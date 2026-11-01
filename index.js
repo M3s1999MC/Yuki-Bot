@@ -128,6 +128,16 @@ async function loadAuthState() {
                 throw new Error('Configura YUKI_AUTH_ENCRYPTION_KEY junto con DATABASE_URL para proteger la sesión de WhatsApp.');
             }
 
+            let databaseUrl;
+            try {
+                databaseUrl = new URL(process.env.DATABASE_URL);
+            } catch {
+                throw new Error('DATABASE_URL no es una URL válida. Configura la URL PostgreSQL completa de Neon sin comillas ni el prefijo DATABASE_URL=.');
+            }
+            if (!['postgres:', 'postgresql:'].includes(databaseUrl.protocol)) {
+                throw new Error('DATABASE_URL debe ser una URL PostgreSQL completa de Neon.');
+            }
+
             const pool = new Pool({
                 connectionString: process.env.DATABASE_URL,
                 ssl: { rejectUnauthorized: true },
