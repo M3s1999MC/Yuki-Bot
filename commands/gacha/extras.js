@@ -1,6 +1,7 @@
 const db = require('../../database/db');
 const { askAI } = require('../../utils/aiClient');
 const { searchPinterestImageBuffer } = require('../../utils/imageSearch');
+const { createFallbackCharacter } = require('../../utils/gachaCharacter');
 
 function parseGeneratedCharacter(response) {
     const jsonText = response.match(/\{[\s\S]*\}/)?.[0];
@@ -100,9 +101,10 @@ module.exports = {
 
         if (['genchar', 'generar', 'genrandom'].includes(command)) {
             if (!input) {
+                let character;
                 try {
                     await sock.sendMessage(jid, {
-                        text: '「✿」 Imaginando un personaje original y buscando una referencia visual en Pinterest...'
+                        text: '「✿」 Imaginando un personaje original...'
                     }, { quoted: m });
                     const response = await askAI(
                         'Inventa un personaje totalmente original y aleatorio, sin basarlo en franquicias existentes. Genera en español: un nombre memorable; un rol; una descripción breve y atractiva; un diseño/estética visual concreto con silueta, ropa, rasgos y colores; una personalidad distintiva. También crea pinterest_query: una frase de búsqueda concisa en inglés que describa el diseño visual y el estilo de ilustración para encontrar referencias similares en Pinterest. Devuelve únicamente un objeto JSON válido con las cadenas name, role, description, design, personality y pinterest_query. No incluyas Markdown ni texto fuera del JSON.',
@@ -110,24 +112,30 @@ module.exports = {
                             system: 'Eres una creadora experta de personajes originales para historias y animación. Cada propuesta debe ser distintiva, coherente y fácil de visualizar.'
                         }
                     );
-                    const character = parseGeneratedCharacter(response);
+                    character = parseGeneratedCharacter(response);
+                } catch (err) {
+                    console.error('No se pudo generar el personaje con IA; usando el generador local:', err.message);
+                    character = createFallbackCharacter();
+                }
+
+                const caption = [
+                    `「✿」 *${character.name}* ✨`,
+                    `🎭 *Rol:* ${character.role}`,
+                    `📖 *Descripción:* ${character.description}`,
+                    `🎨 *Diseño / estética:* ${character.design}`,
+                    `💫 *Personalidad:* ${character.personality}`
+                ].join('\n');
+
+                try {
                     const image = await searchPinterestImageBuffer(character.pinterest_query);
-                    const caption = [
-                        `「✿」 *${character.name}* ✨`,
-                        `🎭 *Rol:* ${character.role}`,
-                        `📖 *Descripción:* ${character.description}`,
-                        `🎨 *Diseño / estética:* ${character.design}`,
-                        `💫 *Personalidad:* ${character.personality}`,
-                        '\n🖼️ Referencia visual: Pinterest'
-                    ].join('\n');
                     return await sock.sendMessage(jid, {
                         image,
-                        caption: caption.slice(0, 1000)
+                        caption: `${caption}\n\n🖼️ Referencia visual`.slice(0, 1000)
                     }, { quoted: m });
-                } catch (err) {
-                    console.error('No se pudo generar el personaje o buscar su imagen en Pinterest:', err.message);
+                } catch (imageErr) {
+                    console.error('No se pudo obtener una referencia visual para genchar:', imageErr.message);
                     return await sock.sendMessage(jid, {
-                        text: `「✿」 No pude completar el personaje con su referencia visual. ${err.message}`
+                        text: `${caption}\n\n🖼️ No encontré una imagen de referencia; el personaje se generó correctamente.`
                     }, { quoted: m });
                 }
             }
