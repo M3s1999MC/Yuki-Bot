@@ -173,7 +173,8 @@ async function startYuki() {
     const sock = makeWASocket({
         auth: state,
         logger: pino({ level: 'silent' }),
-        browser: ['YukiBot', 'Chrome', '120.0.0']
+        browser: ['YukiBot', 'Chrome', '120.0.0'],
+        syncFullHistory: false
     });
     const contactNames = new Map();
 
