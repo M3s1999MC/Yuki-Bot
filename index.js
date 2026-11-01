@@ -3,7 +3,8 @@ require('./utils/loadEnv')();
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 const path = require('path');
-const qrcode = require('qrcode-terminal');
+const { timingSafeEqual } = require('crypto');
+const QRCode = require('qrcode');
 const db = require('./database/db'); 
 require('./database/gacha_db');
 const CommandHandler = require('./handlers/commandHandler');
@@ -16,9 +17,72 @@ const port = process.env.PORT || 8000;
 const dataDir = process.env.YUKI_DATA_DIR
     ? path.resolve(process.env.YUKI_DATA_DIR)
     : __dirname;
+let currentQr = null;
 
 app.get('/', (req, res) => {
     res.send('Yuki Bot está activo y corriendo 24/7');
+});
+
+app.get('/qr', async (req, res) => {
+    const accessToken = process.env.QR_ACCESS_TOKEN;
+    if (!accessToken || accessToken.length < 32) {
+        return res.status(503).send('Configura QR_ACCESS_TOKEN con al menos 32 caracteres en el entorno de Render.');
+    }
+
+    const authorization = req.get('authorization') || '';
+    const credentialsMatch = authorization.match(/^Basic\s+([A-Za-z0-9+/]+={0,2})$/i);
+    const credentials = credentialsMatch
+        ? Buffer.from(credentialsMatch[1], 'base64').toString('utf8')
+        : '';
+    const separator = credentials.indexOf(':');
+    const password = Buffer.from(separator === -1 ? '' : credentials.slice(separator + 1));
+    const expectedPassword = Buffer.from(accessToken);
+
+    if (
+        separator === -1
+        || credentials.slice(0, separator) !== 'yuki'
+        || password.length !== expectedPassword.length
+        || !timingSafeEqual(password, expectedPassword)
+    ) {
+        res.set('WWW-Authenticate', 'Basic realm="YukiBot QR", charset="UTF-8"');
+        return res.sendStatus(401);
+    }
+
+    res.set({
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+        'Content-Security-Policy': "default-src 'none'; img-src data:; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'",
+        'Referrer-Policy': 'no-referrer',
+        'X-Content-Type-Options': 'nosniff'
+    });
+
+    if (!currentQr) {
+        return res.status(503).send('WhatsApp no está solicitando un QR. Revisa los logs de conexión de Render.');
+    }
+
+    const qrImage = await QRCode.toDataURL(currentQr, {
+        errorCorrectionLevel: 'H',
+        margin: 4,
+        width: 360
+    });
+    res.type('html').send(`<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="refresh" content="20">
+<title>Vincular YukiBot</title>
+<style>
+body{font-family:system-ui,sans-serif;text-align:center;margin:2rem auto;padding:0 1rem;max-width:28rem}
+img{width:min(100%,360px);height:auto}
+</style>
+</head>
+<body>
+<h1>Vincular YukiBot</h1>
+<p>En WhatsApp abre Dispositivos vinculados y escanea este código.</p>
+<img src="${qrImage}" alt="Código QR de vinculación de WhatsApp">
+<p>La página se actualiza automáticamente.</p>
+</body>
+</html>`);
 });
 
 app.listen(port, () => {
@@ -73,13 +137,12 @@ async function startYuki() {
         const { connection, lastDisconnect, qr } = update;
         
         if (qr) {
-            console.log('\n========================================');
-            console.log('📱 ¡ ESCANEA ESTE CÓDIGO QR CON WHATSAPP !');
-            console.log('========================================\n');
-            qrcode.generate(qr, { small: true });
+            currentQr = qr;
+            console.log('📱 QR de vinculación disponible en /qr. Configura QR_ACCESS_TOKEN para abrirlo.');
         }
 
         if (connection === 'close') {
+            currentQr = null;
             const statusCode = lastDisconnect?.error?.output?.statusCode;
             console.log(`🔄 Conexión cerrada (Código: ${statusCode}). Reconectando en 4 segundos...`);
             
@@ -89,6 +152,7 @@ async function startYuki() {
                 console.log('❌ Sesión cerrada. Borra la carpeta "sessions/main" y vuelve a iniciar.');
             }
         } else if (connection === 'open') {
+            currentQr = null;
             console.log(`\n⚡ ¡YUKI ESTÁ ONLINE Y CONECTADA! Prefijo activo: ${PREFIX}\n`);
         }
     });
