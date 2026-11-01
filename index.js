@@ -190,6 +190,10 @@ function resetLoggedOutSession() {
 
 async function startYuki() {
     console.log('📂 Cargando sesión de Yuki...');
+    if (db.ready) {
+        await db.ready;
+        console.log('✅ Datos del bot conectados a Neon.');
+    }
     
     const { state, saveCreds } = await loadAuthState();
     const hasRegisteredSession = Boolean(state.creds.registered && state.creds.me?.id);

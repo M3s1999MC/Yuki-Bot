@@ -1,3 +1,6 @@
+if (process.env.DATABASE_URL) {
+    module.exports = require('./neonDb');
+} else {
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
@@ -23,6 +26,7 @@ const userColumns = {
     name: 'TEXT',
     exp: 'INTEGER DEFAULT 0',
     level: 'INTEGER DEFAULT 1',
+    balance: 'INTEGER DEFAULT 0',
     coins: 'INTEGER DEFAULT 0',
     wallet: 'INTEGER DEFAULT 0',
     bank: 'INTEGER DEFAULT 0',
@@ -71,6 +75,7 @@ db.serialize(() => {
         name TEXT,
         exp INTEGER DEFAULT 0,
         level INTEGER DEFAULT 1,
+        balance INTEGER DEFAULT 0,
         coins INTEGER DEFAULT 0,
         wallet INTEGER DEFAULT 0,
         bank INTEGER DEFAULT 0,
@@ -278,3 +283,4 @@ db.getSafeGroup = function(jid, callback) {
 };
 
 module.exports = db;
+}

@@ -186,6 +186,7 @@
   },
   "scripts": {
     "start": "node index.js",
+    "migrate:neon": "node scripts/migrate-sqlite-to-neon.js",
     "test": "node --test"
   },
   "keywords": [],
