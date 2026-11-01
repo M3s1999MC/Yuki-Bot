@@ -3,7 +3,6 @@ require('./utils/loadEnv')();
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 const path = require('path');
-const { Pool } = require('pg');
 const { timingSafeEqual } = require('crypto');
 const QRCode = require('qrcode');
 const db = require('./database/db'); 
@@ -11,7 +10,6 @@ require('./database/gacha_db');
 const CommandHandler = require('./handlers/commandHandler');
 const practiceSessions = require('./utils/practiceSessions');
 const { getMessageContent } = require('./utils/messageContent');
-const { createNeonAuthState } = require('./utils/neonAuthState');
 
 const express = require('express');
 const app = express();
@@ -20,7 +18,6 @@ const dataDir = process.env.YUKI_DATA_DIR
     ? path.resolve(process.env.YUKI_DATA_DIR)
     : __dirname;
 let currentQr = null;
-let authStatePromise;
 
 app.get('/', (req, res) => {
     res.send('Yuki Bot está activo y corriendo 24/7');
@@ -106,50 +103,11 @@ const handler = new CommandHandler();
 // Único prefijo permitido
 const PREFIX = '!';
 
-async function loadAuthState() {
-    if (!authStatePromise) {
-        authStatePromise = (async () => {
-            if (!process.env.DATABASE_URL) {
-                console.warn('⚠️ DATABASE_URL no está configurada; la sesión se guardará en el disco local y puede perderse al reiniciar Render.');
-                return useMultiFileAuthState(path.join(dataDir, 'sessions', 'main'));
-            }
-
-            if (!process.env.YUKI_AUTH_ENCRYPTION_KEY) {
-                throw new Error('Configura YUKI_AUTH_ENCRYPTION_KEY junto con DATABASE_URL para proteger la sesión de WhatsApp.');
-            }
-
-            const pool = new Pool({
-                connectionString: process.env.DATABASE_URL,
-                ssl: { rejectUnauthorized: true },
-                max: 5,
-                connectionTimeoutMillis: 10000
-            });
-
-            try {
-                const authState = await createNeonAuthState(pool, process.env.YUKI_AUTH_ENCRYPTION_KEY);
-                console.log('✅ Sesión de WhatsApp cargada desde PostgreSQL persistente.');
-                return authState;
-            } catch (error) {
-                await pool.end().catch(closeError => {
-                    console.error('Error cerrando la conexión de Neon tras fallar la carga de sesión:', closeError.message);
-                });
-                throw error;
-            }
-        })();
-    }
-
-    try {
-        return await authStatePromise;
-    } catch (error) {
-        authStatePromise = null;
-        throw error;
-    }
-}
-
 async function startYuki() {
+    const sessionPath = path.join(dataDir, 'sessions', 'main');
     console.log('📂 Cargando sesión de Yuki...');
     
-    const { state, saveCreds } = await loadAuthState();
+    const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
     
     const sock = makeWASocket({
         auth: state,
@@ -355,7 +313,4 @@ async function startYuki() {
     });
 }
 
-startYuki().catch(error => {
-    console.error('❌ No se pudo iniciar Yuki:', error);
-    process.exit(1);
-});
+startYuki();
