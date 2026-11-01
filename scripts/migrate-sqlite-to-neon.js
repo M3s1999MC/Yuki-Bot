@@ -84,14 +84,21 @@ async function migrate() {
                 [table.toLowerCase()]
             );
             const targetColumnNames = new Set(targetColumns.rows.map(row => row.column_name));
-            const importColumns = columns
+            const transferableColumns = columns
                 .map(column => column.name)
+                .filter(name => table !== 'users' || name.toLowerCase() !== 'id');
+            const importColumns = transferableColumns
                 .filter(name => targetColumnNames.has(name.toLowerCase()));
-            if (importColumns.length !== columns.length) {
-                const missing = columns
-                    .map(column => column.name)
+            if (importColumns.length !== transferableColumns.length) {
+                const missing = transferableColumns
                     .filter(name => !targetColumnNames.has(name.toLowerCase()));
                 throw new Error(`La tabla ${table} contiene columnas ausentes en Neon: ${missing.join(', ')}.`);
+            }
+            const primaryKeys = table === 'users'
+                ? ['jid']
+                : columns.filter(column => column.pk).sort((left, right) => left.pk - right.pk).map(column => column.name);
+            if (primaryKeys.some(name => !targetColumnNames.has(name.toLowerCase()))) {
+                throw new Error(`La clave primaria de ${table} no coincide con el esquema de Neon.`);
             }
 
             const rows = await sqliteAll(source, `SELECT * FROM ${quotedTable}`);
@@ -101,6 +108,15 @@ async function migrate() {
             }
 
             const quotedColumns = importColumns.map(name => quoteIdentifier(name.toLowerCase()));
+            const updateColumns = importColumns.filter(name =>
+                !primaryKeys.some(primaryKey => primaryKey.toLowerCase() === name.toLowerCase())
+            );
+            const conflictAction = primaryKeys.length && updateColumns.length
+                ? `ON CONFLICT (${primaryKeys.map(name => quoteIdentifier(name.toLowerCase())).join(', ')})
+                   DO UPDATE SET ${updateColumns.map(name =>
+                    `${quoteIdentifier(name.toLowerCase())} = EXCLUDED.${quoteIdentifier(name.toLowerCase())}`
+                ).join(', ')}`
+                : 'ON CONFLICT DO NOTHING';
             let imported = 0;
             const batchSize = 200;
             for (let offset = 0; offset < rows.length; offset += batchSize) {
@@ -114,7 +130,7 @@ async function migrate() {
                     return `(${placeholders.join(', ')})`;
                 });
                 const insertSql = `INSERT INTO ${quotedTable} (${quotedColumns.join(', ')})
-                    VALUES ${rowPlaceholders.join(', ')} ON CONFLICT DO NOTHING`;
+                    VALUES ${rowPlaceholders.join(', ')} ${conflictAction}`;
                 const result = await client.query(insertSql, values);
                 imported += result.rowCount;
             }
@@ -138,8 +154,7 @@ async function migrate() {
         const total = summaries.reduce((sum, item) => sum + item.imported, 0);
         console.log(`Migración completada: ${total} filas copiadas de ${summaries.length} tablas a Neon.`);
         for (const item of summaries) {
-            const retained = item.existing ? ` (${item.existing} ya existían en Neon)` : '';
-            console.log(`- ${item.table}: ${item.imported} filas copiadas${retained}`);
+            console.log(`- ${item.table}: ${item.imported} filas copiadas`);
         }
     } catch (error) {
         await client.query('ROLLBACK').catch(rollbackError => {
