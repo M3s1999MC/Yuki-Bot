@@ -3,7 +3,7 @@ const activeSpawns = require('../../utils/gachaSpawns');
 
 module.exports = {
     name: 'roll',
-    aliases: ['rw', 'rollwaifu'],
+    aliases: ['rw', 'rollwaifu', 'waifu'],
     category: 'gacha',
     description: 'Invoca un personaje del catálogo gacha.',
 

@@ -128,7 +128,7 @@ module.exports = {
 > Compra objetos como tickets de captura
 
 » ˚୨•(🌸)• ⊹ Gacha ⊹
-✧ !roll | !rw | !rollwaifu
+✧ !roll | !rw | !rollwaifu | !waifu
 > Tira un waifu o husbando aleatorio del catálogo gacha
 ✧ !genchar | !generar | !genrandom
 > Genera un personaje original con IA o añade uno al catálogo
