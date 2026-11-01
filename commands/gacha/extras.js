@@ -1,14 +1,14 @@
 const db = require('../../database/db');
 const { askAI } = require('../../utils/aiClient');
-const { searchPinterestImageBuffer } = require('../../utils/imageSearch');
 const { createFallbackCharacter } = require('../../utils/gachaCharacter');
+const { generateOriginalCharacterImage } = require('../../utils/openaiImageGeneration');
 
 function parseGeneratedCharacter(response) {
     const jsonText = response.match(/\{[\s\S]*\}/)?.[0];
     if (!jsonText) throw new Error('La IA no devolvió la ficha en el formato esperado.');
 
     const character = JSON.parse(jsonText);
-    const fields = ['name', 'role', 'description', 'design', 'personality', 'pinterest_query'];
+    const fields = ['name', 'role', 'description', 'design', 'personality'];
     if (fields.some(field => typeof character[field] !== 'string' || !character[field].trim())) {
         throw new Error('La ficha generada está incompleta.');
     }
@@ -107,7 +107,7 @@ module.exports = {
                         text: '「✿」 Imaginando un personaje original...'
                     }, { quoted: m });
                     const response = await askAI(
-                        'Inventa un personaje totalmente original y aleatorio, sin basarlo en franquicias existentes. Genera en español: un nombre memorable; un rol; una descripción breve y atractiva; un diseño/estética visual concreto con silueta, ropa, rasgos y colores; una personalidad distintiva. También crea pinterest_query: una frase de búsqueda concisa en inglés que describa el diseño visual y el estilo de ilustración para encontrar referencias similares en Pinterest. Devuelve únicamente un objeto JSON válido con las cadenas name, role, description, design, personality y pinterest_query. No incluyas Markdown ni texto fuera del JSON.',
+                        'Inventa un personaje totalmente original y aleatorio, sin basarlo en franquicias existentes. Genera en español: un nombre memorable; un rol; una descripción breve y atractiva; un diseño/estética visual concreto con silueta, ropa, rasgos y colores; y una personalidad distintiva. Devuelve únicamente un objeto JSON válido con las cadenas name, role, description, design y personality. No incluyas Markdown ni texto fuera del JSON.',
                         {
                             system: 'Eres una creadora experta de personajes originales para historias y animación. Cada propuesta debe ser distintiva, coherente y fácil de visualizar.'
                         }
@@ -127,15 +127,15 @@ module.exports = {
                 ].join('\n');
 
                 try {
-                    const image = await searchPinterestImageBuffer(character.pinterest_query);
+                    const image = await generateOriginalCharacterImage(character);
                     return await sock.sendMessage(jid, {
                         image,
-                        caption: `${caption}\n\n🖼️ Referencia visual`.slice(0, 1000)
+                        caption: caption.slice(0, 1000)
                     }, { quoted: m });
                 } catch (imageErr) {
-                    console.error('No se pudo obtener una referencia visual para genchar:', imageErr.message);
+                    console.error('No se pudo generar la ilustración original para genchar:', imageErr.message);
                     return await sock.sendMessage(jid, {
-                        text: `${caption}\n\n🖼️ No encontré una imagen de referencia; el personaje se generó correctamente.`
+                        text: `${caption}\n\n⚠️ No se pudo generar la ilustración: ${imageErr.message}`
                     }, { quoted: m });
                 }
             }

@@ -32,3 +32,9 @@ npm run migrate:neon
 Detén el servicio de Render mientras migras. El comando copia las tablas y filas de `database/yuki.db` a Neon dentro de una transacción; si ya existe un perfil con el mismo JID, los datos de SQLite se copian sobre ese perfil. No borra ni modifica el archivo SQLite local y registra la migración para evitar repetirla. Después inicia Render otra vez. No conectes dos instancias del bot a la vez durante la migración.
 
 El almacenamiento de los datos del bot usa `DATABASE_URL`; `YUKI_AUTH_ENCRYPTION_KEY` solo cifra la sesión de WhatsApp.
+
+## Ilustraciones originales con OpenAI
+
+El comando `!genchar` genera una ficha original y una ilustración usando OpenAI Images API. Configura `OPENAI_IMAGE_API_KEY` como variable privada tanto en Render como en el `.env` local. No reutilices `AI_API_KEY`, ya que puede pertenecer a otro proveedor. Opcionalmente, `OPENAI_IMAGE_MODEL` permite elegir otro modelo de imágenes; por defecto se usa `gpt-image-1-mini` con calidad baja para limitar el costo. Cada ejecución solicita una imagen y puede tener costo según las tarifas de OpenAI.
+
+Si no se configura la clave, el bot enviará la ficha del personaje y un error que indica la variable necesaria, pero no fingirá que generó una imagen. Las tiradas `!roll`, `!rw` y `!waifu` siguen usando el catálogo como se solicitó.
