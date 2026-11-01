@@ -21,9 +21,10 @@ const dataDir = process.env.YUKI_DATA_DIR
     : __dirname;
 let currentQr = null;
 let authStatePromise;
+let reconnectTimer;
 
 app.get('/', (req, res) => {
-    res.send('Yuki Bot está activo y corriendo 24/7');
+    res.send('Yuki Bot está activo.');
 });
 
 app.get('/qr', async (req, res) => {
@@ -146,10 +147,28 @@ async function loadAuthState() {
     }
 }
 
+function scheduleReconnect() {
+    if (reconnectTimer) return;
+    reconnectTimer = setTimeout(() => {
+        reconnectTimer = null;
+        startYuki().catch(error => {
+            console.error('❌ No se pudo restablecer la conexión de Yuki:', error.message);
+            scheduleReconnect();
+        });
+    }, 4000);
+}
+
 async function startYuki() {
     console.log('📂 Cargando sesión de Yuki...');
     
     const { state, saveCreds } = await loadAuthState();
+    const hasRegisteredSession = Boolean(state.creds.registered && state.creds.me?.id);
+
+    if (hasRegisteredSession) {
+        console.log('✅ Se encontró una sesión de WhatsApp previamente vinculada.');
+    } else {
+        console.log('ℹ️ No hay una sesión vinculada guardada. El primer QR debe escanearse una vez.');
+    }
     
     const sock = makeWASocket({
         auth: state,
@@ -180,26 +199,51 @@ async function startYuki() {
         
         if (qr) {
             currentQr = qr;
-            console.log('📱 QR de vinculación disponible en /qr. Configura QR_ACCESS_TOKEN para abrirlo.');
+            if (hasRegisteredSession) {
+                console.warn('⚠️ WhatsApp solicita un QR aunque hay una sesión guardada. Comprueba que DATABASE_URL y YUKI_AUTH_ENCRYPTION_KEY no hayan cambiado y que solo haya una instancia del bot.');
+            } else {
+                console.log('📱 QR inicial disponible en /qr. Configura QR_ACCESS_TOKEN para abrirlo.');
+            }
         }
 
         if (connection === 'close') {
             currentQr = null;
             const statusCode = lastDisconnect?.error?.output?.statusCode;
-            console.log(`🔄 Conexión cerrada (Código: ${statusCode}). Reconectando en 4 segundos...`);
             
-            if (statusCode !== DisconnectReason.loggedOut) {
-                setTimeout(() => startYuki(), 4000);
-            } else {
-                console.log('❌ Sesión cerrada. Borra la carpeta "sessions/main" y vuelve a iniciar.');
+            if (statusCode === DisconnectReason.loggedOut) {
+                console.error('❌ WhatsApp cerró la sesión. Se requiere una nueva vinculación; no borres la base de Neon.');
+                return;
             }
+
+            console.log(`🔄 Conexión cerrada (Código: ${statusCode}). Reconectando en 4 segundos...`);
+            scheduleReconnect();
         } else if (connection === 'open') {
+            if (reconnectTimer) {
+                clearTimeout(reconnectTimer);
+                reconnectTimer = null;
+            }
             currentQr = null;
             console.log(`\n⚡ ¡YUKI ESTÁ ONLINE Y CONECTADA! Prefijo activo: ${PREFIX}\n`);
         }
     });
 
-    sock.ev.on('creds.update', saveCreds);
+    let credentialSaveQueue = Promise.resolve();
+    sock.ev.on('creds.update', () => {
+        credentialSaveQueue = credentialSaveQueue.then(async () => {
+            for (let attempt = 1; attempt <= 3; attempt += 1) {
+                try {
+                    await saveCreds();
+                    return;
+                } catch (error) {
+                    if (attempt === 3) throw error;
+                    await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+                }
+            }
+        }).catch(error => {
+            console.error('❌ No se pudieron guardar las credenciales de WhatsApp tras 3 intentos:', error.message);
+            process.exit(1);
+        });
+    });
 
     sock.ev.on('group-participants.update', async (update) => {
         if (!['add', 'remove'].includes(update.action)) return;

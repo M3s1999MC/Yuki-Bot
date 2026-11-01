@@ -32,6 +32,7 @@ test('Neon auth state persists encrypted credentials and Signal keys', async () 
     const pool = createMemoryPool();
     const auth = await createNeonAuthState(pool, encryptionKey);
 
+    auth.state.creds.registered = true;
     auth.state.creds.me = { id: '15551234567@s.whatsapp.net' };
     auth.state.creds.advSecretKey = 'private-session-secret';
     await auth.saveCreds();
@@ -51,6 +52,7 @@ test('Neon auth state persists encrypted credentials and Signal keys', async () 
     assert.ok(!pool.values.get('pre-key-1').includes('private-key'));
 
     const restored = await createNeonAuthState(pool, encryptionKey);
+    assert.equal(restored.state.creds.registered, true);
     assert.equal(restored.state.creds.me.id, '15551234567@s.whatsapp.net');
     assert.equal(restored.state.creds.advSecretKey, 'private-session-secret');
 
