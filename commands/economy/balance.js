@@ -1,4 +1,5 @@
 const db = require('../../database/db');
+const { getBalanceTargetJid } = require('../../utils/messageSender');
 
 module.exports = {
     name: 'balance',
@@ -8,18 +9,7 @@ module.exports = {
 
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
-        const isGroup = jid.endsWith('@g.us');
-
-        let target;
-        const contextInfo = m.message?.extendedTextMessage?.contextInfo;
-
-        if (contextInfo?.participant) {
-            target = contextInfo.participant;
-        } else if (contextInfo?.mentionedJid && contextInfo.mentionedJid.length > 0) {
-            target = contextInfo.mentionedJid[0];
-        } else {
-            target = isGroup ? (m.key.participant || m.key.remoteJid) : jid;
-        }
+        const target = getBalanceTargetJid(m, sock);
 
         const username = target.split('@')[0];
         db.getSafeUser(target, (ensureErr, user) => {

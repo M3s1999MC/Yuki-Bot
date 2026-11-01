@@ -1,5 +1,6 @@
 const { respondToDuel } = require('../../utils/pendingDuels');
 const { getMessageContent } = require('../../utils/messageContent');
+const { getMessageSenderJid } = require('../../utils/messageSender');
 
 module.exports = {
     name: 'aceptar',
@@ -9,7 +10,7 @@ module.exports = {
 
     async execute(sock, m) {
         const jid = m.key.remoteJid;
-        const sender = jid.endsWith('@g.us') ? (m.key.participant || jid) : jid;
+        const sender = getMessageSenderJid(m, sock);
         const content = getMessageContent(m.message);
         const body = content.conversation || content.extendedTextMessage?.text || '';
         const action = body.replace(/^!/, '').trim().split(/\s+/)[0].toLowerCase();

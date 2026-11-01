@@ -12,6 +12,7 @@ require('./database/gacha_db');
 const CommandHandler = require('./handlers/commandHandler');
 const practiceSessions = require('./utils/practiceSessions');
 const { getMessageContent } = require('./utils/messageContent');
+const { getMessageSenderJid } = require('./utils/messageSender');
 const { createNeonAuthState } = require('./utils/neonAuthState');
 
 const express = require('express');
@@ -330,7 +331,11 @@ async function startYuki() {
         if (!m.message) return;
 
         // 🟢 IDENTIFICAR AL REMITENTE
-        const sender = m.key.participant || m.key.remoteJid;
+        const sender = getMessageSenderJid(m, sock);
+        if (!sender) {
+            console.error('❌ No se pudo identificar al remitente; se omite el mensaje para proteger las cuentas.');
+            return;
+        }
 
         // 🟢 REGISTRO AUTOMÁTICO UNIVERSAL
         if (sender) {

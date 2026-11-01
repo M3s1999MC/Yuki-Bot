@@ -1,4 +1,5 @@
 const db = require('../../database/db');
+const { getMessageSenderJid } = require('../../utils/messageSender');
 
 module.exports = {
     name: 'work',
@@ -8,7 +9,7 @@ module.exports = {
 
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
-        const sender = jid.endsWith('@g.us') ? (m.key.participant || m.key.remoteJid) : jid;
+        const sender = getMessageSenderJid(m, sock);
         const jobs = ['Programador indie', 'Animador 3D en Blender', 'Diseñador UI', 'Repartidor de arepas'];
         const currentJob = jobs[Math.floor(Math.random() * jobs.length)];
         const earned = Math.floor(Math.random() * 800) + 200;

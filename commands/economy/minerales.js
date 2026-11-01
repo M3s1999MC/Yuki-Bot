@@ -1,4 +1,5 @@
 const db = require('../../database/db');
+const { getMessageSenderJid } = require('../../utils/messageSender');
 
 const catalog = [
     '⚫ Carbón — 50% · $150',
@@ -15,7 +16,7 @@ module.exports = {
 
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
-        const sender = jid.endsWith('@g.us') ? (m.key.participant || jid) : jid;
+        const sender = getMessageSenderJid(m, sock);
         if ((args[0] || '').toLowerCase() === 'catalogo') {
             return sock.sendMessage(jid, { text: `「✿」 Catálogo de minerales ⛏️\n\n${catalog.join('\n')}` }, { quoted: m });
         }

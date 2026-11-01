@@ -1,4 +1,5 @@
 const db = require('../../database/db');
+const { getMessageSenderJid } = require('../../utils/messageSender');
 
 const prices = { 'carbón': 150, hierro: 350, oro: 800, diamante: 2000 };
 
@@ -10,7 +11,7 @@ module.exports = {
 
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
-        const sender = jid.endsWith('@g.us') ? (m.key.participant || jid) : jid;
+        const sender = getMessageSenderJid(m, sock);
         const requestedMineral = args.join(' ').trim().toLowerCase();
         if (requestedMineral && !Object.prototype.hasOwnProperty.call(prices, requestedMineral)) {
             return sock.sendMessage(jid, { text: '「✿」 Mineral no válido. Opciones: carbón, hierro, oro o diamante.' }, { quoted: m });

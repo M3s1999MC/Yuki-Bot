@@ -1,5 +1,6 @@
 // monthly.js
 const db = require('../../database/db');
+const { getMessageSenderJid } = require('../../utils/messageSender');
 
 module.exports = {
     name: 'monthly',
@@ -8,7 +9,7 @@ module.exports = {
 
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
-        const sender = m.key.participant || m.key.remoteJid;
+        const sender = getMessageSenderJid(m, sock);
         const ahora = Date.now();
         const cooldown = 30 * 24 * 60 * 60 * 1000; // 30 días
         const premio = 50000;

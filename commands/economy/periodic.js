@@ -1,4 +1,5 @@
 const db = require('../../database/db');
+const { getMessageSenderJid } = require('../../utils/messageSender');
 
 module.exports = {
     name: 'periodic_legacy',
@@ -8,7 +9,7 @@ module.exports = {
 
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
-        const sender = m.key.participant || m.key.remoteJid;
+        const sender = getMessageSenderJid(m, sock);
         const ahora = Date.now();
 
         const body = m.message?.conversation || m.message?.extendedTextMessage?.text || '';

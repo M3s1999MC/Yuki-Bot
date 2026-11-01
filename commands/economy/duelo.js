@@ -1,6 +1,7 @@
 const db = require('../../database/db');
 const { addPendingDuel } = require('../../utils/pendingDuels');
 const { getMessageContent } = require('../../utils/messageContent');
+const { getMessageSenderJid } = require('../../utils/messageSender');
 
 module.exports = {
     name: 'duelo',
@@ -10,7 +11,7 @@ module.exports = {
 
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
-        const sender = jid.endsWith('@g.us') ? (m.key.participant || jid) : jid;
+        const sender = getMessageSenderJid(m, sock);
         const content = getMessageContent(m.message);
         const mentionedJids = content.extendedTextMessage?.contextInfo?.mentionedJid || [];
         const target = mentionedJids[0];

@@ -1,4 +1,5 @@
 const db = require('../../database/db');
+const { getMessageSenderJid } = require('../../utils/messageSender');
 
 module.exports = {
     name: 'rob',
@@ -8,7 +9,7 @@ module.exports = {
 
     async execute(sock, m) {
         const jid = m.key.remoteJid;
-        const sender = jid.endsWith('@g.us') ? (m.key.participant || jid) : jid;
+        const sender = getMessageSenderJid(m, sock);
         const context = m.message?.extendedTextMessage?.contextInfo;
         const target = context?.mentionedJid?.[0] || context?.participant;
         if (!target) {

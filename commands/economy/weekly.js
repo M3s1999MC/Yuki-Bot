@@ -1,5 +1,6 @@
 // weekly.js
 const db = require('../../database/db');
+const { getMessageSenderJid } = require('../../utils/messageSender');
 
 module.exports = {
     name: 'weekly',
@@ -8,7 +9,7 @@ module.exports = {
 
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
-        const sender = m.key.participant || m.key.remoteJid;
+        const sender = getMessageSenderJid(m, sock);
         const ahora = Date.now();
         const cooldown = 7 * 24 * 60 * 60 * 1000; // 7 días
         const premio = 10000;
