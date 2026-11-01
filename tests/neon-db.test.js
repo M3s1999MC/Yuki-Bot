@@ -37,6 +37,10 @@ test('Neon SQL compatibility converts SQLite placeholders and syntax', () => {
     );
     assert.equal(translateSql('BEGIN IMMEDIATE'), 'BEGIN');
     assert.equal(
+        translateSql(`CREATE TABLE IF NOT EXISTS characters (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE)`),
+        `CREATE TABLE IF NOT EXISTS characters (id SERIAL PRIMARY KEY, name TEXT UNIQUE)`
+    );
+    assert.equal(
         translateSql(`ALTER TABLE users ADD COLUMN lastWeekly INTEGER DEFAULT 0`),
         `ALTER TABLE users ADD COLUMN IF NOT EXISTS lastWeekly INTEGER DEFAULT 0`
     );

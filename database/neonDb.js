@@ -94,6 +94,7 @@ function translateSql(source) {
     sql = sql.replace(/^\s*INSERT\s+OR\s+IGNORE\s+/i, 'INSERT ');
     sql = sql.replace(/\bBEGIN\s+(?:IMMEDIATE|EXCLUSIVE|TRANSACTION)\b/ig, 'BEGIN');
     sql = sql.replace(/\bALTER\s+TABLE\s+(\S+)\s+ADD\s+COLUMN\s+/ig, 'ALTER TABLE $1 ADD COLUMN IF NOT EXISTS ');
+    sql = sql.replace(/\b([a-z_]\w*)\s+INTEGER\s+PRIMARY\s+KEY\s+AUTOINCREMENT\b/ig, '$1 SERIAL PRIMARY KEY');
     sql = sql.replace(/users\.name\s+NOT\s+GLOB\s+'\*\[\^0-9\+ \]\*'/ig, "users.name !~ '[^0-9+ ]'");
     sql = sql.replace(/\bLIKE\s+(\?)\s+COLLATE\s+NOCASE/ig, 'ILIKE $1');
     sql = sql.replace(/([a-z_][\w.]*)\s+COLLATE\s+NOCASE/ig, 'LOWER($1)');
