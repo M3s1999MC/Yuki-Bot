@@ -3,6 +3,7 @@ require('./utils/loadEnv')();
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 const path = require('path');
+const fs = require('fs/promises');
 const { Pool } = require('pg');
 const { timingSafeEqual } = require('crypto');
 const QRCode = require('qrcode');
@@ -22,6 +23,7 @@ const dataDir = process.env.YUKI_DATA_DIR
 let currentQr = null;
 let authStatePromise;
 let reconnectTimer;
+let authResetPromise;
 
 app.get('/', (req, res) => {
     res.send('Yuki Bot está activo.');
@@ -112,7 +114,14 @@ async function loadAuthState() {
         authStatePromise = (async () => {
             if (!process.env.DATABASE_URL) {
                 console.warn('⚠️ DATABASE_URL no está configurada; la sesión se guardará en el disco local y puede perderse al reiniciar Render.');
-                return useMultiFileAuthState(path.join(dataDir, 'sessions', 'main'));
+                const sessionPath = path.join(dataDir, 'sessions', 'main');
+                const authState = await useMultiFileAuthState(sessionPath);
+                return {
+                    ...authState,
+                    resetAuthState: async () => {
+                        await fs.rm(sessionPath, { recursive: true, force: true });
+                    }
+                };
             }
 
             if (!process.env.YUKI_AUTH_ENCRYPTION_KEY) {
@@ -156,6 +165,27 @@ function scheduleReconnect() {
             scheduleReconnect();
         });
     }, 4000);
+}
+
+function resetLoggedOutSession() {
+    if (authResetPromise) return authResetPromise;
+
+    authResetPromise = (async () => {
+        const authState = await loadAuthState();
+        await authState.resetAuthState();
+        if (!process.env.DATABASE_URL) {
+            authStatePromise = null;
+        }
+        console.log('✅ Sesión revocada eliminada. Se solicitará un QR nuevo.');
+        scheduleReconnect();
+    })().catch(error => {
+        console.error('❌ No se pudo limpiar la sesión revocada:', error.message);
+        process.exit(1);
+    }).finally(() => {
+        authResetPromise = null;
+    });
+
+    return authResetPromise;
 }
 
 async function startYuki() {
@@ -212,7 +242,8 @@ async function startYuki() {
             const statusCode = lastDisconnect?.error?.output?.statusCode;
             
             if (statusCode === DisconnectReason.loggedOut) {
-                console.error('❌ WhatsApp cerró la sesión. Se requiere una nueva vinculación; no borres la base de Neon.');
+                console.warn('⚠️ WhatsApp revocó la sesión guardada. Limpiando solo la autenticación para solicitar un QR nuevo...');
+                resetLoggedOutSession();
                 return;
             }
 

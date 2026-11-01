@@ -17,7 +17,7 @@ La sesión de Baileys puede guardarse en PostgreSQL en lugar del disco temporal 
 
 El bot no solicita la descarga completa del historial de chats al vincularse, para reducir la espera. Baileys mantiene la sincronización básica que necesita para la sesión; los mensajes nuevos siguen llegando, pero el historial completo anterior no se carga.
 
-Si vuelve a aparecer un QR después de una vinculación exitosa, comprueba en los logs que cargó la sesión persistente y que `DATABASE_URL` y `YUKI_AUTH_ENCRYPTION_KEY` siguen siendo las mismas. Mantén una sola instancia del bot conectada a esa sesión. Si WhatsApp cierra la sesión, detén el servicio y, solo entonces, ejecuta `DELETE FROM yuki_whatsapp_auth;` en Neon para iniciar una vinculación nueva; esto elimina únicamente la sesión del bot, no la base completa.
+Si vuelve a aparecer un QR después de una vinculación exitosa, comprueba en los logs que cargó la sesión persistente y que `DATABASE_URL` y `YUKI_AUTH_ENCRYPTION_KEY` siguen siendo las mismas. Mantén una sola instancia del bot conectada a esa sesión. Si quitas Yuki de Dispositivos vinculados, WhatsApp revoca la sesión y el bot elimina automáticamente solo sus datos de autenticación para solicitar un QR nuevo; no borra el resto de la base.
 
 Neon conserva la sesión, pero no evita que Render Gratis suspenda el servicio por inactividad. El código no puede garantizar disponibilidad 24/7 en ese plan; para mantener el bot siempre activo se necesita un plan/servicio que permita procesos permanentes.
 

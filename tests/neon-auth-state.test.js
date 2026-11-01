@@ -11,6 +11,10 @@ function createMemoryPool() {
         values,
         async query(sql, params = []) {
             if (sql.includes('CREATE TABLE IF NOT EXISTS')) return { rows: [] };
+            if (sql.includes('DELETE FROM yuki_whatsapp_auth') && !sql.includes('WHERE')) {
+                values.clear();
+                return { rows: [] };
+            }
             if (sql.includes('SELECT encrypted_value')) {
                 const encryptedValue = values.get(params[0]);
                 return { rows: encryptedValue ? [{ encrypted_value: encryptedValue }] : [] };
@@ -80,4 +84,25 @@ test('Neon auth state rejects malformed encryption keys and tampered values', as
 
     const restored = await createNeonAuthState(pool, encryptionKey);
     await assert.rejects(restored.state.keys.get('pre-key', ['1']));
+});
+
+test('Neon auth state clears revoked credentials and keys for a new QR link', async () => {
+    const pool = createMemoryPool();
+    const auth = await createNeonAuthState(pool, encryptionKey);
+
+    auth.state.creds.registered = true;
+    auth.state.creds.me = { id: '15551234567@s.whatsapp.net' };
+    await auth.saveCreds();
+    await auth.state.keys.set({ 'pre-key': { '1': { private: Buffer.from('revoked-key') } } });
+
+    await auth.resetAuthState();
+
+    assert.equal(auth.state.creds.registered, false);
+    assert.equal(auth.state.creds.me, undefined);
+    assert.equal(pool.values.size, 1);
+    assert.deepEqual(await auth.state.keys.get('pre-key', ['1']), { '1': null });
+
+    const restored = await createNeonAuthState(pool, encryptionKey);
+    assert.equal(restored.state.creds.registered, false);
+    assert.equal(restored.state.creds.me, undefined);
 });

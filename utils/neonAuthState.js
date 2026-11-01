@@ -73,6 +73,15 @@ async function createNeonAuthState(pool, encryptionKey) {
         await pool.query(`DELETE FROM ${TABLE_NAME} WHERE auth_key = $1`, [authKey]);
     };
 
+    const resetAuthState = async () => {
+        await pool.query(`DELETE FROM ${TABLE_NAME}`);
+        for (const keyName of Object.keys(creds)) {
+            delete creds[keyName];
+        }
+        Object.assign(creds, initAuthCreds());
+        await writeData('creds', creds);
+    };
+
     let creds = await readData('creds');
     if (!creds) {
         creds = initAuthCreds();
@@ -107,7 +116,8 @@ async function createNeonAuthState(pool, encryptionKey) {
                 }
             }
         },
-        saveCreds: async () => writeData('creds', creds)
+        saveCreds: async () => writeData('creds', creds),
+        resetAuthState
     };
 }
 
