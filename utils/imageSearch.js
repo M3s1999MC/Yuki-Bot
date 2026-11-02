@@ -3,7 +3,17 @@ const PINTEREST_HOST = 'www.pinterest.com';
 const IMAGE_HOST = 'i.pinimg.com';
 
 async function fetchPinterestImage(imageUrl) {
-    const response = await fetch(imageUrl, {
+    let url;
+    try {
+        url = new URL(imageUrl);
+    } catch {
+        throw new Error('La URL de imagen de Pinterest no es válida.');
+    }
+    if (url.protocol !== 'https:' || url.hostname !== IMAGE_HOST) {
+        throw new Error('La imagen no pertenece al CDN público de Pinterest.');
+    }
+
+    const response = await fetch(url, {
         headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36',
             Referer: 'https://www.pinterest.com/'
@@ -46,10 +56,12 @@ async function searchPinterestImage(query) {
         .replace(/\\u003D/gi, '=')
         .replace(/\\\//g, '/')
         .replace(/&amp;/g, '&');
-    const foundUrls = html.match(/https?:\/\/i\.pinimg\.com\/[^"'\\\s<>]+/gi) || [];
+    const foundUrls = html.match(
+        /https?:\/\/i\.pinimg\.com\/[^\s"'<>\\]*?\.(?:jpe?g|png|webp)(?:\?[^\s"'<>\\]*)?/gi
+    ) || [];
     const candidates = [...new Set(foundUrls.map(candidate => {
         try {
-            const imageUrl = new URL(candidate.replace(/[),]+$/, ''));
+            const imageUrl = new URL(candidate.replace(/[),}\]]+$/, ''));
             if (imageUrl.hostname !== IMAGE_HOST ||
                 !/\.(?:jpe?g|png|webp)(?:$|[?#])/i.test(imageUrl.href)) return null;
             return imageUrl;
@@ -81,4 +93,4 @@ async function searchPinterestImageBuffer(query) {
     return image.buffer;
 }
 
-module.exports = { searchPinterestImage, searchPinterestImageBuffer };
+module.exports = { searchPinterestImage, searchPinterestImageBuffer, fetchPinterestImage };
