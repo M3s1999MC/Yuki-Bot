@@ -34,7 +34,7 @@ test('Pinterest image search finds and downloads a public pin image', async t =>
     assert.equal(requests[1].options.headers.Referer, 'https://www.pinterest.com/');
 });
 
-test('Pinterest image search extracts image URLs from HTML attributes and CSS', async t => {
+test('Pinterest image search ignores a decorative CSS image and selects an actual result', async t => {
     const originalFetch = global.fetch;
     const imageBytes = Buffer.from('fake image data');
     let downloadedUrl;
@@ -42,7 +42,11 @@ test('Pinterest image search extracts image URLs from HTML attributes and CSS', 
         if (String(url).includes('/search/pins/')) {
             return {
                 ok: true,
-                text: async () => '<div style="background:url(https://i.pinimg.com/originals/ab/cd/image.png)}.button_D{">'
+                text: async () => [
+                    '<style>:root{--logo:url(https://i.pinimg.com/originals/logo.png)}</style>',
+                    '<div style="background:url(https://i.pinimg.com/originals/logo.png)}.button_D{">',
+                    '<img src="https://i.pinimg.com/originals/ab/cd/image.png">'
+                ].join('')
             };
         }
         downloadedUrl = String(url);
@@ -62,6 +66,23 @@ test('Pinterest image search extracts image URLs from HTML attributes and CSS', 
 
     assert.equal(result.url, 'https://i.pinimg.com/originals/ab/cd/image.png');
     assert.equal(downloadedUrl, result.url);
+});
+
+test('Pinterest search reports when unauthenticated results are locked', async t => {
+    const originalFetch = global.fetch;
+    global.fetch = async () => ({
+        ok: true,
+        text: async () => '<style>:root{--logo:url(https://i.pinimg.com/originals/logo.png)}</style>' +
+            '"lop_unauth_lockdown_search":"enabled_rollout"'
+    });
+    t.after(() => {
+        global.fetch = originalFetch;
+    });
+
+    await assert.rejects(
+        searchPinterestImage('anime character'),
+        /restringiendo los resultados para búsquedas sin iniciar sesión/
+    );
 });
 
 test('Pinterest image downloader rejects URLs outside its CDN', async () => {

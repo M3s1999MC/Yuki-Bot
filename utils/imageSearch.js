@@ -56,7 +56,10 @@ async function searchPinterestImage(query) {
         .replace(/\\u003D/gi, '=')
         .replace(/\\\//g, '/')
         .replace(/&amp;/g, '&');
-    const foundUrls = html.match(
+    const pinResultsHtml = html
+        .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '')
+        .replace(/url\(\s*(['"]?)[^)]+\1\s*\)/gi, '');
+    const foundUrls = pinResultsHtml.match(
         /https?:\/\/i\.pinimg\.com\/[^\s"'<>\\]*?\.(?:jpe?g|png|webp)(?:\?[^\s"'<>\\]*)?/gi
     ) || [];
     const candidates = [...new Set(foundUrls.map(candidate => {
@@ -74,6 +77,9 @@ async function searchPinterestImage(query) {
     );
 
     if (!candidates.length) {
+        if (/"lop_unauth_lockdown_search"\s*:\s*"(?:enabled|enabled_rollout)"/i.test(html)) {
+            throw new Error('Pinterest está restringiendo los resultados para búsquedas sin iniciar sesión.');
+        }
         throw new Error('Pinterest no mostró imágenes públicas para esa búsqueda.');
     }
 
