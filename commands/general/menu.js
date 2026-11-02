@@ -129,7 +129,9 @@ module.exports = {
 
 » ˚୨•(🌸)• ⊹ Gacha ⊹
 ✧ !roll | !rw | !rollwaifu | !waifu
-> Tira un waifu o husbando aleatorio del catálogo gacha
+> Tira un personaje de la lista seleccionada con la imagen que configuró el dueño
+✧ !rollcatalog | !catalogoroll
+> Muestra los personajes seleccionados que todavía necesitan imagen
 ✧ !genchar | !generar | !genrandom
 > Genera un personaje original con IA o añade uno al catálogo
 ✧ !claim | !c | !reclamar

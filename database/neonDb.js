@@ -77,7 +77,7 @@ const schema = [
     )`,
     `CREATE TABLE IF NOT EXISTS characters (
         id SERIAL PRIMARY KEY, name TEXT, serie TEXT,
-        price INTEGER DEFAULT 1000, image_url TEXT
+        price INTEGER DEFAULT 1000, image_url TEXT, is_curated INTEGER DEFAULT 0
     )`,
     `CREATE TABLE IF NOT EXISTS user_harem (
         id SERIAL PRIMARY KEY, user_jid TEXT, character_id INTEGER REFERENCES characters(id)
@@ -156,6 +156,7 @@ function createNeonDatabase(pool) {
         await pool.query(`ALTER TABLE users ALTER COLUMN lastweekly TYPE BIGINT`);
         await pool.query(`ALTER TABLE users ALTER COLUMN lastmonthly TYPE BIGINT`);
         await pool.query(`ALTER TABLE message_counts ALTER COLUMN last_message_at TYPE BIGINT`);
+        await pool.query(`ALTER TABLE characters ADD COLUMN IF NOT EXISTS is_curated INTEGER DEFAULT 0`);
     });
 
     function acquireTransactionLock() {

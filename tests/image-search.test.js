@@ -1,6 +1,10 @@
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
-const { fetchPinterestImage, searchPinterestImage } = require('../utils/imageSearch');
+const {
+    fetchPinterestImage,
+    resolvePinterestImageUrl,
+    searchPinterestImage
+} = require('../utils/imageSearch');
 
 test('Pinterest image search finds and downloads a public pin image', async t => {
     const originalFetch = global.fetch;
@@ -158,5 +162,56 @@ test('Pinterest image downloader rejects URLs outside its CDN', async () => {
     await assert.rejects(
         fetchPinterestImage('https://example.com/image.jpg'),
         /no pertenece al CDN/
+    );
+});
+
+test('Pinterest pin links resolve to a downloadable Pinterest CDN image', async t => {
+    const originalFetch = global.fetch;
+    const imageBytes = Buffer.from('pin image');
+    const requests = [];
+    global.fetch = async url => {
+        requests.push(String(url));
+        if (String(url).includes('pinterest.com/pin/')) {
+            return {
+                ok: true,
+                url: String(url),
+                text: async () => '<img src="https://i.pinimg.com/originals/ab/cd/pin.jpg">'
+            };
+        }
+        return {
+            ok: true,
+            headers: {
+                get: name => name === 'content-type' ? 'image/jpeg' : String(imageBytes.length)
+            },
+            arrayBuffer: async () => imageBytes
+        };
+    };
+    t.after(() => {
+        global.fetch = originalFetch;
+    });
+
+    const imageUrl = await resolvePinterestImageUrl('https://www.pinterest.com/pin/123456/');
+
+    assert.equal(imageUrl, 'https://i.pinimg.com/originals/ab/cd/pin.jpg');
+    assert.deepEqual(requests, [
+        'https://www.pinterest.com/pin/123456/',
+        imageUrl
+    ]);
+});
+
+test('Pinterest pin resolver rejects redirects outside Pinterest', async t => {
+    const originalFetch = global.fetch;
+    global.fetch = async url => ({
+        ok: true,
+        url: 'https://example.com/pin',
+        text: async () => ''
+    });
+    t.after(() => {
+        global.fetch = originalFetch;
+    });
+
+    await assert.rejects(
+        resolvePinterestImageUrl('https://www.pinterest.com/pin/123456/'),
+        /redirigió fuera de Pinterest/
     );
 });

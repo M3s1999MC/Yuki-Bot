@@ -11,43 +11,44 @@ mockDbModule.exports = db;
 mockDbModule.loaded = true;
 require.cache[dbModulePath] = mockDbModule;
 
-test('gacha roll searches Pinterest instead of using a legacy catalog image URL', async t => {
+test('gacha roll uses the configured Pinterest image for a curated character', async t => {
     const originalAll = db.all;
     const originalRun = db.run;
-    const originalSearch = pinterest.searchPinterestImage;
-    const records = [];
-    const imageBytes = Buffer.from('pinterest image');
-    let searchQuery;
-    let resolveSaved;
-    const savedPromise = new Promise(resolve => {
-        resolveSaved = resolve;
-    });
+    const originalFetchImage = pinterest.fetchPinterestImage;
+    const originalResolveImageUrl = pinterest.resolvePinterestImageUrl;
+    const imageBytes = Buffer.from('configured Pinterest image');
+    let fetchedUrl;
+    let resolvedUrl;
+    let query;
 
     db.all = (sql, params, callback) => {
+        query = sql;
         callback(null, [{
             id: 21,
             name: 'Special Week',
             serie: 'Uma Musume: Pretty Derby',
             price: 1000,
-            image_url: 'https://legacy.example/script-image.jpg'
+            image_url: 'https://www.pinterest.com/pin/123456/'
         }]);
     };
-    db.run = (sql, params, callback) => {
-        records.push({ sql, params });
-        callback?.(null);
-        resolveSaved();
+    db.run = () => {
+        throw new Error('roll must not change catalog images');
     };
-    pinterest.searchPinterestImage = async query => {
-        searchQuery = query;
-        return { buffer: imageBytes, url: 'https://i.pinimg.com/originals/new-image.jpg' };
+    pinterest.fetchPinterestImage = async url => {
+        fetchedUrl = url;
+        return imageBytes;
+    };
+    pinterest.resolvePinterestImageUrl = async url => {
+        resolvedUrl = url;
+        return 'https://i.pinimg.com/originals/special-week.jpg';
     };
     t.after(() => {
         db.all = originalAll;
         db.run = originalRun;
-        pinterest.searchPinterestImage = originalSearch;
+        pinterest.fetchPinterestImage = originalFetchImage;
+        pinterest.resolvePinterestImageUrl = originalResolveImageUrl;
         activeSpawns.delete('group@g.us');
         delete require.cache[require.resolve('../commands/gacha/roll')];
-        delete require.cache[dbModulePath];
     });
 
     const sent = [];
@@ -58,11 +59,35 @@ test('gacha roll searches Pinterest instead of using a legacy catalog image URL'
     }, {
         key: { remoteJid: 'group@g.us' }
     });
-    await savedPromise;
 
-    assert.equal(searchQuery, 'Special Week Uma Musume: Pretty Derby anime character');
+    await new Promise(resolve => setImmediate(resolve));
+    assert.match(query, /is_curated = 1/);
+    assert.equal(resolvedUrl, 'https://www.pinterest.com/pin/123456/');
+    assert.equal(fetchedUrl, 'https://i.pinimg.com/originals/special-week.jpg');
     assert.deepEqual(sent[0].content.image, imageBytes);
-    assert.notEqual(sent[0].content.image.url, 'https://legacy.example/script-image.jpg');
-    assert.equal(activeSpawns.get('group@g.us').image_url, 'https://i.pinimg.com/originals/new-image.jpg');
-    assert.deepEqual(records[0].params, ['https://i.pinimg.com/originals/new-image.jpg', 21]);
+    assert.equal(activeSpawns.get('group@g.us').image_url, 'https://i.pinimg.com/originals/special-week.jpg');
+});
+
+test('gacha roll does not spawn a character until an image has been configured', async t => {
+    const originalAll = db.all;
+    db.all = (sql, params, callback) => callback(null, [{
+        name: 'Special Week',
+        serie: 'Uma Musume: Pretty Derby',
+        image_url: null
+    }]);
+    t.after(() => {
+        db.all = originalAll;
+        activeSpawns.delete('group@g.us');
+    });
+
+    const sent = [];
+    await require('../commands/gacha/roll').execute({
+        sendMessage: async (jid, content) => sent.push(content)
+    }, {
+        key: { remoteJid: 'group@g.us' }
+    });
+
+    await new Promise(resolve => setImmediate(resolve));
+    assert.match(sent[0].text, /utils\/gachaRoster\.js/);
+    assert.equal(activeSpawns.has('group@g.us'), false);
 });
