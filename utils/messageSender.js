@@ -13,7 +13,7 @@ function getMessageSenderJid(message, sock) {
         key.participantAlt,
         key.participant,
         key.remoteJidAlt,
-        key.remoteJid
+        ...(key.remoteJid?.endsWith('@g.us') ? [] : [key.remoteJid])
     ].filter(value => typeof value === 'string' && value);
 
     return normalizeUserJid(

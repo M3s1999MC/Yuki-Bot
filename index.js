@@ -13,6 +13,7 @@ const CommandHandler = require('./handlers/commandHandler');
 const practiceSessions = require('./utils/practiceSessions');
 const { getMessageContent } = require('./utils/messageContent');
 const { getCanonicalMessageCountJid, getMessageSenderJid } = require('./utils/messageSender');
+const { recordGroupMessages } = require('./utils/groupMessageCounter');
 const { createNeonAuthState } = require('./utils/neonAuthState');
 
 const express = require('express');
@@ -325,6 +326,10 @@ async function startYuki() {
         });
     });
 
+    sock.ev.on('messages.upsert', async ({ messages }) => {
+        await recordGroupMessages(db, sock, messages);
+    });
+
     // ESCUCHADOR DE MENSAJES SEGURO
     sock.ev.on('messages.upsert', async ({ messages }) => {
         const m = messages[0];
@@ -379,24 +384,6 @@ async function startYuki() {
                 }
             );
         }
-        if (m.key.remoteJid.endsWith('@g.us') && sender) {
-            try {
-                const countJid = await getCanonicalMessageCountJid(m, sock);
-                if (countJid) {
-                    db.run(
-                        `INSERT INTO message_counts (group_jid, user_jid, count, last_message_at) VALUES (?, ?, 1, ?)
-                         ON CONFLICT(group_jid, user_jid) DO UPDATE SET count = message_counts.count + 1, last_message_at = excluded.last_message_at`,
-                        [m.key.remoteJid, countJid, Date.now()],
-                        (err) => {
-                            if (err) console.error('Error al actualizar el conteo del grupo:', err.message);
-                        }
-                    );
-                }
-            } catch (err) {
-                console.error('Error al resolver el JID del conteo del grupo:', err.message);
-            }
-        }
-
         const msgContent = getMessageContent(m.message);
 
         const messageType = Object.keys(msgContent)[0];
