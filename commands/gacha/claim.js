@@ -30,13 +30,21 @@ module.exports = {
             }
 
             db.run(
-                `INSERT INTO harem (owner_jid, character_name, series, image_url, value) VALUES (?, ?, ?, ?, ?)`,
+                `INSERT INTO harem (owner_jid, character_name, series, image_url, value)
+                 VALUES (?, ?, ?, ?, ?)
+                 ON CONFLICT (owner_jid, character_name, series) DO NOTHING`,
                 [sender, spawned.name, spawned.serie, spawned.image_url, Number(spawned.price) || 0],
-                (err) => {
+                function(err) {
                     if (err) {
                         if (!activeSpawns.has(jid)) activeSpawns.set(jid, spawned);
                         console.error('Error al guardar personaje reclamado:', err.message);
                         return sock.sendMessage(jid, { text: '「✿」 No se pudo guardar el personaje en tu harem.' }, { quoted: m });
+                    }
+                    if (!this.changes) {
+                        if (!activeSpawns.has(jid)) activeSpawns.set(jid, spawned);
+                        return sock.sendMessage(jid, {
+                            text: `「✿」 Ya tienes a *${spawned.name}* de _${spawned.serie}_ en tu harem. 🌸`
+                        }, { quoted: m });
                     }
                     const template = user.claim_message || '「✿」 @user reclamó a *{character}* de _{series}_ 🌸';
                     const text = template

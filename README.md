@@ -45,6 +45,8 @@ Si no se configura la clave, el bot enviará la ficha del personaje y un error q
 
 Los comandos `!roll`, `!rw`, `!rollwaifu` y `!waifu` eligen exclusivamente entre los personajes que agregues a `utils/gachaRoster.js` y tengan una imagen configurada. No buscan ni añaden personajes de Internet. Al iniciar, el bot sincroniza esa lista con la base de datos. No borra otras filas del catálogo, pero para estos personajes la URL de la base se actualiza con el valor escrito en el código.
 
+Cada personaje solo puede aparecer una vez en el harem de cada usuario. Al iniciar, el bot elimina copias exactas ya existentes y crea restricciones únicas en la base de datos; otro usuario todavía puede reclamar ese personaje.
+
 `!rollcatalog` muestra los personajes de la lista que todavía no tienen imagen. Para asignarlas, edita el personaje correspondiente en `utils/gachaRoster.js` y agrega `imageUrl` con el enlace del pin o de la imagen:
 
 ```text

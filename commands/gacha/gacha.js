@@ -55,17 +55,26 @@ module.exports = {
             }
 
             // Verificar si ya fue reclamado o asignarlo al usuario
-            db.run(`INSERT INTO user_harem (user_jid, character_id) VALUES (?, ?)`, [sender, spawned.id], async (err) => {
-                if (err) {
-                    return await sock.sendMessage(jid, { text: `❌ Hubo un error al intentar reclamar a *${spawned.name}*.` }, { quoted: m });
-                }
+            db.run(
+                `INSERT INTO user_harem (user_jid, character_id)
+                 VALUES (?, ?)
+                 ON CONFLICT (user_jid, character_id) DO NOTHING`,
+                [sender, spawned.id],
+                async function(err) {
+                    if (err) {
+                        return await sock.sendMessage(jid, { text: `❌ Hubo un error al intentar reclamar a *${spawned.name}*.` }, { quoted: m });
+                    }
+                    if (!this.changes) {
+                        return await sock.sendMessage(jid, { text: `Ya tienes a *${spawned.name}* en tu harem.` }, { quoted: m });
+                    }
 
-                activeSpawns.delete(jid);
-                await sock.sendMessage(jid, { 
-                    text: `🎉 ¡Felicidades @${sender.split('@')[0]}! Has reclamado exitosamente a *${spawned.name}* (${spawned.serie}) para tu harem.`, 
-                    mentions: [sender] 
-                }, { quoted: m });
-            });
+                    activeSpawns.delete(jid);
+                    await sock.sendMessage(jid, {
+                        text: `🎉 ¡Felicidades @${sender.split('@')[0]}! Has reclamado exitosamente a *${spawned.name}* (${spawned.serie}) para tu harem.`,
+                        mentions: [sender]
+                    }, { quoted: m });
+                }
+            );
             return;
         }
 
