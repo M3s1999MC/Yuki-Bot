@@ -1,5 +1,5 @@
 const db = require('../../database/db');
-const { getMessageCountTargetJid } = require('../../utils/messageSender');
+const { getMessageCountJids } = require('../../utils/messageSender');
 
 module.exports = {
     name: 'count',
@@ -16,8 +16,6 @@ module.exports = {
         const body = m.message?.conversation || m.message?.extendedTextMessage?.text || '';
         const command = body.replace(/^!/, '').trim().split(/\s+/)[0].toLowerCase();
         const isTop = ['topcount', 'topmensajes', 'topmsgcount', 'topmessages'].includes(command);
-        const target = getMessageCountTargetJid(m, sock);
-
         if (isTop) {
             return db.all(
                 `SELECT user_jid, count FROM message_counts WHERE group_jid = ? ORDER BY count DESC LIMIT 10`,
@@ -35,18 +33,31 @@ module.exports = {
             );
         }
 
+        let targetJids;
+        try {
+            targetJids = await getMessageCountJids(m, sock);
+        } catch (err) {
+            console.error('Error al resolver el JID para consultar el conteo:', err.message);
+            return sock.sendMessage(jid, { text: '「✿」 No pude identificar al usuario para consultar el conteo.' }, { quoted: m });
+        }
+        const target = targetJids[0];
         if (!target) {
             return sock.sendMessage(jid, { text: '「✿」 Menciona o responde a una persona para consultar su conteo.' }, { quoted: m });
         }
-        db.get(`SELECT count FROM message_counts WHERE group_jid = ? AND user_jid = ?`, [jid, target], (err, row) => {
-            if (err) {
-                console.error('Error al consultar el conteo de mensajes:', err.message);
-                return sock.sendMessage(jid, { text: '「✿」 No pude consultar el conteo de mensajes.' }, { quoted: m });
+        const placeholders = targetJids.map(() => '?').join(', ');
+        db.get(
+            `SELECT COALESCE(SUM(count), 0) AS count FROM message_counts WHERE group_jid = ? AND user_jid IN (${placeholders})`,
+            [jid, ...targetJids],
+            (err, row) => {
+                if (err) {
+                    console.error('Error al consultar el conteo de mensajes:', err.message);
+                    return sock.sendMessage(jid, { text: '「✿」 No pude consultar el conteo de mensajes.' }, { quoted: m });
+                }
+                sock.sendMessage(jid, {
+                    text: `「✿」 Mensajes de @${target.split('@')[0]}: *${row?.count || 0}* 📊`,
+                    mentions: [target]
+                }, { quoted: m });
             }
-            sock.sendMessage(jid, {
-                text: `「✿」 Mensajes de @${target.split('@')[0]}: *${row?.count || 0}* 📊`,
-                mentions: [target]
-            }, { quoted: m });
-        });
+        );
     }
 };
