@@ -1,5 +1,5 @@
 const db = require('../../database/db');
-const { getMessageSenderJid } = require('../../utils/messageSender');
+const { getMessageCountTargetJid } = require('../../utils/messageSender');
 
 module.exports = {
     name: 'count',
@@ -16,8 +16,7 @@ module.exports = {
         const body = m.message?.conversation || m.message?.extendedTextMessage?.text || '';
         const command = body.replace(/^!/, '').trim().split(/\s+/)[0].toLowerCase();
         const isTop = ['topcount', 'topmensajes', 'topmsgcount', 'topmessages'].includes(command);
-        const context = m.message?.extendedTextMessage?.contextInfo;
-        const target = context?.mentionedJid?.[0] || context?.participant || getMessageSenderJid(m, sock);
+        const target = getMessageCountTargetJid(m, sock);
 
         if (isTop) {
             return db.all(

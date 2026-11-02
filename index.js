@@ -379,7 +379,7 @@ async function startYuki() {
                 }
             );
         }
-        if (!m.key.fromMe && m.key.remoteJid.endsWith('@g.us') && sender) {
+        if (m.key.remoteJid.endsWith('@g.us') && sender) {
             db.run(
                 `INSERT INTO message_counts (group_jid, user_jid, count, last_message_at) VALUES (?, ?, 1, ?)
                  ON CONFLICT(group_jid, user_jid) DO UPDATE SET count = message_counts.count + 1, last_message_at = excluded.last_message_at`,

@@ -28,4 +28,12 @@ function getBalanceTargetJid(message, sock) {
     return getMessageSenderJid(message, sock);
 }
 
-module.exports = { getBalanceTargetJid, getMessageSenderJid };
+function getMessageCountTargetJid(message, sock) {
+    const context = message?.message?.extendedTextMessage?.contextInfo;
+    const target = context?.mentionedJid?.find(jid => typeof jid === 'string' && jid)
+        || context?.participant
+        || getMessageSenderJid(message, sock);
+    return normalizeUserJid(target);
+}
+
+module.exports = { getBalanceTargetJid, getMessageCountTargetJid, getMessageSenderJid };
