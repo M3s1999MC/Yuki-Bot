@@ -52,7 +52,6 @@ async function resolvePinterestImageUrl(sourceUrl) {
         throw new Error('El enlace de Pinterest debe usar HTTPS.');
     }
     if (url.hostname === IMAGE_HOST) {
-        await fetchPinterestImage(url.href);
         return url.href;
     }
     if (!isPinterestHost(url.hostname)) {
@@ -68,7 +67,6 @@ async function resolvePinterestImageUrl(sourceUrl) {
     });
     const finalUrl = new URL(response.url || url.href);
     if (finalUrl.protocol === 'https:' && finalUrl.hostname === IMAGE_HOST) {
-        await fetchPinterestImage(finalUrl.href);
         return finalUrl.href;
     }
     if (!isPinterestHost(finalUrl.hostname)) {
@@ -100,18 +98,8 @@ async function resolvePinterestImageUrl(sourceUrl) {
         Number(/\/originals\//i.test(right)) - Number(/\/originals\//i.test(left))
     );
 
-    let lastError;
-    for (const candidate of candidates.slice(0, 5)) {
-        try {
-            await fetchPinterestImage(candidate);
-            return candidate;
-        } catch (error) {
-            lastError = error;
-        }
-    }
-    throw new Error(
-        `No pude obtener una imagen pública del pin${lastError ? `: ${lastError.message}` : '.'}`
-    );
+    if (!candidates.length) throw new Error('El pin no contiene una imagen pública de Pinterest.');
+    return candidates[0];
 }
 
 async function searchPinterestImage(query) {

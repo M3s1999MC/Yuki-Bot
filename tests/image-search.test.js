@@ -167,23 +167,13 @@ test('Pinterest image downloader rejects URLs outside its CDN', async () => {
 
 test('Pinterest pin links resolve to a downloadable Pinterest CDN image', async t => {
     const originalFetch = global.fetch;
-    const imageBytes = Buffer.from('pin image');
     const requests = [];
     global.fetch = async url => {
         requests.push(String(url));
-        if (String(url).includes('pinterest.com/pin/')) {
-            return {
-                ok: true,
-                url: String(url),
-                text: async () => '<img src="https://i.pinimg.com/originals/ab/cd/pin.jpg">'
-            };
-        }
         return {
             ok: true,
-            headers: {
-                get: name => name === 'content-type' ? 'image/jpeg' : String(imageBytes.length)
-            },
-            arrayBuffer: async () => imageBytes
+            url: String(url),
+            text: async () => '<img src="https://i.pinimg.com/originals/ab/cd/pin.jpg">'
         };
     };
     t.after(() => {
@@ -194,8 +184,7 @@ test('Pinterest pin links resolve to a downloadable Pinterest CDN image', async 
 
     assert.equal(imageUrl, 'https://i.pinimg.com/originals/ab/cd/pin.jpg');
     assert.deepEqual(requests, [
-        'https://www.pinterest.com/pin/123456/',
-        imageUrl
+        'https://www.pinterest.com/pin/123456/'
     ]);
 });
 

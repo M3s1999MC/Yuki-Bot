@@ -65,6 +65,9 @@ test('gacha roll uses the configured Pinterest image for a curated character', a
     assert.equal(resolvedUrl, 'https://www.pinterest.com/pin/123456/');
     assert.equal(fetchedUrl, 'https://i.pinimg.com/originals/special-week.jpg');
     assert.deepEqual(sent[0].content.image, imageBytes);
+    assert.match(sent[0].content.caption, /Special Week/);
+    assert.match(sent[0].content.caption, /Uma Musume: Pretty Derby/);
+    assert.match(sent[0].content.caption, /1\.000/);
     assert.equal(activeSpawns.get('group@g.us').image_url, 'https://i.pinimg.com/originals/special-week.jpg');
 });
 
