@@ -81,8 +81,77 @@ test('Pinterest search reports when unauthenticated results are locked', async t
 
     await assert.rejects(
         searchPinterestImage('anime character'),
-        /restringiendo los resultados para búsquedas sin iniciar sesión/
+        /PINTEREST_ACCESS_TOKEN.*pins:read/
     );
+});
+
+test('Pinterest image search uses the authenticated API when an access token is configured', async t => {
+    const originalFetch = global.fetch;
+    const originalToken = process.env.PINTEREST_ACCESS_TOKEN;
+    const imageBytes = Buffer.from('authenticated Pinterest image');
+    const requests = [];
+    process.env.PINTEREST_ACCESS_TOKEN = 'test-access-token';
+    global.fetch = async (url, options) => {
+        requests.push({ url: String(url), options });
+        if (String(url).includes('/v5/search/pins')) {
+            return {
+                ok: true,
+                json: async () => ({
+                    items: [{
+                        media: {
+                            images: {
+                                '600x': { url: 'https://i.pinimg.com/600x/ab/cd/image.jpg' }
+                            }
+                        }
+                    }]
+                })
+            };
+        }
+        return {
+            ok: true,
+            headers: {
+                get: name => name === 'content-type' ? 'image/jpeg' : String(imageBytes.length)
+            },
+            arrayBuffer: async () => imageBytes
+        };
+    };
+    t.after(() => {
+        global.fetch = originalFetch;
+        if (originalToken === undefined) delete process.env.PINTEREST_ACCESS_TOKEN;
+        else process.env.PINTEREST_ACCESS_TOKEN = originalToken;
+    });
+
+    const result = await searchPinterestImage('Special Week Uma Musume');
+
+    assert.equal(result.url, 'https://i.pinimg.com/600x/ab/cd/image.jpg');
+    assert.deepEqual(result.buffer, imageBytes);
+    assert.equal(requests.length, 2);
+    assert.equal(requests[0].options.headers.Authorization, 'Bearer test-access-token');
+    assert.equal(new URL(requests[0].url).searchParams.get('query'), 'Special Week Uma Musume');
+    assert.equal(new URL(requests[0].url).searchParams.get('page_size'), '25');
+});
+
+test('Pinterest search reports an invalid access token without falling back to anonymous scraping', async t => {
+    const originalFetch = global.fetch;
+    const originalToken = process.env.PINTEREST_ACCESS_TOKEN;
+    const requests = [];
+    process.env.PINTEREST_ACCESS_TOKEN = 'expired-access-token';
+    global.fetch = async url => {
+        requests.push(String(url));
+        return { ok: false, status: 401 };
+    };
+    t.after(() => {
+        global.fetch = originalFetch;
+        if (originalToken === undefined) delete process.env.PINTEREST_ACCESS_TOKEN;
+        else process.env.PINTEREST_ACCESS_TOKEN = originalToken;
+    });
+
+    await assert.rejects(
+        searchPinterestImage('anime character'),
+        /HTTP 401.*PINTEREST_ACCESS_TOKEN.*pins:read/
+    );
+    assert.equal(requests.length, 1);
+    assert.match(requests[0], /api\.pinterest\.com\/v5\/search\/pins/);
 });
 
 test('Pinterest image downloader rejects URLs outside its CDN', async () => {

@@ -54,6 +54,9 @@ test('Neon database adapter preserves callback results and transaction boundarie
     const pool = createFakePool();
     const db = createNeonDatabase(pool);
     await db.ready;
+    assert.ok(pool.queries.some(query =>
+        query.sql === 'ALTER TABLE users ADD COLUMN IF NOT EXISTS lastdaily INTEGER DEFAULT 0'
+    ));
 
     const count = await new Promise((resolve, reject) => {
         db.get('SELECT COUNT(*) AS count FROM users WHERE jid = ?', ['user'], (error, row) => {
