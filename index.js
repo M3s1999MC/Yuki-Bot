@@ -8,7 +8,7 @@ const { Pool } = require('pg');
 const { timingSafeEqual } = require('crypto');
 const QRCode = require('qrcode');
 const db = require('./database/db'); 
-require('./database/gacha_db');
+const gachaDatabaseReady = require('./database/gacha_db');
 const CommandHandler = require('./handlers/commandHandler');
 const practiceSessions = require('./utils/practiceSessions');
 const { getMessageContent } = require('./utils/messageContent');
@@ -206,6 +206,7 @@ async function startYuki() {
         await db.ready;
         console.log('✅ Datos del bot conectados a Neon.');
     }
+    await gachaDatabaseReady;
     
     const { state, saveCreds } = await loadAuthState();
     const hasRegisteredSession = Boolean(state.creds.registered && state.creds.me?.id);
