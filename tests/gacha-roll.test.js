@@ -1,8 +1,15 @@
 const assert = require('node:assert/strict');
+const Module = require('node:module');
 const { test } = require('node:test');
-const db = require('../database/db');
 const pinterest = require('../utils/imageSearch');
 const activeSpawns = require('../utils/gachaSpawns');
+
+const db = {};
+const dbModulePath = require.resolve('../database/db');
+const mockDbModule = new Module(dbModulePath);
+mockDbModule.exports = db;
+mockDbModule.loaded = true;
+require.cache[dbModulePath] = mockDbModule;
 
 test('gacha roll searches Pinterest instead of using a legacy catalog image URL', async t => {
     const originalAll = db.all;
@@ -39,6 +46,8 @@ test('gacha roll searches Pinterest instead of using a legacy catalog image URL'
         db.run = originalRun;
         pinterest.searchPinterestImage = originalSearch;
         activeSpawns.delete('group@g.us');
+        delete require.cache[require.resolve('../commands/gacha/roll')];
+        delete require.cache[dbModulePath];
     });
 
     const sent = [];
