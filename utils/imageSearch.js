@@ -1,6 +1,7 @@
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const PINTEREST_HOST = 'www.pinterest.com';
 const IMAGE_HOST = 'i.pinimg.com';
+const PINTEREST_API_HOST = 'api.pinterest.com';
 
 async function fetchPinterestImage(imageUrl) {
     let url;
@@ -38,6 +39,11 @@ async function fetchPinterestImage(imageUrl) {
 async function searchPinterestImage(query) {
     if (typeof query !== 'string' || !query.trim()) {
         throw new Error('Escribe qué imagen quieres buscar en Pinterest.');
+    }
+
+    const accessToken = process.env.PINTEREST_ACCESS_TOKEN;
+    if (accessToken) {
+        return searchAuthenticatedPinterestImage(query.trim(), accessToken);
     }
 
     const searchUrl = new URL('/search/pins/', `https://${PINTEREST_HOST}`);
@@ -78,7 +84,7 @@ async function searchPinterestImage(query) {
 
     if (!candidates.length) {
         if (/"lop_unauth_lockdown_search"\s*:\s*"(?:enabled|enabled_rollout)"/i.test(html)) {
-            throw new Error('Pinterest está restringiendo los resultados para búsquedas sin iniciar sesión.');
+            throw new Error('Pinterest exige autenticación para esta búsqueda. Configura PINTEREST_ACCESS_TOKEN con el permiso pins:read; no es posible obtener esos resultados públicos sin iniciar sesión.');
         }
         throw new Error('Pinterest no mostró imágenes públicas para esa búsqueda.');
     }
@@ -92,6 +98,54 @@ async function searchPinterestImage(query) {
         }
     }
     throw new Error(`No se pudo descargar una imagen pública de Pinterest${lastError ? `: ${lastError.message}` : '.'}`);
+}
+
+async function searchAuthenticatedPinterestImage(query, accessToken) {
+    const searchUrl = new URL('/v5/search/pins', `https://${PINTEREST_API_HOST}`);
+    searchUrl.searchParams.set('query', query);
+    searchUrl.searchParams.set('page_size', '25');
+
+    const response = await fetch(searchUrl, {
+        headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${accessToken}`
+        },
+        signal: AbortSignal.timeout(20_000)
+    });
+    if (!response.ok) {
+        throw new Error(`La búsqueda autenticada de Pinterest respondió HTTP ${response.status}. Verifica PINTEREST_ACCESS_TOKEN y el permiso pins:read.`);
+    }
+
+    const data = await response.json();
+    const imageUrls = (Array.isArray(data?.items) ? data.items : [])
+        .flatMap(pin => Object.values(pin.media?.images || {}))
+        .map(image => image?.url)
+        .filter(imageUrl => {
+            if (typeof imageUrl !== 'string') return false;
+            try {
+                const url = new URL(imageUrl);
+                return url.protocol === 'https:' && url.hostname === IMAGE_HOST;
+            } catch {
+                return false;
+            }
+        });
+    const candidates = [...new Set(imageUrls)].sort((left, right) =>
+        Number(/\/originals\//i.test(right)) - Number(/\/originals\//i.test(left))
+    );
+
+    if (!candidates.length) {
+        throw new Error('La búsqueda autenticada de Pinterest no devolvió imágenes; verifica el acceso de la app y el permiso pins:read.');
+    }
+
+    let lastError;
+    for (const candidate of candidates.slice(0, 5)) {
+        try {
+            return { buffer: await fetchPinterestImage(candidate), url: candidate };
+        } catch (error) {
+            lastError = error;
+        }
+    }
+    throw new Error(`No se pudo descargar una imagen de los resultados autenticados de Pinterest${lastError ? `: ${lastError.message}` : '.'}`);
 }
 
 async function searchPinterestImageBuffer(query) {

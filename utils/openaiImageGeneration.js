@@ -2,9 +2,9 @@ const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const DEFAULT_IMAGE_MODEL = 'gpt-image-1-mini';
 
 async function generateOriginalCharacterImage(character) {
-    const apiKey = process.env.OPENAI_IMAGE_API_KEY;
+    const apiKey = process.env.OPENAI_IMAGE_API_KEY || process.env.OPENAI_API_KEY;
     if (!apiKey) {
-        throw new Error('Configura OPENAI_IMAGE_API_KEY en el entorno para generar ilustraciones.');
+        throw new Error('Configura OPENAI_IMAGE_API_KEY o OPENAI_API_KEY en el entorno para generar ilustraciones.');
     }
 
     const description = ['role', 'description', 'design', 'personality']

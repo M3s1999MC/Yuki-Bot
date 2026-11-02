@@ -23,12 +23,12 @@ const schema = [
         main_waifu TEXT,
         claim_message TEXT,
         afk_reason TEXT,
-        afk_since INTEGER,
+        afk_since BIGINT,
         profile_image TEXT,
         tickets INTEGER DEFAULT 0,
-        lastdaily INTEGER DEFAULT 0,
-        lastweekly INTEGER DEFAULT 0,
-        lastmonthly INTEGER DEFAULT 0
+        lastdaily BIGINT DEFAULT 0,
+        lastweekly BIGINT DEFAULT 0,
+        lastmonthly BIGINT DEFAULT 0
     )`,
     `CREATE TABLE IF NOT EXISTS wa_contacts (jid TEXT PRIMARY KEY, name TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS harem (
@@ -61,7 +61,7 @@ const schema = [
     )`,
     `CREATE TABLE IF NOT EXISTS message_counts (
         group_jid TEXT, user_jid TEXT, count INTEGER DEFAULT 0,
-        last_message_at INTEGER DEFAULT 0, PRIMARY KEY (group_jid, user_jid)
+        last_message_at BIGINT DEFAULT 0, PRIMARY KEY (group_jid, user_jid)
     )`,
     `CREATE TABLE IF NOT EXISTS gacha_votes (
         group_jid TEXT, user_jid TEXT, character_name TEXT,
@@ -148,8 +148,14 @@ function createNeonDatabase(pool) {
         Promise.resolve()
     ).then(async () => {
         await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS balance INTEGER DEFAULT 0`);
-        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS lastweekly INTEGER DEFAULT 0`);
-        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS lastmonthly INTEGER DEFAULT 0`);
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS lastdaily BIGINT DEFAULT 0`);
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS lastweekly BIGINT DEFAULT 0`);
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS lastmonthly BIGINT DEFAULT 0`);
+        await pool.query(`ALTER TABLE users ALTER COLUMN afk_since TYPE BIGINT`);
+        await pool.query(`ALTER TABLE users ALTER COLUMN lastdaily TYPE BIGINT`);
+        await pool.query(`ALTER TABLE users ALTER COLUMN lastweekly TYPE BIGINT`);
+        await pool.query(`ALTER TABLE users ALTER COLUMN lastmonthly TYPE BIGINT`);
+        await pool.query(`ALTER TABLE message_counts ALTER COLUMN last_message_at TYPE BIGINT`);
     });
 
     function acquireTransactionLock() {

@@ -54,6 +54,18 @@ test('Neon database adapter preserves callback results and transaction boundarie
     const pool = createFakePool();
     const db = createNeonDatabase(pool);
     await db.ready;
+    assert.ok(pool.queries.some(query =>
+        query.sql === 'ALTER TABLE users ADD COLUMN IF NOT EXISTS lastdaily BIGINT DEFAULT 0'
+    ));
+    for (const statement of [
+        'ALTER TABLE users ALTER COLUMN afk_since TYPE BIGINT',
+        'ALTER TABLE users ALTER COLUMN lastdaily TYPE BIGINT',
+        'ALTER TABLE users ALTER COLUMN lastweekly TYPE BIGINT',
+        'ALTER TABLE users ALTER COLUMN lastmonthly TYPE BIGINT',
+        'ALTER TABLE message_counts ALTER COLUMN last_message_at TYPE BIGINT'
+    ]) {
+        assert.ok(pool.queries.some(query => query.sql === statement), statement);
+    }
 
     const count = await new Promise((resolve, reject) => {
         db.get('SELECT COUNT(*) AS count FROM users WHERE jid = ?', ['user'], (error, row) => {

@@ -23,12 +23,17 @@ const dataDir = process.env.YUKI_DATA_DIR
     ? path.resolve(process.env.YUKI_DATA_DIR)
     : __dirname;
 let currentQr = null;
+let currentQrImage = null;
 let authStatePromise;
 let reconnectTimer;
 let authResetPromise;
 
 app.get('/', (req, res) => {
     res.send('Yuki Bot está activo.');
+});
+
+app.get('/health', (req, res) => {
+    res.status(200).type('text/plain').send('ok');
 });
 
 app.get('/qr', async (req, res) => {
@@ -63,32 +68,27 @@ app.get('/qr', async (req, res) => {
         'X-Content-Type-Options': 'nosniff'
     });
 
-    if (!currentQr) {
+    if (!currentQrImage) {
         return res.status(503).send('WhatsApp no está solicitando un QR. Revisa los logs de conexión de Render.');
     }
 
-    const qrImage = await QRCode.toDataURL(currentQr, {
-        errorCorrectionLevel: 'H',
-        margin: 4,
-        width: 360
-    });
     res.type('html').send(`<!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="refresh" content="20">
-<title>Vincular YukiBot</title>
+<title>Vincular el número de Yuki</title>
 <style>
 body{font-family:system-ui,sans-serif;text-align:center;margin:2rem auto;padding:0 1rem;max-width:28rem}
 img{width:min(100%,360px);height:auto}
 </style>
 </head>
 <body>
-<h1>Vincular YukiBot</h1>
-<p>En WhatsApp abre Dispositivos vinculados y escanea este código.</p>
-<img src="${qrImage}" alt="Código QR de vinculación de WhatsApp">
-<p>La página se actualiza automáticamente.</p>
+<h1>Vincular el número de Yuki</h1>
+<p>Con el teléfono del número de Yuki, abre WhatsApp &gt; Dispositivos vinculados &gt; Vincular un dispositivo y escanea este código.</p>
+<img src="${currentQrImage}" alt="Código QR para vincular el número de Yuki con WhatsApp">
+<p>Este QR vincula el número de Yuki al bot; no es un QR de contacto ni debe escanearse desde otros números.</p>
+<p>WhatsApp puede hacer caducar el código. Si ocurre, recarga esta página para consultar el nuevo código solicitado por WhatsApp.</p>
 </body>
 </html>`);
 });
@@ -241,20 +241,37 @@ async function startYuki() {
     sock.ev.on('contacts.upsert', cacheContacts);
     sock.ev.on('contacts.update', cacheContacts);
 
-    sock.ev.on('connection.update', (update) => {
+    sock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect, qr } = update;
         
         if (qr) {
-            currentQr = qr;
             if (hasRegisteredSession) {
+                currentQr = null;
+                currentQrImage = null;
                 console.warn('⚠️ WhatsApp solicita un QR aunque hay una sesión guardada. Comprueba que DATABASE_URL y YUKI_AUTH_ENCRYPTION_KEY no hayan cambiado y que solo haya una instancia del bot.');
             } else {
-                console.log('📱 QR inicial disponible en /qr. Configura QR_ACCESS_TOKEN para abrirlo.');
+                if (qr !== currentQr || !currentQrImage) {
+                    currentQr = qr;
+                    currentQrImage = null;
+                    try {
+                        const qrImage = await QRCode.toDataURL(qr, {
+                            errorCorrectionLevel: 'H',
+                            margin: 4,
+                            width: 360
+                        });
+                        if (currentQr === qr) currentQrImage = qrImage;
+                    } catch (error) {
+                        if (currentQr === qr) currentQr = null;
+                        console.error('❌ No se pudo preparar el QR de vinculación de WhatsApp:', error.message);
+                    }
+                }
+                console.log('📱 QR para vincular el número de Yuki disponible en /qr. Configura QR_ACCESS_TOKEN para abrirlo.');
             }
         }
 
         if (connection === 'close') {
             currentQr = null;
+            currentQrImage = null;
             const statusCode = lastDisconnect?.error?.output?.statusCode;
             
             if (statusCode === DisconnectReason.loggedOut) {
@@ -271,6 +288,7 @@ async function startYuki() {
                 reconnectTimer = null;
             }
             currentQr = null;
+            currentQrImage = null;
             console.log(`\n⚡ ¡YUKI ESTÁ ONLINE Y CONECTADA! Prefijo activo: ${PREFIX}\n`);
         }
     });
