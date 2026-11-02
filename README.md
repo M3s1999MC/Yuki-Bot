@@ -9,11 +9,11 @@ Para conservar los perfiles, economía, gachas, grupos y la sesión de WhatsApp 
   ```powershell
   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
   ```
-- `QR_ACCESS_TOKEN`: token privado de al menos 32 caracteres para abrir `/link` y vincular la cuenta de WhatsApp de Yuki.
+- `QR_ACCESS_TOKEN`: token privado de al menos 32 caracteres para abrir `/qr` y vincular el número de WhatsApp de Yuki.
 
 Si `DATABASE_URL` no está configurada, el bot usará SQLite local, cuyos datos pueden perderse al reiniciar Render.
 
-Guarda la clave de cifrado en un lugar seguro y no la cambies: sin ella no se puede recuperar la sesión. Las tablas de datos del bot y la tabla de sesión se crean automáticamente en Neon. Una base nueva requiere escanear una vez el QR privado de `/link`; luego las credenciales y claves se guardan cifradas en PostgreSQL y se reutilizan en los reinicios. El QR público de `/qr` es distinto: abre el chat de Yuki mediante `wa.me`, se calcula una sola vez cuando conecta la cuenta y cualquier persona puede escanear o compartir ese mismo QR para hablar con el bot. No vincula dispositivos ni requiere volver a emparejar. WhatsApp sí hace caducar los QR privados de emparejamiento, que nunca deben compartirse.
+Guarda la clave de cifrado en un lugar seguro y no la cambies: sin ella no se puede recuperar la sesión. Las tablas de datos del bot y la tabla de sesión se crean automáticamente en Neon. Para vincular el número de Yuki, escanea el QR de `/qr` desde Dispositivos vinculados de ese mismo número. El QR se convierte a imagen una sola vez por cada código que WhatsApp emite y se reutiliza al abrir la página; la página no se actualiza sola. WhatsApp controla la vigencia del código y puede caducarlo: no existe un QR de emparejamiento permanente. Cuando la sesión se vincula, las credenciales se guardan cifradas en PostgreSQL y se reutilizan en los reinicios normales, sin escanear otro QR.
 
 El bot no solicita la descarga completa del historial de chats al vincularse, para reducir la espera. Baileys mantiene la sincronización básica que necesita para la sesión; los mensajes nuevos siguen llegando, pero el historial completo anterior no se carga.
 

@@ -15,7 +15,6 @@ const { getMessageContent } = require('./utils/messageContent');
 const { getCanonicalMessageCountJid, getMessageSenderJid } = require('./utils/messageSender');
 const { recordGroupMessages } = require('./utils/groupMessageCounter');
 const { createNeonAuthState } = require('./utils/neonAuthState');
-const { getWhatsAppInviteUrl } = require('./utils/whatsappInvite');
 
 const express = require('express');
 const app = express();
@@ -24,8 +23,7 @@ const dataDir = process.env.YUKI_DATA_DIR
     ? path.resolve(process.env.YUKI_DATA_DIR)
     : __dirname;
 let currentQr = null;
-let botInviteUrl = null;
-let botInviteQr = null;
+let currentQrImage = null;
 let authStatePromise;
 let reconnectTimer;
 let authResetPromise;
@@ -38,38 +36,7 @@ app.get('/health', (req, res) => {
     res.status(200).type('text/plain').send('ok');
 });
 
-app.get('/qr', (req, res) => {
-    if (!botInviteUrl || !botInviteQr) {
-        return res.status(503).send('El QR público estará disponible cuando Yuki se conecte a WhatsApp.');
-    }
-
-    res.set({
-        'Cache-Control': 'no-store, no-cache, must-revalidate, private',
-        'Content-Security-Policy': "default-src 'none'; img-src data:; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'",
-        'Referrer-Policy': 'no-referrer',
-        'X-Content-Type-Options': 'nosniff'
-    });
-    res.type('html').send(`<!doctype html>
-<html lang="es">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Usar Yuki en WhatsApp</title>
-<style>
-body{font-family:system-ui,sans-serif;text-align:center;margin:2rem auto;padding:0 1rem;max-width:28rem}
-img{width:min(100%,360px);height:auto}
-</style>
-</head>
-<body>
-<h1>Usar Yuki en WhatsApp</h1>
-<p>Escanea este QR con tu teléfono para abrir un chat con Yuki. Puedes compartir el mismo código; no vincula tu cuenta ni caduca como un código de emparejamiento.</p>
-<img src="${botInviteQr}" alt="Código QR público para abrir el chat de Yuki">
-<p><a href="${botInviteUrl}">Abrir chat con Yuki</a></p>
-</body>
-</html>`);
-});
-
-app.get('/link', async (req, res) => {
+app.get('/qr', async (req, res) => {
     const accessToken = process.env.QR_ACCESS_TOKEN;
     if (!accessToken || accessToken.length < 32) {
         return res.status(503).send('Configura QR_ACCESS_TOKEN con al menos 32 caracteres en el entorno de Render.');
@@ -101,31 +68,27 @@ app.get('/link', async (req, res) => {
         'X-Content-Type-Options': 'nosniff'
     });
 
-    if (!currentQr) {
+    if (!currentQrImage) {
         return res.status(503).send('WhatsApp no está solicitando un QR. Revisa los logs de conexión de Render.');
     }
 
-    const qrImage = await QRCode.toDataURL(currentQr, {
-        errorCorrectionLevel: 'H',
-        margin: 4,
-        width: 360
-    });
     res.type('html').send(`<!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Vincular YukiBot</title>
+<title>Vincular el número de Yuki</title>
 <style>
 body{font-family:system-ui,sans-serif;text-align:center;margin:2rem auto;padding:0 1rem;max-width:28rem}
 img{width:min(100%,360px);height:auto}
 </style>
 </head>
 <body>
-<h1>Vincular la cuenta de Yuki</h1>
-<p>Este código privado solo sirve para iniciar sesión en la cuenta de WhatsApp de Yuki. Escanéalo desde Dispositivos vinculados; WhatsApp hace caducar los códigos de emparejamiento.</p>
-<img src="${qrImage}" alt="Código QR privado para vincular la cuenta de Yuki">
-<p>Para que otras personas usen Yuki, comparte el QR público de <a href="/qr">/qr</a>; no compartas este código.</p>
+<h1>Vincular el número de Yuki</h1>
+<p>Con el teléfono del número de Yuki, abre WhatsApp &gt; Dispositivos vinculados &gt; Vincular un dispositivo y escanea este código.</p>
+<img src="${currentQrImage}" alt="Código QR para vincular el número de Yuki con WhatsApp">
+<p>Este QR vincula el número de Yuki al bot; no es un QR de contacto ni debe escanearse desde otros números.</p>
+<p>WhatsApp puede hacer caducar el código. Si ocurre, recarga esta página para consultar el nuevo código solicitado por WhatsApp.</p>
 </body>
 </html>`);
 });
@@ -284,15 +247,31 @@ async function startYuki() {
         if (qr) {
             if (hasRegisteredSession) {
                 currentQr = null;
+                currentQrImage = null;
                 console.warn('⚠️ WhatsApp solicita un QR aunque hay una sesión guardada. Comprueba que DATABASE_URL y YUKI_AUTH_ENCRYPTION_KEY no hayan cambiado y que solo haya una instancia del bot.');
             } else {
-                currentQr = qr;
-                console.log('📱 QR privado de vinculación disponible en /link. Configura QR_ACCESS_TOKEN para abrirlo.');
+                if (qr !== currentQr || !currentQrImage) {
+                    currentQr = qr;
+                    currentQrImage = null;
+                    try {
+                        const qrImage = await QRCode.toDataURL(qr, {
+                            errorCorrectionLevel: 'H',
+                            margin: 4,
+                            width: 360
+                        });
+                        if (currentQr === qr) currentQrImage = qrImage;
+                    } catch (error) {
+                        if (currentQr === qr) currentQr = null;
+                        console.error('❌ No se pudo preparar el QR de vinculación de WhatsApp:', error.message);
+                    }
+                }
+                console.log('📱 QR para vincular el número de Yuki disponible en /qr. Configura QR_ACCESS_TOKEN para abrirlo.');
             }
         }
 
         if (connection === 'close') {
             currentQr = null;
+            currentQrImage = null;
             const statusCode = lastDisconnect?.error?.output?.statusCode;
             
             if (statusCode === DisconnectReason.loggedOut) {
@@ -309,26 +288,7 @@ async function startYuki() {
                 reconnectTimer = null;
             }
             currentQr = null;
-            const inviteUrl = getWhatsAppInviteUrl(sock.user?.id);
-            if (!inviteUrl) {
-                botInviteUrl = null;
-                botInviteQr = null;
-                console.error('❌ No se pudo crear el QR público: WhatsApp no devolvió un JID telefónico válido para Yuki.');
-            } else if (inviteUrl !== botInviteUrl || !botInviteQr) {
-                botInviteUrl = inviteUrl;
-                try {
-                    botInviteQr = await QRCode.toDataURL(inviteUrl, {
-                        errorCorrectionLevel: 'H',
-                        margin: 4,
-                        width: 360
-                    });
-                    console.log('✅ QR público para abrir un chat con Yuki disponible en /qr.');
-                } catch (error) {
-                    botInviteUrl = null;
-                    botInviteQr = null;
-                    console.error('❌ No se pudo generar el QR público de Yuki:', error.message);
-                }
-            }
+            currentQrImage = null;
             console.log(`\n⚡ ¡YUKI ESTÁ ONLINE Y CONECTADA! Prefijo activo: ${PREFIX}\n`);
         }
     });
