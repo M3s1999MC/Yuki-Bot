@@ -1,4 +1,5 @@
 const db = require('../../database/db');
+const { getMessageSenderJid } = require('../../utils/messageSender');
 
 module.exports = {
     name: 'atrapar',
@@ -8,7 +9,7 @@ module.exports = {
 
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
-        const sender = jid.endsWith('@g.us') ? (m.key.participant || jid) : jid;
+        const sender = getMessageSenderJid(m, sock);
         const id = Number.parseInt(args[0], 10);
         if (!Number.isInteger(id) || id < 1) {
             return sock.sendMessage(jid, { text: '「✿」 Indica el ID de un personaje libre. Consulta !serie para ver el catálogo.' }, { quoted: m });

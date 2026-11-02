@@ -1,4 +1,5 @@
 const db = require('../../database/db');
+const { getMessageSenderJid } = require('../../utils/messageSender');
 
 module.exports = {
     name: 'level',
@@ -8,7 +9,7 @@ module.exports = {
 
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
-        const sender = jid.endsWith('@g.us') ? (m.key.participant || m.key.remoteJid) : jid;
+        const sender = getMessageSenderJid(m, sock);
         const username = sender.split('@')[0];
 
         db.get(`SELECT exp, level FROM users WHERE jid = ?`, [sender], async (err, row) => {

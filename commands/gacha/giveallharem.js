@@ -1,4 +1,5 @@
 const db = require('../../database/db');
+const { getMessageSenderJid } = require('../../utils/messageSender');
 
 module.exports = {
     name: 'giveallharem',
@@ -7,7 +8,7 @@ module.exports = {
 
     async execute(sock, m) {
         const jid = m.key.remoteJid;
-        const sender = jid.endsWith('@g.us') ? (m.key.participant || jid) : jid;
+        const sender = getMessageSenderJid(m, sock);
         const target = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] ||
             m.message?.extendedTextMessage?.contextInfo?.participant;
         if (!target) {

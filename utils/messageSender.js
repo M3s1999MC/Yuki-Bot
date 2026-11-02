@@ -25,9 +25,6 @@ function getBalanceTargetJid(message, sock) {
     const context = message?.message?.extendedTextMessage?.contextInfo;
     const mentionedJid = context?.mentionedJid?.find(jid => typeof jid === 'string' && jid);
     if (mentionedJid) return normalizeUserJid(mentionedJid);
-    if (typeof context?.participant === 'string' && context.participant) {
-        return normalizeUserJid(context.participant);
-    }
     return getMessageSenderJid(message, sock);
 }
 

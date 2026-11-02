@@ -1,5 +1,6 @@
 const db = require('../../database/db');
 const activeSpawns = require('../../utils/gachaSpawns');
+const { getMessageSenderJid } = require('../../utils/messageSender');
 
 module.exports = {
     name: 'claim',
@@ -9,7 +10,7 @@ module.exports = {
 
     async execute(sock, m) {
         const jid = m.key.remoteJid;
-        const sender = jid.endsWith('@g.us') ? (m.key.participant || jid) : jid;
+        const sender = getMessageSenderJid(m, sock);
         const context = m.message?.extendedTextMessage?.contextInfo;
         const spawned = activeSpawns.get(jid);
 

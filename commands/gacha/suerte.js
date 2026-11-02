@@ -1,3 +1,5 @@
+const { getMessageSenderJid } = require('../../utils/messageSender');
+
 module.exports = {
     name: 'suerte',
     aliases: ['luck', 'gachaluck'],
@@ -6,7 +8,7 @@ module.exports = {
 
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
-        const sender = jid.endsWith('@g.us') ? (m.key.participant || m.key.remoteJid) : jid;
+        const sender = getMessageSenderJid(m, sock);
         const username = sender.split('@')[0];
 
         // Calcular un porcentaje de suerte aleatorio o basado en ID

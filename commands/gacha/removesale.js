@@ -1,4 +1,5 @@
 const db = require('../../database/db');
+const { getMessageSenderJid } = require('../../utils/messageSender');
 
 module.exports = {
     name: 'removesale',
@@ -8,7 +9,7 @@ module.exports = {
 
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
-        const sender = jid.endsWith('@g.us') ? (m.key.participant || jid) : jid;
+        const sender = getMessageSenderJid(m, sock);
         const query = args.join(' ').trim();
         if (!query) {
             return sock.sendMessage(jid, { text: '「✿」 Indica el nombre o número de tu oferta en !removesale.' }, { quoted: m });

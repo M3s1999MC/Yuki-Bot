@@ -1,4 +1,5 @@
 const db = require('../../database/db');
+const { getMessageSenderJid } = require('../../utils/messageSender');
 
 const fields = {
     setbirth: { column: 'birthday', empty: 'No registrado', label: 'cumpleaños' },
@@ -26,7 +27,7 @@ module.exports = {
 
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
-        const sender = jid.endsWith('@g.us') ? (m.key.participant || jid) : jid;
+        const sender = getMessageSenderJid(m, sock);
         const body = m.message?.conversation ||
             m.message?.extendedTextMessage?.text ||
             m.message?.imageMessage?.caption ||

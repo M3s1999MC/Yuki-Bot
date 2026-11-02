@@ -1,4 +1,5 @@
 const db = require('../../database/db');
+const { getMessageSenderJid } = require('../../utils/messageSender');
 
 module.exports = {
     name: 'divorce',
@@ -8,7 +9,7 @@ module.exports = {
 
     async execute(sock, m) {
         const jid = m.key.remoteJid;
-        const sender = jid.endsWith('@g.us') ? (m.key.participant || jid) : jid;
+        const sender = getMessageSenderJid(m, sock);
         db.getSafeUser(sender, (err, user) => {
             if (err) {
                 console.error('Error al consultar pareja para divorcio:', err.message);

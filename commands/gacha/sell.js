@@ -1,4 +1,5 @@
 const db = require('../../database/db');
+const { getMessageSenderJid } = require('../../utils/messageSender');
 
 module.exports = {
     name: 'sell',
@@ -8,7 +9,7 @@ module.exports = {
 
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
-        const sender = jid.endsWith('@g.us') ? (m.key.participant || jid) : jid;
+        const sender = getMessageSenderJid(m, sock);
         const [characterName, priceText] = args.join(' ').split('|').map(value => value.trim());
         const price = Number(priceText);
         if (!characterName || !Number.isSafeInteger(price) || price < 1) {

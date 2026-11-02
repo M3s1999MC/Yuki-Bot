@@ -1,4 +1,5 @@
 const db = require('../../database/db');
+const { getMessageSenderJid } = require('../../utils/messageSender');
 
 // Variable temporal en memoria para almacenar el último personaje droppeado en el chat
 const activeSpawns = new Map(); // key: jid -> { charId, name, serie, price, image_url }
@@ -11,7 +12,7 @@ module.exports = {
 
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
-        const sender = m.key.participant || m.key.remoteJid;
+        const sender = getMessageSenderJid(m, sock);
         const body = m.message?.conversation || m.message?.extendedTextMessage?.text || '';
         const prefix = '.';
         const commandUsed = body.slice(prefix.length).trim().split(/ +/)[0].toLowerCase();

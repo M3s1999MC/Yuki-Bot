@@ -57,3 +57,19 @@ test('balance mention selects the mentioned account even when the command replie
         'target-user@s.whatsapp.net'
     );
 });
+
+test('balance without a mention uses the sender even when replying to another contact', () => {
+    const message = {
+        key: { fromMe: true, remoteJid: 'friend@s.whatsapp.net' },
+        message: {
+            extendedTextMessage: {
+                contextInfo: { participant: 'friend@s.whatsapp.net' }
+            }
+        }
+    };
+
+    assert.equal(
+        getBalanceTargetJid(message, { user: { id: 'my-account@s.whatsapp.net' } }),
+        'my-account@s.whatsapp.net'
+    );
+});

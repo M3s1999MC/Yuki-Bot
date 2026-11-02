@@ -1,4 +1,5 @@
 const db = require('../../database/db');
+const { getMessageSenderJid } = require('../../utils/messageSender');
 
 module.exports = {
     name: 'principal',
@@ -8,7 +9,7 @@ module.exports = {
 
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
-        const sender = jid.endsWith('@g.us') ? (m.key.participant || jid) : jid;
+        const sender = getMessageSenderJid(m, sock);
         const body = m.message?.conversation || m.message?.extendedTextMessage?.text || '';
         const command = body.replace(/^!/, '').trim().split(/\s+/)[0].toLowerCase();
         const remove = ['deletefav', 'delfav'].includes(command);

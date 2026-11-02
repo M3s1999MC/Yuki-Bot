@@ -1,4 +1,5 @@
 const db = require('../../database/db');
+const { getMessageSenderJid } = require('../../utils/messageSender');
 
 module.exports = {
     name: 'profile',
@@ -9,8 +10,8 @@ module.exports = {
     async execute(sock, m) {
         const jid = m.key.remoteJid;
         const context = m.message?.extendedTextMessage?.contextInfo;
-        const sender = jid.endsWith('@g.us') ? (m.key.participant || jid) : jid;
-        const target = context?.mentionedJid?.[0] || context?.participant || sender;
+        const sender = getMessageSenderJid(m, sock);
+        const target = context?.mentionedJid?.[0] || sender;
 
         db.getSafeUser(target, async (err, data) => {
             if (err) {
