@@ -1,7 +1,7 @@
 // Add an imageUrl to an entry to include that character in !roll.
 const roster = [
-    { name: 'Matikanetannhauser', serie: 
-    { name: 'Special Week', serie: 'Uma Musume: Pretty Derby' },
+    { name: 'Matikanetannhauser', serie: 'Uma Musume: Pretty Derby', imageUrl: 'https://i.pinimg.com/736x/fc/eb/bf/fcebbf6116ae19a9de1e4433e5dbe994.jpg'  },
+    { name: 'Special Week', serie: 'Uma Musume: Pretty Derby', imageUrl: 'https://i.pinimg.com/736x/c7/7b/cb/c77bcb49c9e9e72d6291652902a8371c.jpg'  },
     { name: 'Silence Suzuka', serie: 'Uma Musume: Pretty Derby' },
     { name: 'Tokai Teio', serie: 'Uma Musume: Pretty Derby' },
     { name: 'Mejiro McQueen', serie: 'Uma Musume: Pretty Derby' },
