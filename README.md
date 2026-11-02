@@ -39,6 +39,18 @@ El almacenamiento de los datos del bot usa `DATABASE_URL`; `YUKI_AUTH_ENCRYPTION
 
 El comando `!genchar` genera una ficha original y una ilustración usando OpenAI Images API. Configura `OPENAI_IMAGE_API_KEY` o la variable estándar `OPENAI_API_KEY` como variable privada tanto en Render como en el `.env` local. No reutilices `AI_API_KEY`, ya que puede pertenecer a otro proveedor. La cuenta de OpenAI también debe tener acceso y saldo para la API de imágenes. Opcionalmente, `OPENAI_IMAGE_MODEL` permite elegir otro modelo de imágenes; por defecto se usa `gpt-image-1-mini` con calidad baja para limitar el costo. Cada ejecución solicita una imagen y puede tener costo según las tarifas de OpenAI.
 
-Si no se configura la clave, el bot enviará la ficha del personaje y un error que indica la variable necesaria, pero no fingirá que generó una imagen. Las tiradas `!roll`, `!rw`, `!rollwaifu` y `!waifu` buscan una imagen en Pinterest, incluso si el catálogo tiene una URL anterior; guardan el resultado para el harem y para próximas consultas.
+Si no se configura la clave, el bot enviará la ficha del personaje y un error que indica la variable necesaria, pero no fingirá que generó una imagen.
+
+## Catálogo de `!roll`
+
+Los comandos `!roll`, `!rw`, `!rollwaifu` y `!waifu` eligen exclusivamente entre los personajes que agregues a `utils/gachaRoster.js` y tengan una imagen configurada. No buscan ni añaden personajes de Internet. Al iniciar, el bot sincroniza esa lista con la base de datos. No borra otras filas del catálogo, pero para estos personajes la URL de la base se actualiza con el valor escrito en el código.
+
+`!rollcatalog` muestra los personajes de la lista que todavía no tienen imagen. Para asignarlas, edita el personaje correspondiente en `utils/gachaRoster.js` y agrega `imageUrl` con el enlace del pin o de la imagen:
+
+```text
+{ name: 'Special Week', serie: 'Uma Musume: Pretty Derby', imageUrl: 'https://www.pinterest.com/pin/...' }
+```
+
+Al iniciar, el bot sincroniza esas URLs al catálogo. Acepta enlaces públicos de pins de Pinterest o enlaces directos HTTPS de `i.pinimg.com`; valida y descarga la imagen al hacer la tirada. Deja `imageUrl` vacío si todavía no tienes imagen para ese personaje: no aparecerá en `!roll` hasta que agregues una URL y despliegues el cambio.
 
 Para que `!pinterest` funcione cuando Pinterest bloquea las búsquedas sin iniciar sesión, registra una aplicación en [Pinterest Developers](https://developers.pinterest.com/docs/getting-started/connect-app/) y configura `PINTEREST_ACCESS_TOKEN` como variable privada en Render. El token requiere el permiso `pins:read`; Pinterest puede requerir que la app tenga acceso aprobado a la API. Sin ese token el bot intenta la búsqueda pública, pero no puede acceder a resultados que Pinterest reserva a usuarios autenticados.

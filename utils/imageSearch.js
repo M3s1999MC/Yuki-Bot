@@ -3,6 +3,11 @@ const PINTEREST_HOST = 'www.pinterest.com';
 const IMAGE_HOST = 'i.pinimg.com';
 const PINTEREST_API_HOST = 'api.pinterest.com';
 
+function isPinterestHost(hostname) {
+    return hostname === 'pin.it' || hostname.endsWith('.pin.it')
+        || hostname === 'pinterest.com' || hostname.endsWith('.pinterest.com');
+}
+
 async function fetchPinterestImage(imageUrl) {
     let url;
     try {
@@ -34,6 +39,67 @@ async function fetchPinterestImage(imageUrl) {
         throw new Error('La imagen está vacía o supera el límite de 8 MB.');
     }
     return buffer;
+}
+
+async function resolvePinterestImageUrl(sourceUrl) {
+    let url;
+    try {
+        url = new URL(sourceUrl);
+    } catch {
+        throw new Error('El enlace de Pinterest no es válido.');
+    }
+    if (url.protocol !== 'https:') {
+        throw new Error('El enlace de Pinterest debe usar HTTPS.');
+    }
+    if (url.hostname === IMAGE_HOST) {
+        return url.href;
+    }
+    if (!isPinterestHost(url.hostname)) {
+        throw new Error('Usa un enlace de Pinterest o una URL directa de i.pinimg.com.');
+    }
+
+    const response = await fetch(url, {
+        headers: {
+            Accept: 'text/html,application/xhtml+xml',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36'
+        },
+        signal: AbortSignal.timeout(20_000)
+    });
+    const finalUrl = new URL(response.url || url.href);
+    if (finalUrl.protocol === 'https:' && finalUrl.hostname === IMAGE_HOST) {
+        return finalUrl.href;
+    }
+    if (!isPinterestHost(finalUrl.hostname)) {
+        throw new Error('El enlace redirigió fuera de Pinterest.');
+    }
+    if (!response.ok) {
+        throw new Error(`Pinterest respondió HTTP ${response.status} al abrir el pin.`);
+    }
+
+    const html = (await response.text())
+        .replace(/\\u002F/gi, '/')
+        .replace(/\\u003D/gi, '=')
+        .replace(/\\\//g, '/')
+        .replace(/&amp;/g, '&');
+    const candidates = [...new Set(
+        (html.match(/https?:\/\/i\.pinimg\.com\/[^\s"'<>\\]*?\.(?:jpe?g|png|webp)(?:\?[^\s"'<>\\]*)?/gi) || [])
+            .map(candidate => {
+                try {
+                    const imageUrl = new URL(candidate.replace(/[),}\]]+$/, ''));
+                    return imageUrl.protocol === 'https:' && imageUrl.hostname === IMAGE_HOST
+                        ? imageUrl.href
+                        : null;
+                } catch {
+                    return null;
+                }
+            })
+            .filter(Boolean)
+    )].sort((left, right) =>
+        Number(/\/originals\//i.test(right)) - Number(/\/originals\//i.test(left))
+    );
+
+    if (!candidates.length) throw new Error('El pin no contiene una imagen pública de Pinterest.');
+    return candidates[0];
 }
 
 async function searchPinterestImage(query) {
@@ -153,4 +219,9 @@ async function searchPinterestImageBuffer(query) {
     return image.buffer;
 }
 
-module.exports = { searchPinterestImage, searchPinterestImageBuffer, fetchPinterestImage };
+module.exports = {
+    searchPinterestImage,
+    searchPinterestImageBuffer,
+    fetchPinterestImage,
+    resolvePinterestImageUrl
+};
