@@ -1,6 +1,13 @@
 const assert = require('node:assert/strict');
+const Module = require('node:module');
 const { test } = require('node:test');
-const db = require('../database/db');
+
+const db = {};
+const dbModulePath = require.resolve('../database/db');
+const mockDbModule = new Module(dbModulePath);
+mockDbModule.exports = db;
+mockDbModule.loaded = true;
+require.cache[dbModulePath] = mockDbModule;
 
 const rewards = [
     { command: require('../commands/economy/daily'), cooldownField: 'lastDaily', amount: 1500 },
