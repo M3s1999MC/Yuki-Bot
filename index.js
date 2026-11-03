@@ -281,6 +281,11 @@ async function startYuki() {
                 return;
             }
 
+            if (statusCode === DisconnectReason.connectionReplaced) {
+                console.error('❌ WhatsApp reemplazó esta conexión (código 440). Detén cualquier otra instancia de Yuki que use esta misma sesión y reinicia este servicio. Se pausó la reconexión automática para evitar un bucle.');
+                return;
+            }
+
             console.log(`🔄 Conexión cerrada (Código: ${statusCode}). Reconectando en 4 segundos...`);
             scheduleReconnect();
         } else if (connection === 'open') {
