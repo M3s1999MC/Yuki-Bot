@@ -23,6 +23,12 @@ Si aparece otro QR tras vincular, comprueba los logs para confirmar que cargó l
 
 Neon conserva la sesión, pero no evita que Render Gratis suspenda el servicio tras 15 minutos sin tráfico entrante. Para mantener despierto un servicio Gratis, configura un monitor externo que consulte `https://TU-SERVICIO.onrender.com/health` cada 5 minutos; Render también limita el uso gratis a 750 horas por espacio de trabajo al mes. Para disponibilidad permanente sin depender de un monitor, usa un plan/servicio que permita procesos siempre activos. Cerrar el panel de Render no debería detener por sí mismo el servicio.
 
+## Desplegar Yuki con Docker
+
+Este repositorio incluye un `Dockerfile` para desplegar **Yuki** en Render con el runtime Docker. Conecta el repositorio de Yuki, selecciona Docker como runtime y configura `DATABASE_URL`, `YUKI_AUTH_ENCRYPTION_KEY` y `QR_ACCESS_TOKEN` como variables privadas. Render define `PORT` automáticamente; no lo fijes a un número en el panel. El contenedor instala las dependencias de Node, incluyendo la dependencia Git de Baileys mediante HTTPS, y `ffmpeg` para las funciones multimedia.
+
+No uses el Dockerfile del proyecto Levanter para este despliegue: ese Dockerfile inicia el bot Levanter. Yuki utiliza la sesión persistente cifrada en Neon y no requiere la variable `SESSION_ID` de Levanter. Conserva los mismos valores de `DATABASE_URL` y `YUKI_AUTH_ENCRYPTION_KEY` si quieres recuperar la sesión existente de Yuki.
+
 ## Migrar los datos locales de SQLite a Neon
 
 Antes de desplegar esta versión, conserva `DATABASE_URL` en el `.env` local y ejecuta una sola vez:
