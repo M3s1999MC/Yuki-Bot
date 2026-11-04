@@ -148,6 +148,8 @@ function createNeonDatabase(pool) {
         Promise.resolve()
     ).then(async () => {
         await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS balance INTEGER DEFAULT 0`);
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS hobby TEXT DEFAULT 'Sin asignar'`);
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT DEFAULT 'Sin asignar'`);
         await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS lastdaily BIGINT DEFAULT 0`);
         await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS lastweekly BIGINT DEFAULT 0`);
         await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS lastmonthly BIGINT DEFAULT 0`);
