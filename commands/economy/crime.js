@@ -20,16 +20,25 @@ module.exports = {
             }
             const loss = Math.min(Number(user.wallet) || 0, amount);
             const change = success ? amount : -loss;
-            db.run(`UPDATE users SET wallet = MAX(0, wallet + ?) WHERE jid = ?`, [change, sender], (err) => {
-                if (err) {
-                    console.error('Error al procesar resultado de crimen:', err.message);
-                    return sock.sendMessage(jid, { text: '「✿」 No se pudo actualizar tu billetera.' }, { quoted: m });
+            db.run(
+                `UPDATE users
+                 SET wallet = CASE
+                     WHEN COALESCE(wallet, 0) + ? < 0 THEN 0
+                     ELSE COALESCE(wallet, 0) + ?
+                 END
+                 WHERE jid = ?`,
+                [change, change, sender],
+                (err) => {
+                    if (err) {
+                        console.error('Error al procesar resultado de crimen:', err.message);
+                        return sock.sendMessage(jid, { text: '「✿」 No se pudo actualizar tu billetera.' }, { quoted: m });
+                    }
+                    const text = success
+                        ? `「✿」 ¡Escapaste! Ganaste *+$${amount.toLocaleString('es-CO')}*. 🦹`
+                        : `「✿」 Te atraparon y perdiste *$${loss.toLocaleString('es-CO')}* en multas. 🚨`;
+                    sock.sendMessage(jid, { text }, { quoted: m });
                 }
-                const text = success
-                    ? `「✿」 ¡Escapaste! Ganaste *+$${amount.toLocaleString('es-CO')}*. 🦹`
-                    : `「✿」 Te atraparon y perdiste *$${loss.toLocaleString('es-CO')}* en multas. 🚨`;
-                sock.sendMessage(jid, { text }, { quoted: m });
-            });
+            );
         });
     }
 };
