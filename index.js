@@ -39,7 +39,7 @@ app.get('/health', (req, res) => {
 app.get('/qr', async (req, res) => {
     const accessToken = process.env.QR_ACCESS_TOKEN;
     if (!accessToken || accessToken.length < 32) {
-        return res.status(503).send('Configura QR_ACCESS_TOKEN con al menos 32 caracteres en el entorno de Render.');
+        return res.status(503).send('Configura QR_ACCESS_TOKEN con al menos 32 caracteres en el entorno del servidor.');
     }
 
     const authorization = req.get('authorization') || '';
@@ -69,7 +69,7 @@ app.get('/qr', async (req, res) => {
     });
 
     if (!currentQrImage) {
-        return res.status(503).send('WhatsApp no está solicitando un QR. Revisa los logs de conexión de Render.');
+        return res.status(503).send('WhatsApp no está solicitando un QR. Revisa los logs de conexión del servidor.');
     }
 
     res.type('html').send(`<!doctype html>
@@ -115,7 +115,7 @@ async function loadAuthState() {
     if (!authStatePromise) {
         authStatePromise = (async () => {
             if (!process.env.DATABASE_URL) {
-                console.warn('⚠️ DATABASE_URL no está configurada; la sesión se guardará en el disco local y puede perderse al reiniciar Render.');
+                console.warn('⚠️ DATABASE_URL no está configurada; la sesión se guardará en el disco local y puede perderse al reiniciar el servidor.');
                 const sessionPath = path.join(dataDir, 'sessions', 'main');
                 const authState = await useMultiFileAuthState(sessionPath);
                 return {
@@ -366,21 +366,23 @@ async function startYuki() {
             return;
         }
 
-        // 🟢 REGISTRO AUTOMÁTICO UNIVERSAL
-        if (sender) {
-            const contactName = contactNames.get(sender)
-                || contactNames.get(m.key.participantAlt)
-                || contactNames.get(m.key.remoteJidAlt);
-            db.registerUser(sender, contactName || m.pushName);
-        }
         const initialText = m.message?.conversation || m.message?.extendedTextMessage?.text || '';
         const isAfkCommand = /^!(?:afk|ausente)(?:\s|$)/i.test(initialText);
-        if (!m.key.fromMe && sender) {
-            if (!isAfkCommand) {
-            db.run(`UPDATE users SET afk_reason = NULL, afk_since = NULL WHERE jid = ? AND afk_since IS NOT NULL`, [sender], (err) => {
-                if (err) console.error('Error al desactivar estado AFK:', err.message);
-            });
+        const contactName = contactNames.get(sender)
+            || contactNames.get(m.key.participantAlt)
+            || contactNames.get(m.key.remoteJidAlt);
+        db.recordMessageActivity(
+            sender,
+            contactName || m.pushName,
+            {
+                incrementExp: !m.key.fromMe,
+                clearAfk: !m.key.fromMe && !isAfkCommand
+            },
+            err => {
+                if (err) console.error('Error al registrar la actividad del usuario:', err.message);
             }
+        );
+        if (!m.key.fromMe) {
             const mentionedJids = m.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
             for (const mentionedJid of mentionedJids) {
                 db.get(`SELECT afk_reason, afk_since FROM users WHERE jid = ? AND afk_since IS NOT NULL`, [mentionedJid], async (err, afkUser) => {
@@ -398,15 +400,6 @@ async function startYuki() {
                     }, { quoted: m });
                 });
             }
-        }
-        if (!m.key.fromMe && sender) {
-            db.run(
-                `UPDATE users SET exp = exp + 1, level = CAST((exp + 1) / 500 AS INTEGER) + 1 WHERE jid = ?`,
-                [sender],
-                (err) => {
-                    if (err) console.error('Error al actualizar experiencia:', err.message);
-                }
-            );
         }
         const msgContent = getMessageContent(m.message);
 
