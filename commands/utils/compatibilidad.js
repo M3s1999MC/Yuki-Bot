@@ -1,8 +1,8 @@
 module.exports = {
     name: 'compatibilidad',
-    alias: ['shipbot'],
-    desc: 'Mide qué tan compatible eres hoy con Yuki',
-    run: async (sock, m) => {
+    aliases: ['shipbot'],
+    description: 'Mide qué tan compatible eres hoy con Yuki',
+    async execute(sock, m) {
         const jid = m.key.participant || m.key.remoteJid;
         const porc = Math.floor(Math.random() * 100);
         await sock.sendMessage(m.key.remoteJid, { 
