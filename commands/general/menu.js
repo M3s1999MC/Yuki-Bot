@@ -7,7 +7,7 @@ module.exports = {
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
 
-        const menuHeader = `꧁༺ 𝐇𝐨λ𝐚! 𝐒𝐨𝐲 𝓨𝓾𝓴𝓲 ༻꧂\nᴀǫᴜɪ ᴛɪᴇɴᴇs ʟᴀ ʟɪsᴛᴀ ᴅᴇ ᴄᴏᴍᴀɴᴅos\n╭┈ ↷\n│ ✐ 𝓓𝓮𝔀𝓮𝓵𝓸𝓹𝓮𝓭 𝓫𝔂 Inkra Studios 🌸\n│ ✐ ꒷ꕤ💎 𝐂𝐚𝐧𝐚λ 𝐎𝐟𝐢𝐜𝐢𝐚λ ෴\n│ https://whatsapp.com/channel/0029Vb9AOpk9WtC12RHEEj0Y\n╰─────────────────\n\n`;
+        const menuHeader = `꧁༺ 𝐇𝐨λ𝐚! 𝐒𝐨𝐲 𝓨𝓾𝓴𝓲 ༻꧂\nᴀǫᴜɪ ᴛɪᴇɴᴇs ʟᴀ ʟɪsᴛᴀ ᴅᴇ ᴄₒᴍᴀɴᴅₒs\n╭┈ ↷\n│ ✐ 𝓓𝓮𝔀𝓮𝓵𝓸𝓹𝓮𝓭 𝓫𝔂 Inkra Studios 🌸\n│ ✐ ꒷ꕤ💎 𝐂𝐚𝐧𝐚λ 𝐎𝐟𝐢𝐜𝐢𝐚λ ෴\n│ https://whatsapp.com/channel/0029Vb9AOpk9WtC12RHEEj0Y\n╰─────────────────\n\n`;
 
         const menuBody = `» ˚୨•(🌸)• ⊹ Perfil ⊹
 ✧ !profile | !perfil
@@ -36,6 +36,52 @@ module.exports = {
 > Establece tu género
 ✧ !delgenre
 > Elimina tu género del perfil
+
+» ˚୨•(🌸)• ⊹ Perfil (Nuevos) ⊹
+✧ !boda | !bodas
+> Muestra los detalles y tiempo de tu matrimonio actual
+✧ !intereses | !gustos
+> Establece una lista de gustos en tu perfil
+✧ !delintereses | !quitargustos
+> Elimina los intereses de tu perfil
+✧ !titulo | !settitle
+> Establece un título personalizado arriba de tu nombre
+✧ !deltitulo | !deltitle
+> Elimina tu título personalizado de perfil
+
+» ˚୨•(🌸)• ⊹ Random ⊹
+✧ !8ball | !pregunta | !duda
+> Consulta a la bola mágica una pregunta de Sí/No
+✧ !chiste | !joke
+> Envía un chiste aleatorio para romper el hielo en el grupo
+✧ !frase | !quote | !consejo
+> Muestra un pensamiento aleatorio o un consejo
+✧ !ruletarusa | !shot
+> Prueba tu suerte con un castigo ficticio e inofensivo
+✧ !hack | !hackear
+> Simula de forma cómica y falsa el hackeo de un usuario mencionado
+✧ !dado
+> Lanza un dado; puedes indicar entre 2 y 100 caras
+✧ !f
+> Envía un respetuoso mensaje rindiendo homenaje
+✧ !taza | !café | !mate
+> Invita una bebida caliente a otro usuario
+✧ !confesion | !confesar
+> Genera una confesión absurda o vergonzosa al azar
+✧ !funar | !funa
+> Inventa una razón cómica para funar a un usuario
+✧ !maldicion | !hex
+> Lanza una maldición inofensiva y chistosa a alguien del grupo
+✧ !sueldo | !salario
+> Revela tu sueldo imaginario basado en tu comportamiento en el chat
+✧ !iq | !cerebro
+> Mide tu IQ del día con un comentario sarcástico
+✧ !futuro | !destino
+> Predice tu vida en 10 años de forma absurda
+✧ !compatibilidad | !shipbot
+> Mide qué tan compatible eres hoy con Yuki
+✧ !cantar | !letra
+> Lanza una frase o verso aleatorio de una canción
 
 » ˚୨•(🌸)• ⊹ Grupo ⊹
 ✧ !promote | !promover | !admin
@@ -94,6 +140,14 @@ module.exports = {
 > Activa o desactiva la eliminación automática de enlaces de otros grupos o canales.
 ✧ !adminonly | !soloadmin | !onlyadmin | !modoadmin
 > Activa o desactiva el modo Solo Admins: solo los administradores del grupo podrán usar el bot.
+✧ !inactivos | !listainactivos
+> Muestra la lista de miembros inactivos según los días elegidos
+✧ !topactivos | !topmensajessemana
+> Muestra el top de miembros más activos de la semana
+✧ !mute | !silenciar
+> Silencia a un usuario para que no pueda usar comandos de Yuki
+✧ !unmute | !desilenciar
+> Le devuelve los permisos de uso de comandos a un usuario
 
 » ˚୨•(🌸)• ⊹ Economía ⊹
 ✧ !balance | !bal | !saldo
@@ -126,6 +180,16 @@ module.exports = {
 > Muestra a los usuarios más ricos
 ✧ !tienda | !shop
 > Compra objetos como tickets de captura
+✧ !banco | !bank
+> Revisa el estado detallado e intereses de tu cuenta bancaria
+✧ !invertir | !inversion
+> Arriesga parte de tu saldo en un fondo de inversión simulado
+✧ !negocio | !miempresa
+> Revisa y cobra las ganancias de tu negocio simulado
+✧ !prestamo | !prestar
+> Solicita un préstamo al banco de Yuki
+✧ !pagardeuda | !pagarprestamo
+> Paga las cuotas o salda la deuda de tu préstamo
 
 » ˚୨•(🌸)• ⊹ Gacha ⊹
 ✧ !roll | !rw | !rollwaifu | !waifu
@@ -212,6 +276,14 @@ module.exports = {
 > Crea un sticker estilo brat con texto
 ✧ !bratv
 > Crea un video-sticker estilo brat
+✧ !wm | !take
+> Cambia el nombre del pack y autor de un sticker citado
+✧ !emojimix | !mix
+> Fusiona dos emojis en un nuevo sticker
+✧ !qc | !quote
+> Transforma un texto citado en una tarjeta de sticker tipo frase
+✧ !circle | !redondo
+> Convierte una imagen en un sticker circular
 
 » ˚୨•(🌸)• ⊹ Utilidades ⊹
 ✧ !chatgpt | !ia
@@ -234,6 +306,14 @@ module.exports = {
 > Guarda una de las últimas sugerencias de !rizz u !opener en tu biblioteca
 ✧ !biblioteca | !misfrases | !library
 > Muestra tus frases guardadas, o borra una con !biblioteca borrar <número>
+✧ !clima | !weather
+> Consulta el estado del tiempo en cualquier ciudad
+✧ !traducir | !tr
+> Traduce un texto o mensaje citado a otro idioma
+✧ !calc | !calcular
+> Realiza cálculos y operaciones matemáticas rápidas
+✧ !encuesta | !poll
+> Genera una encuesta rápida para que el grupo vote
 
 » ˚୨•(🌸)• ⊹ Sub-Bot ⊹
 ✧ !serbot | !jadibot | !subbot | !code
@@ -339,8 +419,6 @@ module.exports = {
 ✧ !pat | !darpalmada
 > Da una palmada a otro usuario
 
-
-
 ━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 
         const fullMenuText = menuHeader + menuBody;
@@ -348,7 +426,6 @@ module.exports = {
         try {
             const imageUrl = 'https://i.pinimg.com/736x/c7/52/42/c752425496a914f6e1e0a58da246fe20.jpg';
             
-            // Petición con User-Agent para evitar bloqueo de Pinterest
             const res = await fetch(imageUrl, {
                 headers: {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
