@@ -1,22 +1,18 @@
-const db = require('../../database/db');
-const { getMessageSenderJid } = require('../../utils/messageSender');
-
 module.exports = {
-    name: 'bank_legacy',
-    aliases: [],
-    category: 'economy',
-    description: 'Deposita o retira dinero de tu cuenta bancaria.',
+    name: 'banco',
+    alias: ['bank'],
+    desc: 'Revisa el estado detallado e intereses de tu cuenta bancaria',
+    run: async (sock, m, args, db) => {
+        const jid = m.key.participant || m.key.remoteJid;
+        db.getSafeUser(jid, async (err, user) => {
+            if (err || !user) return sock.sendMessage(m.key.remoteJid, { text: '❌ Error al consultar tu banco.' }, { quoted: m });
 
-    async execute(sock, m, args) {
-        const jid = m.key.remoteJid;
-        const sender = getMessageSenderJid(m, sock);
-        const cmd = m.text?.split(' ')[0]?.replace('!', '') || 'deposit';
-        const amountArg = args[0];
+            const banco = user.bank || 0;
+            const interesEstimado = Math.floor(banco * 0.02);
 
-        if (!amountArg) {
-            return await sock.sendMessage(jid, { text: `⚠️ Por favor indica la cantidad que deseas ${cmd.includes('dep') ? 'depositar' : 'retirar'}.` }, { quoted: m });
-        }
-
-        await sock.sendMessage(jid, { text: `🏦 Operación bancaria procesada con éxito.` }, { quoted: m });
+            await sock.sendMessage(m.key.remoteJid, {
+                text: `🏦 *ESTADO BANCARIO DE YUKI* 🏦\n\n💵 *Saldo en Banco:* $${banco.toLocaleString()}\n📈 *Interés Diario (2%):* +$${interesEstimado.toLocaleString()}\n\n_¡Guarda tu dinero seguro con Yuki!_ 🔒`
+            }, { quoted: m });
+        });
     }
 };
