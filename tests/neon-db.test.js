@@ -44,6 +44,10 @@ test('Neon SQL compatibility converts SQLite placeholders and syntax', () => {
         translateSql(`ALTER TABLE users ADD COLUMN lastWeekly INTEGER DEFAULT 0`),
         `ALTER TABLE users ADD COLUMN IF NOT EXISTS lastWeekly INTEGER DEFAULT 0`
     );
+    assert.equal(
+        translateSql(`UPDATE users SET wallet = CASE WHEN COALESCE(wallet, 0) + ? < 0 THEN 0 ELSE COALESCE(wallet, 0) + ? END WHERE jid = ?`),
+        `UPDATE users SET wallet = CASE WHEN COALESCE(wallet, 0) + $1 < 0 THEN 0 ELSE COALESCE(wallet, 0) + $2 END WHERE jid = $3`
+    );
     assert.match(
         translateSql(`UPDATE users SET name = excluded.name WHERE users.name NOT GLOB '*[^0-9+ ]*'`),
         /users\.name !~ '\[\^0-9\+ \]'/
@@ -90,4 +94,32 @@ test('Neon database adapter preserves callback results and transaction boundarie
         pool.clientQueries.map(query => query.sql),
         ['BEGIN', 'UPDATE users SET coins = coins + $1 WHERE jid = $2', 'COMMIT']
     );
+});
+
+test('message activity is recorded with one upsert and preserves activity options', async () => {
+    const pool = createFakePool();
+    const db = createNeonDatabase(pool);
+    await db.ready;
+    const queryCount = pool.queries.length;
+    for (const [options, expectedValues] of [
+        [{ incrementExp: true, clearAfk: true }, [1, 1, 1, 1]],
+        [{ incrementExp: false, clearAfk: false }, [0, 0, 0, 0]]
+    ]) {
+        await new Promise((resolve, reject) => {
+            db.recordMessageActivity(
+                'user@s.whatsapp.net',
+                ' Usuario ',
+                options,
+                error => error ? reject(error) : resolve()
+            );
+        });
+
+        const query = pool.queries.at(-1);
+        assert.match(query.sql, /^INSERT INTO users /);
+        assert.match(query.sql, /ON CONFLICT\(jid\) DO UPDATE SET/);
+        assert.deepEqual(query.params, ['user@s.whatsapp.net', 'Usuario', ...expectedValues]);
+        assert.match(query.sql, /level = CAST\(\(users\.exp \+ excluded\.exp\) \/ 500 AS INTEGER\) \+ 1/);
+        assert.match(query.sql, /users\.name !~ '\[\^0-9\+ \]'/);
+    }
+    assert.equal(pool.queries.length, queryCount + 2);
 });
