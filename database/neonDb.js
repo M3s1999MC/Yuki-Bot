@@ -282,6 +282,29 @@ function createNeonDatabase(pool) {
             execute(sql, args.params, args.callback, 'run');
             return this;
         },
+        recordMessageActivity(jid, name = 'Usuario', options = {}, callback) {
+            if (!jid) return;
+            const displayName = typeof name === 'string' ? name.trim() : '';
+            const storedName = displayName && displayName !== 'Usuario' ? displayName : 'Usuario';
+            const experience = options.incrementExp ? 1 : 0;
+            const clearAfk = options.clearAfk ? 1 : 0;
+
+            this.run(
+                `INSERT INTO users (jid, name, exp, level) VALUES (?, ?, ?, CAST(? / 500 AS INTEGER) + 1)
+                 ON CONFLICT(jid) DO UPDATE SET
+                     name = CASE
+                         WHEN users.name IS NULL OR TRIM(users.name) = '' OR users.name = 'Usuario'
+                              OR users.name !~ '[^0-9+ ]' THEN excluded.name
+                         ELSE users.name
+                     END,
+                     exp = users.exp + excluded.exp,
+                     level = CAST((users.exp + excluded.exp) / 500 AS INTEGER) + 1,
+                     afk_reason = CASE WHEN ? = 1 THEN NULL ELSE users.afk_reason END,
+                     afk_since = CASE WHEN ? = 1 THEN NULL ELSE users.afk_since END`,
+                [jid, storedName, experience, experience, clearAfk, clearAfk],
+                callback
+            );
+        },
         get(sql, params, callback) {
             const args = normalizeArgs(params, callback);
             execute(sql, args.params, args.callback, 'get');
@@ -318,19 +341,6 @@ function createNeonDatabase(pool) {
     return db;
 }
 
-function normalizeRow(row) {
-    if (!row) return row;
-    const normalized = { ...row };
-    for (const [lower, original] of [
-        ['lastdaily', 'lastDaily'],
-        ['lastweekly', 'lastWeekly'],
-        ['lastmonthly', 'lastMonthly']
-    ]) {
-        if (Object.hasOwn(normalized, lower)) normalized[original] = normalized[lower];
-    }
-    return normalized;
-}
-
 let db = {};
 if (process.env.DATABASE_URL) {
     const pool = new Pool({
@@ -350,7 +360,7 @@ if (process.env.DATABASE_URL) db.registerUser = function(jid, name = 'Usuario', 
         `INSERT INTO users (jid, name) VALUES (?, ?)
          ON CONFLICT(jid) DO UPDATE SET name = CASE
              WHEN users.name IS NULL OR TRIM(users.name) = '' OR users.name = 'Usuario'
-                  OR users.name NOT GLOB '*[^0-9+ ]*' THEN excluded.name
+                  OR users.name !~ '[^0-9+ ]' THEN excluded.name
              ELSE users.name
          END`,
         [jid, storedName],
