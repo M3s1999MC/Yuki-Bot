@@ -1,8 +1,8 @@
 module.exports = {
     name: 'futuro',
-    alias: ['destino'],
-    desc: 'Predice tu vida en 10 años de forma absurda',
-    run: async (sock, m) => {
+    aliases: ['destino'],
+    description: 'Predice tu vida en 10 años de forma absurda',
+    async execute(sock, m) {
         const jid = m.key.participant || m.key.remoteJid;
         const pred = [
             'serás el dueño de una granja de gatos galácticos.',
