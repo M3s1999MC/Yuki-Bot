@@ -1,8 +1,8 @@
 module.exports = {
     name: 'calc',
-    alias: ['calcular'],
-    desc: 'Realiza cálculos matemáticos rápidos',
-    run: async (sock, m, args) => {
+    aliases: ['calcular'],
+    description: 'Realiza cálculos matemáticos rápidos',
+    async execute(sock, m, args) {
         const expr = args.join('');
         if (!expr) return sock.sendMessage(m.key.remoteJid, { text: '⚠️ Ingresa una operación. Ejemplo: `!calc 50*12`' }, { quoted: m });
         try {
