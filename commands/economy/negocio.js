@@ -1,8 +1,10 @@
+const db = require('../database/db');
+
 module.exports = {
     name: 'negocio',
-    alias: ['miempresa'],
-    desc: 'Revisa y cobra las ganancias de tu negocio simulado',
-    run: async (sock, m, args, db) => {
+    aliases: ['miempresa'],
+    description: 'Revisa y cobra las ganancias de tu negocio simulado',
+    async execute(sock, m) {
         const jid = m.key.participant || m.key.remoteJid;
         const ganancia = Math.floor(Math.random() * 1500) + 500;
 
