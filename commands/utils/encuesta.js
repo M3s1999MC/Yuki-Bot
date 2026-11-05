@@ -1,8 +1,8 @@
 module.exports = {
     name: 'encuesta',
-    alias: ['poll'],
-    desc: 'Genera una encuesta rápida para que el grupo vote',
-    run: async (sock, m, args) => {
+    aliases: ['poll'],
+    description: 'Genera una encuesta rápida para que el grupo vote',
+    async execute(sock, m, args) {
         const preg = args.join(' ') || '¿Qué hacemos hoy?';
         await sock.sendMessage(m.key.remoteJid, {
             poll: {
