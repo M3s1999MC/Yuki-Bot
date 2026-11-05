@@ -1,8 +1,8 @@
 module.exports = {
     name: 'funar',
-    alias: ['funa'],
-    desc: 'Inventa una razón cómica para funar a un usuario',
-    run: async (sock, m, args) => {
+    aliases: ['funa'],
+    description: 'Inventa una razón cómica para funar a un usuario',
+    async execute(sock, m) {
         const user = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || m.key.participant || m.key.remoteJid;
         const razones = [
             'por poner la leche antes que el cereal.',
