@@ -1,8 +1,10 @@
+const db = require('../database/db');
+
 module.exports = {
     name: 'pagardeuda',
-    alias: ['pagarprestamo'],
-    desc: 'Paga las cuotas o salda la deuda de tu préstamo',
-    run: async (sock, m, args, db) => {
+    aliases: ['pagarprestamo'],
+    description: 'Paga las cuotas o salda la deuda de tu préstamo',
+    async execute(sock, m) {
         const jid = m.key.participant || m.key.remoteJid;
         const pago = 2000;
 
