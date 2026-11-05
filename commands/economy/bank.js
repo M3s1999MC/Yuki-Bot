@@ -1,8 +1,10 @@
+const db = require('../database/db');
+
 module.exports = {
     name: 'banco',
-    alias: ['bank'],
-    desc: 'Revisa el estado detallado e intereses de tu cuenta bancaria',
-    run: async (sock, m, args, db) => {
+    aliases: ['bank'],
+    description: 'Revisa el estado detallado e intereses de tu cuenta bancaria',
+    async execute(sock, m) {
         const jid = m.key.participant || m.key.remoteJid;
         db.getSafeUser(jid, async (err, user) => {
             if (err || !user) return sock.sendMessage(m.key.remoteJid, { text: '❌ Error al consultar tu banco.' }, { quoted: m });
