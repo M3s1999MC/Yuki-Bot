@@ -1,8 +1,8 @@
 module.exports = {
     name: 'boda',
-    alias: ['bodas', 'matrimonio'],
-    desc: 'Muestra los detalles y tiempo de tu matrimonio actual',
-    run: async (sock, m, args, db) => {
+    aliases: ['bodas', 'matrimonio'],
+    description: 'Muestra los detalles y tiempo de tu matrimonio actual',
+    async execute(sock, m, args) {
         const jid = m.key.participant || m.key.remoteJid;
         db.getSafeUser(jid, async (err, user) => {
             if (err || !user) return sock.sendMessage(m.key.remoteJid, { text: '❌ No se pudo consultar la información de tu boda.' }, { quoted: m });
