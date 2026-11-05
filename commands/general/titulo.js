@@ -1,8 +1,10 @@
+const db = require('../database/db');
+
 module.exports = {
     name: 'titulo',
-    alias: ['settitle', 'tituloPerfil'],
-    desc: 'Establece un título personalizado en tu perfil',
-    run: async (sock, m, args, db) => {
+    aliases: ['settitle', 'tituloperfil'],
+    description: 'Establece un título personalizado en tu perfil',
+    async execute(sock, m, args) {
         const jid = m.key.participant || m.key.remoteJid;
         const titulo = args.join(' ');
         if (!titulo) return sock.sendMessage(m.key.remoteJid, { text: '⚠️ Escribe el título que quieres ponértelo. Ejemplo: `!titulo El Animador Legendario`' }, { quoted: m });
