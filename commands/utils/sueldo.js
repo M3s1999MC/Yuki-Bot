@@ -1,8 +1,8 @@
 module.exports = {
     name: 'sueldo',
-    alias: ['salario'],
-    desc: 'Revela tu sueldo imaginario del día',
-    run: async (sock, m) => {
+    aliases: ['salario'],
+    description: 'Revela tu sueldo imaginario del día',
+    async execute(sock, m) {
         const jid = m.key.participant || m.key.remoteJid;
         const sueldo = Math.floor(Math.random() * 5000) + 50;
         await sock.sendMessage(m.key.remoteJid, { 
