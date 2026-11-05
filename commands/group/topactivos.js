@@ -1,8 +1,10 @@
+const db = require('../database/db');
+
 module.exports = {
     name: 'topactivos',
-    alias: ['topmensajessemana'],
-    desc: 'Muestra el top de miembros más activos',
-    run: async (sock, m, args, db) => {
+    aliases: ['topmensajessemana'],
+    description: 'Muestra el top de miembros más activos',
+    async execute(sock, m) {
         if (!m.key.remoteJid.endsWith('@g.us')) return sock.sendMessage(m.key.remoteJid, { text: '⚠️ Este comando solo funciona en grupos.' }, { quoted: m });
 
         db.all(`SELECT user_jid, count FROM message_counts WHERE group_jid = ? ORDER BY count DESC LIMIT 10`, [m.key.remoteJid], async (err, rows) => {
