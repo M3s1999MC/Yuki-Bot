@@ -1,8 +1,10 @@
+const db = require('../database/db');
+
 module.exports = {
     name: 'inactivos',
-    alias: ['listainactivos'],
-    desc: 'Muestra los miembros inactivos del grupo',
-    run: async (sock, m, args, db) => {
+    aliases: ['listainactivos'],
+    description: 'Muestra los miembros inactivos del grupo',
+    async execute(sock, m) {
         if (!m.key.remoteJid.endsWith('@g.us')) return sock.sendMessage(m.key.remoteJid, { text: '⚠️ Este comando solo funciona en grupos.' }, { quoted: m });
 
         const metadata = await sock.groupMetadata(m.key.remoteJid);
