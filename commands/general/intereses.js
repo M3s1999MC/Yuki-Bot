@@ -1,8 +1,10 @@
+const db = require('../database/db');
+
 module.exports = {
     name: 'intereses',
-    alias: ['gustos', 'sethobby', 'setpasatiempo'],
-    desc: 'Establece una lista de gustos o intereses en tu perfil',
-    run: async (sock, m, args, db) => {
+    aliases: ['gustos', 'sethobby', 'setpasatiempo'],
+    description: 'Establece una lista de gustos o intereses en tu perfil',
+    async execute(sock, m, args) {
         const jid = m.key.participant || m.key.remoteJid;
         const texto = args.join(' ');
         if (!texto) return sock.sendMessage(m.key.remoteJid, { text: '⚠️ Escribe tus intereses. Ejemplo: `!intereses Anime, Voleibol, Programar`' }, { quoted: m });
