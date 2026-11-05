@@ -1,8 +1,8 @@
 module.exports = {
     name: 'confesion',
-    alias: ['confesar'],
-    desc: 'Genera una confesión absurda al azar',
-    run: async (sock, m) => {
+    aliases: ['confesar'],
+    description: 'Genera una confesión absurda al azar',
+    async execute(sock, m) {
         const confesiones = [
             'Confieso que una vez me comí un borrador pensando que era un dulce.',
             'Confieso que duermo con la luz prendida si veo un sticker raro.',
