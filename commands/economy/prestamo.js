@@ -1,10 +1,12 @@
+const db = require('../database/db');
+
 module.exports = {
     name: 'prestamo',
-    alias: ['prestar'],
-    desc: 'Solicita un préstamo al banco de Yuki',
-    run: async (sock, m, args, db) => {
+    aliases: ['prestar'],
+    description: 'Solicita un préstamo al banco de Yuki',
+    async execute(sock, m) {
         const jid = m.key.participant || m.key.remoteJid;
-        const monto = 2000; // Monto fijo de préstamo
+        const monto = 2000;
 
         db.getSafeUser(jid, async (err, user) => {
             if (err || !user) return;
