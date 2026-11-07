@@ -28,6 +28,67 @@ let authStatePromise;
 let reconnectTimer;
 let authResetPromise;
 
+// --- SISTEMA DE COLA Y DELAY ALEATORIO PARA PROTECCIÓN CONTRA SPAM ---
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const getRandomDelay = (min = 1500, max = 3500) => {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+};
+
+class MessageQueue {
+    constructor() {
+        this.queue = [];
+        this.processing = false;
+    }
+
+    add(task) {
+        this.queue.push(task);
+        this.process();
+    }
+
+    async process() {
+        if (this.processing) return;
+        this.processing = true;
+
+        try {
+            while (this.queue.length > 0) {
+                const task = this.queue.shift();
+
+                try {
+                    // Espera aleatoria antes de enviar para simular comportamiento humano y evitar baneos
+                    const delay = getRandomDelay(1500, 3500);
+                    await sleep(delay);
+
+                    await task();
+                } catch (error) {
+                    console.error("[MessageQueue Error]:", error);
+                }
+            }
+        } finally {
+            this.processing = false;
+        }
+    }
+}
+
+const messageQueue = new MessageQueue();
+
+// Helper de envío seguro envuelto en la cola
+function safeReply(sock, jid, content, options = {}) {
+    const formattedContent = typeof content === 'string' ? { text: content } : content;
+
+    return new Promise((resolve, reject) => {
+        messageQueue.add(async () => {
+            try {
+                const result = await sock.sendMessage(jid, formattedContent, options);
+                resolve(result);
+            } catch (err) {
+                reject(err);
+            }
+        });
+    });
+}
+// ---------------------------------------------------------------------
+
 app.get('/', (req, res) => {
     res.send('Yuki Bot está activo.');
 });
@@ -97,7 +158,7 @@ app.listen(port, () => {
     console.log(`Servidor de Yuki escuchando en el puerto ${port}`);
 });
 
-// 🛡️ ESCUDO GLOBAL: Evita que cualquier error imprevisto (como SQLite) apague el bot
+// 🛡️ ESCUDO GLOBAL: Evita que cualquier error imprevisto apague el bot
 process.on('uncaughtException', (err) => {
     console.error('⚠️ [Protector] Error crítico interceptado (El bot sigue en línea):', err.message);
 });
@@ -335,13 +396,13 @@ async function startYuki() {
                     .replace(/@user/g, `@${participant.split('@')[0]}`);
                 try {
                     if (isWelcome && settings.welcome_image) {
-                        await sock.sendMessage(update.id, {
+                        await safeReply(sock, update.id, {
                             image: { url: settings.welcome_image },
                             caption: text,
                             mentions: [participant]
                         });
                     } else {
-                        await sock.sendMessage(update.id, { text, mentions: [participant] });
+                        await safeReply(sock, update.id, { text, mentions: [participant] });
                     }
                 } catch (sendErr) {
                     console.error('Error al enviar mensaje de bienvenida/despedida:', sendErr);
@@ -394,7 +455,7 @@ async function startYuki() {
                     const elapsed = Math.max(0, Date.now() - afkUser.afk_since);
                     const minutes = Math.floor(elapsed / 60000);
                     const away = minutes < 60 ? `${minutes} min` : `${Math.floor(minutes / 60)} h`;
-                    await sock.sendMessage(m.key.remoteJid, {
+                    await safeReply(sock, m.key.remoteJid, {
                         text: `「✿」 @${mentionedJid.split('@')[0]} está ausente desde hace ${away}.\nMotivo: ${afkUser.afk_reason || 'Sin motivo especificado'} 💤`,
                         mentions: [mentionedJid]
                     }, { quoted: m });
@@ -426,20 +487,20 @@ async function startYuki() {
                     );
                     if (participant?.admin) return;
                     await sock.sendMessage(m.key.remoteJid, { delete: m.key });
-                    await sock.sendMessage(m.key.remoteJid, {
+                    await safeReply(sock, m.key.remoteJid, {
                         text: `「✿」 @${sender.split('@')[0]}, eliminé el enlace de invitación publicado. 🌸`,
                         mentions: [sender]
                     }, { quoted: m });
                 } catch (antilinkErr) {
                     console.error('Error al moderar enlace del grupo:', antilinkErr);
-                    await sock.sendMessage(m.key.remoteJid, { text: '「✿」 No pude moderar el enlace; revisa los permisos del bot.' }, { quoted: m });
+                    await safeReply(sock, m.key.remoteJid, { text: '「✿」 No pude moderar el enlace; revisa los permisos del bot.' }, { quoted: m });
                 }
             });
         }
 
         if (!m.key.fromMe && !m.key.remoteJid.endsWith('@g.us') && !body.startsWith(PREFIX) && practiceSessions.sessions.has(sender)) {
-            const reply = practiceSessions.respond(body, practiceSessions.sessions.get(sender));
-            await sock.sendMessage(m.key.remoteJid, { text: `「✿」 ${reply}` }, { quoted: m });
+            const replyText = practiceSessions.respond(body, practiceSessions.sessions.get(sender));
+            await safeReply(sock, m.key.remoteJid, { text: `「✿」 ${replyText}` }, { quoted: m });
             return;
         }
 
@@ -453,10 +514,24 @@ async function startYuki() {
 
         // Ejecución segura del comando
         try {
-            await handler.handle(sock, m, body, usedPrefix, command, args);
+            // Inyectamos un objeto de contexto que redirige todas las respuestas de los comandos a la cola con delay
+            const ctx = {
+                sock,
+                m,
+                msg: m,
+                body,
+                usedPrefix,
+                command,
+                args,
+                sender,
+                reply: (content, options) => safeReply(sock, m.key.remoteJid, content, { quoted: m, ...options })
+            };
+
+            // Dependiendo de cómo reciba los parámetros tu handler, puedes pasarle ctx o los argumentos habituales
+            await handler.handle(sock, m, body, usedPrefix, command, args, ctx);
         } catch (err) {
             console.error(`❌ Error ejecutando el comando '${command}':`, err);
-            await sock.sendMessage(m.key.remoteJid, { text: '❌ Ocurrió un error interno al procesar este comando.' }, { quoted: m });
+            await safeReply(sock, m.key.remoteJid, { text: '❌ Ocurrió un error interno al procesar este comando.' }, { quoted: m });
         }
     });
 }
