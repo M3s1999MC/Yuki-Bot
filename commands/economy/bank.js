@@ -1,11 +1,12 @@
-const db = require('../database/db');
+const db = require('../../database/db');
+const { getMessageSenderJid } = require('../../utils/messageSender');
 
 module.exports = {
     name: 'banco',
     aliases: ['bank'],
     description: 'Revisa el estado detallado e intereses de tu cuenta bancaria',
     async execute(sock, m) {
-        const jid = m.key.participant || m.key.remoteJid;
+        const jid = getMessageSenderJid(m, sock);
         db.getSafeUser(jid, async (err, user) => {
             if (err || !user) return sock.sendMessage(m.key.remoteJid, { text: '❌ Error al consultar tu banco.' }, { quoted: m });
 

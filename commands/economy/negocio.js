@@ -1,11 +1,12 @@
-const db = require('../database/db');
+const db = require('../../database/db');
+const { getMessageSenderJid } = require('../../utils/messageSender');
 
 module.exports = {
     name: 'negocio',
     aliases: ['miempresa'],
     description: 'Revisa y cobra las ganancias de tu negocio simulado',
     async execute(sock, m) {
-        const jid = m.key.participant || m.key.remoteJid;
+        const jid = getMessageSenderJid(m, sock);
         const ganancia = Math.floor(Math.random() * 1500) + 500;
 
         db.getSafeUser(jid, async (err, user) => {

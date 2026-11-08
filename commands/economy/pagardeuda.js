@@ -1,11 +1,12 @@
-const db = require('../database/db');
+const db = require('../../database/db');
+const { getMessageSenderJid } = require('../../utils/messageSender');
 
 module.exports = {
     name: 'pagardeuda',
     aliases: ['pagarprestamo'],
     description: 'Paga las cuotas o salda la deuda de tu préstamo',
     async execute(sock, m) {
-        const jid = m.key.participant || m.key.remoteJid;
+        const jid = getMessageSenderJid(m, sock);
         const pago = 2000;
 
         db.getSafeUser(jid, async (err, user) => {

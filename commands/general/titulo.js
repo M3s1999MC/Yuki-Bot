@@ -1,11 +1,12 @@
-const db = require('../database/db');
+const db = require('../../database/db');
+const { getMessageSenderJid } = require('../../utils/messageSender');
 
 module.exports = {
     name: 'titulo',
     aliases: ['settitle', 'tituloperfil'],
     description: 'Establece un título personalizado en tu perfil',
     async execute(sock, m, args) {
-        const jid = m.key.participant || m.key.remoteJid;
+        const jid = getMessageSenderJid(m, sock);
         const titulo = args.join(' ');
         if (!titulo) return sock.sendMessage(m.key.remoteJid, { text: '⚠️ Escribe el título que quieres ponértelo. Ejemplo: `!titulo El Animador Legendario`' }, { quoted: m });
 

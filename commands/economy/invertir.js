@@ -1,11 +1,12 @@
-const db = require('../database/db');
+const db = require('../../database/db');
+const { getMessageSenderJid } = require('../../utils/messageSender');
 
 module.exports = {
     name: 'invertir',
     aliases: ['inversion'],
     description: 'Arriesga parte de tu saldo en un fondo simulado',
     async execute(sock, m, args) {
-        const jid = m.key.participant || m.key.remoteJid;
+        const jid = getMessageSenderJid(m, sock);
         const cantidad = parseInt(args[0]);
         if (isNaN(cantidad) || cantidad <= 0) return sock.sendMessage(m.key.remoteJid, { text: '⚠️ Ingresa una cantidad válida para invertir. Ejemplo: `!invertir 500`' }, { quoted: m });
 
