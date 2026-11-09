@@ -71,15 +71,40 @@ class MessageQueue {
 
 const messageQueue = new MessageQueue();
 
+// Función safeReply con simulación humana (1.2s - 6.3s) y protección para menús largos
 function safeReply(sock, jid, content, options = {}) {
     const formattedContent = typeof content === 'string' ? { text: content } : content;
+    const textStr = formattedContent.text || '';
 
     return new Promise((resolve, reject) => {
         messageQueue.add(async () => {
             try {
+                // 1. Avisamos que estamos "escribiendo..."
+                await sock.presenceSubscribe(jid);
+                await sock.sendPresenceUpdate('composing', jid);
+
+                // 2. Calculamos el retraso aleatorio entre 1.2s (1200ms) y 6.3s (6300ms)
+                const minMs = 1200;
+                const maxMs = 6300;
+                let typingDelay = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
+
+                // Protección para listas o textos muy largos (>250 caracteres):
+                // Si es un menú largo, limitamos el tiempo entre 1.2s y 2s para no hacer esperar al usuario.
+                if (textStr.length > 250) {
+                    typingDelay = Math.floor(Math.random() * 800) + 1200;
+                }
+
+                await sleep(typingDelay);
+
+                // 3. Enviamos el mensaje
                 const result = await sock.sendMessage(jid, formattedContent, options);
+
+                // 4. Pausamos el estado de escritura
+                await sock.sendPresenceUpdate('paused', jid);
+
                 resolve(result);
             } catch (err) {
+                await sock.sendPresenceUpdate('paused', jid).catch(() => {});
                 reject(err);
             }
         });
