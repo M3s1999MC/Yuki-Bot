@@ -249,11 +249,12 @@ button.btn:hover { opacity: 0.9; }
         }
     }
 
-    setTimeout(() => {
+// Solo se recarga sola si estás viendo el QR y pasan 45 segundos
+    setInterval(() => {
         if(document.getElementById('sec-qr').classList.contains('active')) {
             window.location.reload();
         }
-    }, 5000);
+    }, 45000);
 </script>
 </body>
 </html>`);
