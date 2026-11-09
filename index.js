@@ -89,7 +89,6 @@ function safeReply(sock, jid, content, options = {}) {
                 let typingDelay = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
 
                 // Protección para listas o textos muy largos (>250 caracteres):
-                // Si es un menú largo, limitamos el tiempo entre 1.2s y 2s para no hacer esperar al usuario.
                 if (textStr.length > 250) {
                     typingDelay = Math.floor(Math.random() * 800) + 1200;
                 }
@@ -393,7 +392,9 @@ async function startYuki() {
         auth: state,
         logger: pino({ level: 'silent' }),
         browser: ['YukiBot', 'Chrome', '120.0.0'],
-        syncFullHistory: false
+        syncFullHistory: false,
+        connectTimeoutMs: 60000,      // Margen extendido para evitar timeout 408
+        defaultQueryTimeoutMs: 60000  // Evita que las consultas expiren prematuramente
     });
 
     currentSock = sock; // Guardamos el socket activo globalmente para la API web
