@@ -5,7 +5,6 @@ const pino = require('pino');
 const path = require('path');
 const fs = require('fs/promises');
 const { Pool } = require('pg');
-const { timingSafeEqual } = require('crypto');
 const QRCode = require('qrcode');
 const db = require('./database/db'); 
 const gachaDatabaseReady = require('./database/gacha_db');
@@ -25,7 +24,7 @@ const dataDir = process.env.YUKI_DATA_DIR
 
 let currentQr = null;
 let currentQrImage = null;
-let currentSock = null; // <--- Instancia global del socket para el código de 8 dígitos
+let currentSock = null; // Instancia global del socket para el código de 8 dígitos
 let authStatePromise;
 let reconnectTimer;
 let authResetPromise;
@@ -116,38 +115,18 @@ app.get('/api/request-pairing', async (req, res) => {
     }
 });
 
-// Ruta web unificada (/qr) con pestañas para Código QR y Código de 8 Dígitos
+// Ruta web unificada (/qr) SIN CONTRASEÑA y con pestañas (QR / Código de 8 Dígitos)
 app.get('/qr', async (req, res) => {
-    const accessToken = process.env.QR_ACCESS_TOKEN;
-    if (!accessToken || accessToken.length < 32) {
-        return res.status(503).send('Configura QR_ACCESS_TOKEN con al menos 32 caracteres en el entorno del servidor.');
-    }
-
-    const authorization = req.get('authorization') || '';
-    const credentialsMatch = authorization.match(/^Basic\s+([A-Za-z0-9+/]+={0,2})$/i);
-    const credentials = credentialsMatch
-        ? Buffer.from(credentialsMatch[1], 'base64').toString('utf8')
-        : '';
-    const separator = credentials.indexOf(':');
-    const password = Buffer.from(separator === -1 ? '' : credentials.slice(separator + 1));
-    const expectedPassword = Buffer.from(accessToken);
-
-    if (
-        separator === -1
-        || credentials.slice(0, separator) !== 'yuki'
-        || password.length !== expectedPassword.length
-        || !timingSafeEqual(password, expectedPassword)
-    ) {
-        res.set('WWW-Authenticate', 'Basic realm="YukiBot QR", charset="UTF-8"');
-        return res.sendStatus(401);
-    }
-
     res.set({
         'Cache-Control': 'no-store, no-cache, must-revalidate, private',
         'Content-Security-Policy': "default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'",
         'Referrer-Policy': 'no-referrer',
         'X-Content-Type-Options': 'nosniff'
     });
+
+    const qrSectionHtml = currentQrImage 
+        ? `<img src="${currentQrImage}" alt="Código QR de WhatsApp">` 
+        : `<p style="color:#000; padding:2rem 0; font-size:0.9rem;">Cargando QR...</p>`;
 
     res.type('html').send(`<!doctype html>
 <html lang="es">
@@ -191,7 +170,7 @@ button.btn:hover { opacity: 0.9; }
         <p>Abre WhatsApp > Dispositivos vinculados > Vincular dispositivo y escanea.</p>
         <div class="qr-container">
             <div id="qr-box">
-                ${currentQrImage ? `<img src="${currentQrImage}" alt="Código QR de WhatsApp">` : `<p style="color:#000; padding:2rem 0; font-size:0.9rem;">Cargando QR...</p>`}
+                ${qrSectionHtml}
             </div>
         </div>
         <p style="font-size:0.75rem; margin-top:0.5rem;">La página se actualizará sola si el QR expira.</p>
@@ -236,9 +215,9 @@ button.btn:hover { opacity: 0.9; }
             const data = await res.json();
 
             if (res.ok && data.code) {
-                container.innerHTML = \`<div class="code-box">\${data.code}</div><p style="font-size:0.75rem; margin-top:8px; color:var(--muted);">Ingrésalo en WhatsApp > Vincular con número de teléfono.</p>\`;
+                container.innerHTML = '<div class="code-box">' + data.code + '</div><p style="font-size:0.75rem; margin-top:8px; color:var(--muted);">Ingrésalo en WhatsApp > Vincular con número de teléfono.</p>';
             } else {
-                container.innerHTML = \`<div class="error">\${data.error || 'Ocurrió un error'}</div>\`;
+                container.innerHTML = '<div class="error">' + (data.error || 'Ocurrió un error') + '</div>';
             }
         } catch (err) {
             container.innerHTML = '<div class="error">Error de conexión con el servidor.</div>';
@@ -381,7 +360,7 @@ async function startYuki() {
         syncFullHistory: false
     });
 
-    currentSock = sock; // <--- Guardamos el socket activo globalmente para la API web
+    currentSock = sock; // Guardamos el socket activo globalmente para la API web
     const contactNames = new Map();
 
     const cacheContacts = (contacts) => {
@@ -432,7 +411,7 @@ async function startYuki() {
         if (connection === 'close') {
             currentQr = null;
             currentQrImage = null;
-            currentSock = null; // Limpiamos la referencia si se cierra
+            currentSock = null; 
             const statusCode = lastDisconnect?.error?.output?.statusCode;
             
             if (statusCode === DisconnectReason.loggedOut) {
