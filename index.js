@@ -140,17 +140,17 @@ app.get('/api/request-pairing', async (req, res) => {
     }
 });
 
-// Ruta web unificada (/qr) SIN CONTRASEÑA y con pestañas (QR / Código de 8 Dígitos)
+// Ruta web unificada (/qr) SIN CONTRASEÑA, con tarjeta de perfil y SIN RECARGAS AUTOMÁTICAS
 app.get('/qr', async (req, res) => {
     res.set({
         'Cache-Control': 'no-store, no-cache, must-revalidate, private',
-        'Content-Security-Policy': "default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'",
+        'Content-Security-Policy': "default-src 'none'; img-src data: https:; style-src 'unsafe-inline' https:; script-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'",
         'Referrer-Policy': 'no-referrer',
         'X-Content-Type-Options': 'nosniff'
     });
 
     const qrSectionHtml = currentQrImage 
-        ? `<img src="${currentQrImage}" alt="Código QR de WhatsApp">` 
+        ? `<img src="${currentQrImage}" alt="Código QR de WhatsApp" class="qr-code">` 
         : `<p style="color:#000; padding:2rem 0; font-size:0.9rem;">Cargando QR...</p>`;
 
     res.type('html').send(`<!doctype html>
@@ -164,7 +164,15 @@ app.get('/qr', async (req, res) => {
 :root { --bg: #0f1016; --card: #181a24; --pink: #ff75a0; --purple: #c084fc; --text: #FFFDF9; --muted: #a0a5b8; --border: #2a2e3d; }
 body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text); text-align: center; margin: 0; padding: 2rem 1rem; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
 .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; max-width: 420px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-h1 { font-family: 'Quicksand', sans-serif; color: var(--pink); font-size: 1.6rem; margin-bottom: 0.5rem; }
+
+/* Tarjeta de perfil */
+.profile-container { display: flex; align-items: center; background: rgba(255, 117, 160, 0.05); border: 1px solid rgba(255, 117, 160, 0.2); border-radius: 12px; padding: 12px; margin-bottom: 1.5rem; gap: 12px; text-align: left; }
+.profile-pic { width: 55px; height: 55px; border-radius: 50%; object-fit: cover; border: 2px solid var(--pink); box-shadow: 0 0 10px rgba(255, 117, 160, 0.3); }
+.profile-info h3 { font-family: 'Quicksand', sans-serif; margin: 0; font-size: 1.1rem; color: var(--text); }
+.profile-info p { margin: 2px 0 0 0; font-size: 0.75rem; color: var(--pink); display: flex; align-items: center; gap: 5px; }
+.status-dot { width: 8px; height: 8px; background-color: #22c55e; border-radius: 50%; display: inline-block; box-shadow: 0 0 6px #22c55e; }
+
+h1 { font-family: 'Quicksand', sans-serif; color: var(--pink); font-size: 1.5rem; margin-bottom: 0.5rem; }
 p { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.2rem; line-height: 1.4; }
 .tabs { display: flex; gap: 10px; margin-bottom: 1.5rem; background: rgba(0,0,0,0.3); padding: 4px; border-radius: 8px; }
 .tab { flex: 1; background: none; border: none; color: var(--muted); padding: 8px; font-weight: 600; cursor: pointer; border-radius: 6px; font-size: 0.85rem; transition: 0.2s; }
@@ -172,7 +180,7 @@ p { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.2rem; line-height: 
 .section { display: none; }
 .section.active { display: block; }
 .qr-container { background: #fff; padding: 12px; border-radius: 12px; display: inline-block; margin-bottom: 0.5rem; }
-img { width: 100%; max-width: 240px; height: auto; display: block; border-radius: 6px; }
+img.qr-code { width: 100%; max-width: 240px; height: auto; display: block; border-radius: 6px; }
 input { width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 1rem; margin-bottom: 10px; box-sizing: border-box; text-align: center; }
 input:focus { outline: none; border-color: var(--pink); }
 button.btn { background: var(--pink); color: #000; border: none; padding: 12px; width: 100%; font-weight: 600; border-radius: 8px; cursor: pointer; font-size: 0.95rem; transition: 0.2s; }
@@ -183,7 +191,16 @@ button.btn:hover { opacity: 0.9; }
 </head>
 <body>
 <div class="card">
-    <h1>Vincular Yuki-MD 🌸</h1>
+    <!-- Tarjeta de perfil de Yuki -->
+    <div class="profile-container">
+        <img src="https://i.imgur.com/86kcc0x.jpeg" alt="Yuki Avatar" class="profile-pic">
+        <div class="profile-info">
+            <h3>Yuki-MD 🌸</h3>
+            <p><span class="status-dot"></span> Sistema en línea / Listo para vincular</p>
+        </div>
+    </div>
+
+    <h1>Vincular Dispositivo</h1>
     
     <div class="tabs">
         <button class="tab active" onclick="switchTab('qr')">Código QR</button>
@@ -198,7 +215,7 @@ button.btn:hover { opacity: 0.9; }
                 ${qrSectionHtml}
             </div>
         </div>
-        <p style="font-size:0.75rem; margin-top:0.5rem;">La página se actualizará sola si el QR expira.</p>
+        <p style="font-size:0.75rem; margin-top:0.5rem;">Actualiza la página manualmente si el QR expira.</p>
     </div>
 
     <!-- Pestaña Código de 8 Dígitos -->
@@ -248,13 +265,6 @@ button.btn:hover { opacity: 0.9; }
             container.innerHTML = '<div class="error">Error de conexión con el servidor.</div>';
         }
     }
-
-// Solo se recarga sola si estás viendo el QR y pasan 45 segundos
-    setInterval(() => {
-        if(document.getElementById('sec-qr').classList.contains('active')) {
-            window.location.reload();
-        }
-    }, 45000);
 </script>
 </body>
 </html>`);
