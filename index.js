@@ -14,6 +14,7 @@ const { getMessageContent } = require('./utils/messageContent');
 const { getCanonicalMessageCountJid, getMessageSenderJid } = require('./utils/messageSender');
 const { recordGroupMessages } = require('./utils/groupMessageCounter');
 const { createNeonAuthState } = require('./utils/neonAuthState');
+const { createPairingGuard } = require('./utils/pairingGuard');
 
 const express = require('express');
 const app = express();
@@ -120,18 +121,17 @@ app.get('/health', (req, res) => {
 });
 
 // API interna para generar el código de 8 dígitos desde la web
+// Solo funciona mientras Yuki NO está vinculada (requestPairingCode sobrescribe creds.me
+// de la sesión activa y hace que WhatsApp notifique al número indicado). Ver utils/pairingGuard.js
+const pairingGuard = createPairingGuard();
 app.get('/api/request-pairing', async (req, res) => {
-    const phone = req.query.phone;
-    if (!phone || phone.length < 10) {
-        return res.status(400).json({ error: 'Número de teléfono inválido.' });
-    }
-    if (!currentSock) {
-        return res.status(503).json({ error: 'El bot aún no está inicializado. Espera unos segundos.' });
+    const verdict = pairingGuard.check({ sock: currentSock, phone: req.query.phone, ip: req.ip });
+    if (!verdict.ok) {
+        return res.status(verdict.status).json({ error: verdict.error });
     }
 
     try {
-        const cleanPhone = phone.replace(/[^0-9]/g, '');
-        const code = await currentSock.requestPairingCode(cleanPhone);
+        const code = await currentSock.requestPairingCode(verdict.phone);
         res.json({ code });
     } catch (error) {
         console.error('Error al generar código de emparejamiento:', error);
