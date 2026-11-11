@@ -190,6 +190,40 @@ module.exports = {
 > Solicita un préstamo al banco de Yuki
 ✧ !pagardeuda | !pagarprestamo
 > Paga las cuotas o salda la deuda de tu préstamo
+✧ !cofre | !chest
+> Abre un cofre misterioso (cada 24 horas)
+✧ !trivia
+> Responde una pregunta de cultura general y gana monedas y experiencia: !trivia, luego !trivia a|b|c|d
+✧ !alltop | !tops
+> Ver los primeros puestos de todos los rankings en un solo mensaje
+✧ !hitos | !elogros | !metas [@usuario]
+> Insignias por llegar a ciertas cantidades de dinero
+✧ !esperas | !cooldowns | !espera [@usuario]
+> Ver el tiempo de espera de todos los comandos de economía
+✧ !allw | !todostrabajos
+> Reclamar todos los trabajos disponibles (respeta cada espera)
+✧ !espiar | !espia
+> Espionaje, riesgo de ser descubierto (cada 1 hora)
+✧ !explorar | !investigar
+> Exploración, ganancia media-alta (cada 1 hora y 30 minutos)
+✧ !influencer | !tiktoker
+> Contenido viral, buena ganancia con riesgo de fracaso (cada 2 horas)
+✧ !mazmorra | !castillo
+> Máximo riesgo, máxima recompensa (cada 2 horas)
+✧ !migajear | !limosna | !ayudas
+> Pedir ayudas, ganancia mínima pero rápida (cada 30 minutos)
+✧ !niñero | !ninero | !cuidador
+> Cuidado de niños, pago alto con riesgo de descuido (cada 1 hora)
+✧ !superalbañil | !superalbanil | !albañil | !albanil
+> Construcción pesada, la mejor paga (cada 3 horas)
+✧ !uber | !conductor
+> Conducción de viajes, riesgo de choques y multas (cada 45 minutos)
+✧ !vendedor | !ambulante
+> Ventas ambulantes, ganancia pequeña pero segura (cada 30 minutos)
+✧ !youtuber | !cc
+> Contenido en YouTube, buena ganancia (cada 2 horas)
+✧ !bombardear | !bomb [país]
+> Lanza una lluvia de confeti sobre un país (hay 193): puedes ganar dinero o perder y pagar los daños (cada 30 minutos)
 
 » ˚୨•(🌸)• ⊹ Gacha ⊹
 ✧ !roll | !rw | !rollwaifu | !waifu
