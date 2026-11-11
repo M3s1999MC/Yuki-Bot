@@ -54,7 +54,7 @@ module.exports = {
 > Consulta a la bola mágica una pregunta de Sí/No
 ✧ !chiste | !joke
 > Envía un chiste aleatorio para romper el hielo en el grupo
-✧ !frase | !quote | !consejo
+✧ !frase | !consejo
 > Muestra un pensamiento aleatorio o un consejo
 ✧ !ruletarusa | !shot
 > Prueba tu suerte con un castigo ficticio e inofensivo
@@ -370,6 +370,8 @@ module.exports = {
 > Ver el estado del bot
 ✧ !suggest | !sug | !report | !reporte
 > Envía una sugerencia o reporte a los owners del bot
+✧ !pruebacolor
+> Prueba los estilos de formato de texto
 
 » ˚୨•(🌸)• ⊹ Otros ⊹
 ✧ !autolearn | !autoaprendizaje
