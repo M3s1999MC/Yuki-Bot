@@ -7,7 +7,7 @@ module.exports = {
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
 
-        const menuHeader = `꧁༺ 𝐇𝐨λ𝐚! 𝐒𝐨𝐲 𝓨𝓾𝓴𝓲 ༻꧂\nᴀǫᴜɪ ᴛɪᴇɴᴇs ʟᴀ ʟɪsᴛᴀ ᴅᴇ ᴄₒᴍᴀɴᴅₒs\n╭┈ ↷\n│ ✐ 𝓓𝓮𝔀𝓮𝓵𝓸𝓹𝓮𝓭 𝓫𝔂 Inkra Studios 🌸\n│ ✐ ꒷ꕤ💎 𝐂𝐚𝐧𝐚λ 𝐎𝐟𝐢𝐜𝐢𝐚λ ෴\n│ https://whatsapp.com/channel/0029Vb9AOpk9WtC12RHEEj0Y\n╰─────────────────\n\n`;
+        const menuHeader = `꧁༺ 𝐇𝐨λ𝐚! 𝐒𝐨𝐲 𝓨𝓾𝓴𝓲 ༻꧂\nᴀǫᴜɪ ᴛɪᴇɴᴇs ʟᴀ ʟɪsᴛᴀ ᴅᴇ ᴄₒᴍᴀɴᴅₒs\n╭┈ ↷\n│ ✐ 𝓓𝓮𝔀𝓮𝓵𝓸𝓹𝓮𝓭 𝓫𝔂 Inkra Studios 🌸\n│ ✐ ꒷ꕤ💎 𝐂𝐚𝐧𝐚λ 𝐎𝐟𝐢𝐜𝐢𝐚λ ෴\n│ https://whatsapp.com/channel/0029Vb9AOpk9WtC12RHEEj0Y\n │ ✐ 𝓓𝓮𝔀𝓮𝓵𝓸𝓹𝓮𝓭 𝓫𝔂 Inkra Studios 🌸\n│ ✐ ꒷ꕤ💎 𝐂𝐚𝐧𝐚λ Patrocinado ෴\n│ https://whatsapp.com/channel/0029Vb92LdaCnA7rdqUbdw38\n╰─────────────────\n\n`;
 
         const menuBody = `» ˚୨•(🌸)• ⊹ Perfil ⊹
 ✧ !profile | !perfil
