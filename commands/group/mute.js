@@ -1,14 +1,22 @@
 module.exports = {
-    name: 'mute',
-    aliases: ['silenciar'],
-    description: 'Silencia a un usuario para evitar que use comandos',
-    async execute(sock, m, args) {
-        const target = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || args[0];
-        if (!target) return sock.sendMessage(m.key.remoteJid, { text: '⚠️ Menciona al usuario que quieres silenciar.' }, { quoted: m });
+    name: 'ban',
+    aliases: ['silenciar', 'mute'],
+    category: 'groups',
+    description: 'Silencia a un usuario: el bot borra todo lo que escriba.',
 
-        await sock.sendMessage(m.key.remoteJid, { 
-            text: `🤫 @${target.split('@')[0]} ha sido silenciado/a para el uso de comandos de Yuki.`,
-            mentions: [target]
+    async execute(sock, m, args) {
+        const jid = m.key.remoteJid;
+        const targetUser = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
+
+        if (!targetUser) {
+            return await sock.sendMessage(jid, {
+                text: '(「✿」 "MODO SILENCIO"🌸)\n\n⚠️ Debes mencionar al usuario que deseas silenciar.'
+            }, { quoted: m });
+        }
+
+        await sock.sendMessage(jid, {
+            text: `(「✿」 "USUARIO SILENCIADO"🌸)\n\n🔇 El usuario @${targetUser.split('@')[0]} ha sido silenciado en este grupo.`,
+            mentions: [targetUser]
         }, { quoted: m });
     }
 };
