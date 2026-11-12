@@ -1,636 +1,503 @@
-require('./utils/loadEnv')();
+module.exports = {
+    name: 'menu',
+    aliases: ['help', 'ayuda', 'commands'],
+    category: 'general',
+    description: 'Muestra el menú principal y la lista completa de comandos disponibles de Yuki.',
 
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
-const pino = require('pino');
-const path = require('path');
-const fs = require('fs/promises');
-const { Pool } = require('pg');
-const QRCode = require('qrcode');
-const db = require('./database/db'); 
-const gachaDatabaseReady = require('./database/gacha_db');
-const CommandHandler = require('./handlers/commandHandler');
-const practiceSessions = require('./utils/practiceSessions');
-const { getMessageContent } = require('./utils/messageContent');
-const { getCanonicalMessageCountJid, getMessageSenderJid } = require('./utils/messageSender');
-const { recordGroupMessages } = require('./utils/groupMessageCounter');
-const { createNeonAuthState } = require('./utils/neonAuthState');
-const { createPairingGuard } = require('./utils/pairingGuard');
+    async execute(sock, m, args) {
+        const jid = m.key.remoteJid;
 
-const express = require('express');
-const app = express();
-const port = process.env.PORT || 8000;
-const dataDir = process.env.YUKI_DATA_DIR
-    ? path.resolve(process.env.YUKI_DATA_DIR)
-    : __dirname;
+        const menuHeader = `꧁༺ 𝐇𝐨λ𝐚! 𝐒𝐨𝐲 𝓨𝓾𝓴𝓲 ༻꧂\nᴀǫᴜɪ ᴛɪᴇɴᴇs ʟᴀ ʟɪsᴛᴀ ᴅᴇ cₒᴍᴀɴᴅₒs\n╭┈ ↷\n│ ✐ 𝓓𝓮𝔀𝓮𝓵𝓸𝓹𝓮𝓭 𝓫𝔂 𝓘𝓷𝓴𝓻𝓪 𝓢𝓽𝓾𝓭𝓲𝓸𝓼 🌸\n│ ✐ ꒷ꕤ💎 𝓒𝓪𝓷𝓪𝓵 𝐎𝐟𝐢𝐜𝐢𝐚𝓵 ෴\n│ https://whatsapp.com/channel/0029Vb9AOpk9WtC12RHEEj0Y\n│ ✐ 𝓓𝓮𝔀𝓮𝓵𝓸𝓹𝓮𝓭 𝓫𝔂 𝙳𝓾𝚟𝓪𝚕𝓲𝓷 🌸\n│ ✐ ꒷ꕤ💎 𝓒𝓪𝓷𝓪𝓵 𝓟𝓪𝓽𝓻𝓸𝓬𝓲𝓷𝓪𝓭𝓸 ෴\n│ https://whatsapp.com/channel/0029Vb92LdaCnA7rdqUbdw38\n╰─────────────────\n\n`;
 
-let currentQr = null;
-let currentQrImage = null;
-let currentSock = null; // Instancia global del socket para el código de 8 dígitos
-let authStatePromise;
-let reconnectTimer;
-let authResetPromise;
+        const menuBody = `» ˚୨•(🌸)• ⊹ Perfil ⊹
+✧ !profile | !perfil
+> Muestra tu perfil o el de un usuario
+✧ !level | !lvl
+> Muestra tu nivel y experiencia actual
+✧ !lboard | !lb | !xptop
+> Top de usuarios con más experiencia
+✧ !marry | !casarse
+> Cásate con alguien mencionándolo o respondiendo a su mensaje
+✧ !divorce | !divorciarse
+> Divorciarte de tu pareja
+✧ !setbirth
+> Establece tu fecha de cumpleaños
+✧ !delbirth
+> Borra tu fecha de cumpleaños
+✧ !setdesc | !setdescription
+> Establece tu descripción de perfil
+✧ !deldesc | !deldescription
+> Elimina tu descripción de perfil
+✧ !sethobby | !setpasatiempo
+> Establece tu pasatiempo
+✧ !delhobby | !delpasatiempo | !removehobby
+> Elimina tu pasatiempo del perfil
+✧ !setgenre
+> Establece tu género
+✧ !delgenre
+> Elimina tu género del perfil
 
-// --- SISTEMA DE COLA Y DELAY ALEATORIO PARA PROTECCIÓN CONTRA SPAM ---
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+» ˚୨•(🌸)• ⊹ Perfil (Nuevos) ⊹
+✧ !boda | !bodas
+> Muestra los detalles y tiempo de tu matrimonio actual
+✧ !intereses | !gustos
+> Establece una lista de gustos en tu perfil
+✧ !delintereses | !quitargustos
+> Elimina los intereses de tu perfil
+✧ !titulo | !settitle
+> Establece un título personalizado arriba de tu nombre
+✧ !deltitulo | !deltitle
+> Elimina tu título personalizado de perfil
 
-const getRandomDelay = (min = 1500, max = 3500) => {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-};
+» ˚୨•(🌸)• ⊹ Random ⊹
+✧ !8ball | !pregunta | !duda
+> Consulta a la bola mágica una pregunta de Sí/No
+✧ !chiste | !joke
+> Envía un chiste aleatorio para romper el hielo en el grupo
+✧ !frase | !consejo
+> Muestra un pensamiento aleatorio o un consejo
+✧ !ruletarusa | !shot
+> Prueba tu suerte con un castigo ficticio e inofensivo
+✧ !hack | !hackear
+> Simula de forma cómica y falsa el hackeo de un usuario mencionado
+✧ !dado
+> Lanza un dado; puedes indicar entre 2 y 100 caras
+✧ !f
+> Envía un respetuoso mensaje rindiendo homenaje
+✧ !taza | !café | !mate
+> Invita una bebida caliente a otro usuario
+✧ !confesion | !confesar
+> Genera una confesión absurda o vergonzosa al azar
+✧ !funar | !funa
+> Inventa una razón cómica para funar a un usuario
+✧ !maldicion | !hex
+> Lanza una maldición inofensiva y chistosa a alguien del grupo
+✧ !sueldo | !salario
+> Revela tu sueldo imaginario basado en tu comportamiento en el chat
+✧ !iq | !cerebro
+> Mide tu IQ del día con un comentario sarcástico
+✧ !futuro | !destino
+> Predice tu vida en 10 años de forma absurda
+✧ !compatibilidad | !shipbot
+> Mide qué tan compatible eres hoy con Yuki
+✧ !cantar | !letra
+> Lanza una frase o verso aleatorio de una canción
 
-class MessageQueue {
-    constructor() {
-        this.queue = [];
-        this.processing = false;
-    }
+» ˚୨•(🌸)• ⊹ Grupo ⊹
+✧ !promote | !promover | !admin
+> Asciende a un usuario como administrador del grupo (mencionalo o responde su mensaje)
+✧ !demote | !degradar
+> Desciende a un usuario de administrador del grupo (mencionalo o responde su mensaje)
+✧ !bot | !botgc | !onbot
+> Activa o desactiva al bot en este grupo.
+✧ !clear
+> Limpia las claims (waifus) de usuarios inactivos en el grupo.
+✧ !close | !cerrar
+> Cierra el grupo para que solo los administradores puedan enviar mensajes.
+✧ !open | !abrir
+> Abre el grupo para que todos puedan enviar mensajes.
+✧ !link | !enlace | !invite
+> Obtiene el enlace de invitación del grupo.
+✧ !count | !mensajes | !messages | !msgcount
+> Obtiene el conteo de mensajes de un usuario en este grupo.
+✧ !topcount | !topmensajes | !topmsgcount | !topmessages
+> Ver el top de usuarios con más mensajes en el grupo.
+✧ !groupinfo | !gp | !infogrupo | !infogc
+> Muestra información del grupo.
+✧ !kick | !ban | !bang | !expulsar
+> Expulsa a un usuario del grupo. Admite modos especiales: num, listnum, all, inactive, listinactive.
+✧ !hidetag | !tag | !etiquetar
+> Envía un mensaje o multimedia mencionando en silencio a todos los usuarios del grupo.
+✧ !tagall | !todos | !invocar
+> Envía un mensaje mencionando a todos los usuarios del grupo.
+✧ !warn | !advertir
+> Advierte a un usuario del grupo (mencionalo o responde su mensaje). Expulsa automáticamente al llegar al límite.
+✧ !delwarn | !eliminaradvertencia
+> Elimina una advertencia de un miembro del grupo (o todas con "all").
+✧ !listwarn | !warnings | !advertencias
+> Muestra las advertencias registradas de un usuario del grupo.
+✧ !setwarnlimit | !warnlimit | !limiteadvertencias
+> Configura cuántas advertencias tolera el grupo antes de expulsar automáticamente.
+✧ !welcome | !bienvenida
+> Activa o desactiva el mensaje de bienvenida para nuevos miembros.
+✧ !setwelcome | .setbienvenida
+> Establece un mensaje de bienvenida personalizado para el grupo.
+✧ !setwelcomeimg | !setbienvenidaimg | !welcomeimg | !setwelcomegif
+> Establece una imagen o gif personalizado para la bienvenida del grupo.
+✧ !testwelcome | !probarbienvenida | !previewwelcome
+> Muestra un ejemplo de cómo se ve la bienvenida actual del grupo.
+✧ !goodbye | !despedida | !bye
+> Activa o desactiva el mensaje de despedida cuando alguien sale del grupo.
+✧ !setgoodbye | !setdespedida
+> Establece un mensaje de despedida personalizado para el grupo.
+✧ !setgpdesc | !descripciongrupo | !setdescripciongrupo
+> Cambia la descripción del grupo.
+✧ !setgpname | !nombregrupo | !setnombregrupo
+> Cambia el nombre del grupo.
+✧ !setgpbanner | !setgpimage | !fotogrupo | !setfotogrupo
+> Cambia la foto de perfil del grupo.
+✧ !antilink | !antienlace | !antilinks
+> Activa o desactiva la eliminación automática de enlaces de otros grupos o canales.
+✧ !adminonly | !soloadmin | !onlyadmin | !modoadmin
+> Activa o desactiva el modo Solo Admins: solo los administradores del grupo podrán usar el bot.
+✧ !inactivos | !listainactivos
+> Muestra la lista de miembros inactivos según los días elegidos
+✧ !topactivos | !topmensajessemana
+> Muestra el top de miembros más activos de la semana
+✧ !mute | !silenciar
+> Silencia a un usuario para que no pueda usar comandos de Yuki
+✧ !unmute | !desilenciar
+> Le devuelve los permisos de uso de comandos a un usuario
 
-    add(task) {
-        this.queue.push(task);
-        this.process();
-    }
+» ˚୨•(🌸)• ⊹ Economía ⊹
+✧ !balance | !bal | !saldo
+> Muestra tu saldo (billetera y banco)
+✧ !daily
+> Reclama tu recompensa diaria
+✧ !apostar <cantidad> | !ruleta <cantidad> | !bet <cantidad>
+> Juega contra el bot: 50 % de ganar el doble o perder lo apostado
+✧ !apostar @usuario <cantidad>
+> Reta a otro jugador; debe aceptar el duelo
+✧ !duelo @usuario <cantidad>
+> Desafía a un usuario; debe responder al reto con !aceptar o !rechazar
+✧ !weekly
+> Reclama tu recompensa semanal
+✧ !monthly
+> Reclama tu recompensa mensual
+✧ !work | !trabajar
+> Trabaja para ganar dinero
+✧ !crime | !crimen
+> Comete un crimen para ganar dinero (con riesgo)
+✧ !rob | !robar
+> Intenta robarle a otro usuario (mencionalo o responde su mensaje)
+✧ !deposit | !depositar | !dep
+> Deposita dinero de tu billetera al banco
+✧ !withdraw | !retirar | !wd
+> Retira dinero del banco a tu billetera
+✧ !transfer | !transferir | !pay | !dar
+> Transfiere dinero a otro usuario (mencionalo o responde su mensaje)
+✧ !leaderboard | !top | !ranking
+> Muestra a los usuarios más ricos
+✧ !tienda | !shop
+> Compra objetos como tickets de captura
+✧ !banco | !bank
+> Revisa el estado detallado e intereses de tu cuenta bancaria
+✧ !invertir | !inversion
+> Arriesga parte de tu saldo en un fondo de inversión simulado
+✧ !negocio | !miempresa
+> Revisa y cobra las ganancias de tu negocio simulado
+✧ !prestamo | !prestar
+> Solicita un préstamo al banco de Yuki
+✧ !pagardeuda | !pagarprestamo
+> Paga las cuotas o salda la deuda de tu préstamo
+✧ !cofre | !chest
+> Abre un cofre misterioso (cada 24 horas)
+✧ !trivia
+> Responde una pregunta de cultura general y gana monedas y experiencia: !trivia, luego !trivia a|b|c|d
+✧ !alltop | !tops
+> Ver los primeros puestos de todos los rankings en un solo mensaje
+✧ !hitos | !elogros | !metas [@usuario]
+> Insignias por llegar a ciertas cantidades de dinero
+✧ !esperas | !cooldowns | !espera [@usuario]
+> Ver el tiempo de espera de todos los comandos de economía
+✧ !allw | !todostrabajos
+> Reclamar todos los trabajos disponibles (respeta cada espera)
+✧ !espiar | !espia
+> Espionaje, riesgo de ser descubierto (cada 1 hora)
+✧ !explorar | !investigar
+> Exploración, ganancia media-alta (cada 1 hora y 30 minutos)
+✧ !influencer | !tiktoker
+> Contenido viral, buena ganancia con riesgo de fracaso (cada 2 horas)
+✧ !mazmorra | !castillo
+> Máximo riesgo, máxima recompensa (cada 2 horas)
+✧ !migajear | !limosna | !ayudas
+> Pedir ayudas, ganancia mínima pero rápida (cada 30 minutos)
+✧ !niñero | !ninero | !cuidador
+> Cuidado de niños, pago alto con riesgo de descuido (cada 1 hora)
+✧ !superalbañil | !superalbanil | !albañil | !albanil
+> Construcción pesada, la mejor paga (cada 3 horas)
+✧ !uber | !conductor
+> Conducción de viajes, riesgo de choques y multas (cada 45 minutos)
+✧ !vendedor | !ambulante
+> Ventas ambulantes, ganancia pequeña pero segura (cada 30 minutos)
+✧ !youtuber | !cc
+> Contenido en YouTube, buena ganancia (cada 2 horas)
+✧ !bombardear | !bomb [país]
+> Lanza una lluvia de confeti sobre un país (hay 193): puedes ganar dinero o perder y pagar los daños (cada 30 minutos)
 
-    async process() {
-        if (this.processing) return;
-        this.processing = true;
+» ˚୨•(🌸)• ⊹ Gacha ⊹
+✧ !roll | !rw | !rollwaifu | !waifu
+> Tira un personaje de la lista seleccionada con la imagen que configuró el dueño
+✧ !rollcatalog | !catalogoroll
+> Muestra los personajes seleccionados que todavía necesitan imagen
+✧ !genchar | !generar | !genrandom
+> Genera un personaje original con IA o añade uno al catálogo
+✧ !claim | !c | !reclamar
+> Reclama el personaje de un roll citado
+✧ !harem | !waifus | !claims
+> Muestra los personajes reclamados de un usuario
+✧ !principal | !setmain | !waifuprincipal | !setfav | !setfavourite
+> Marca uno de tus personajes reclamados como tu principal
+✧ !waifusboard | !waifustop | !topwaifus | !wtop
+> Muestra el top de personajes con mayor valor
+✧ !vote | !votar
+> Vota por un personaje para subir su valor
+✧ !trade | !intercambiar
+> Intercambia un personaje reclamado con otro usuario del chat
+✧ !setclaimmsg | !setclaim
+> Modifica el mensaje que se envía al reclamar un personaje
+✧ !serielist | !slist | !animelist
+> Lista las series disponibles en el gacha
+✧ !serieinfo | !ainfo | !animeinfo
+> Muestra información y personajes de una serie
+✧ !charimage | !waifuimage | !cimage | !wimage
+> Muestra una imagen aleatoria de un personaje del catálogo
+✧ !sell | !vender
+> Pone en venta un personaje reclamado para que otros lo compren
+✧ !buychar | !buyc | !buycharacter | !comprar
+> Compra un personaje puesto en venta en el chat
+✧ !wshop | !haremshop | !tiendawaifus
+> Muestra los personajes puestos en venta en el chat
+✧ !removesale | !removerventa
+> Elimina un personaje que pusiste en venta
+✧ !gachainfo | !ginfo | !infogacha
+> Muestra tu información y cooldowns de gacha
+✧ !givechar | !givewaifu | !regalar
+> Regala un personaje reclamado a otro usuario
+✧ !giveallharem
+> Regala todos tus personajes reclamados a otro usuario
+✧ !deletewaifu | !delchar | !delwaifu
+> Elimina un personaje reclamado de tu harem
+✧ !deletefav | !delfav
+> Quita tu personaje favorito/principal
+✧ !charinfo | !winfo | !waifuinfo
+> Muestra información detallada de un personaje
+✧ !favboard | !favtop | !favoritetop
+> Muestra el top de personajes favoritos del chat
+✧ !delclaimmsg | !resetclaimmsg
+> Restablece el mensaje al reclamar un personaje
+✧ !atrapar | !catch | !usarticket
+> Usa un ticket para intentar atrapar un personaje libre por su ID
+✧ !serie | !series | !catalogo | !idlist | !personajes
+> Lista las series o los personajes (con ID) de una serie
+
+ ˚୨•(🌸)• ⊹ Descargas ⊹
+✧ !pinterest | !pin | !pinsearch
+> Busca y envía una imagen de Pinterest con la búsqueda pública
+✧ !tiktoksearch | !ttsearch | !ttbuscar
+> Busca un video de TikTok por texto (requiere TIKTOK_SEARCH_API_URL)
+✧ !ytsearch | !ytbuscar | !yts
+> Busca videos en YouTube por texto
+✧ !facebook | !fb | !facebookdl | !fbdl
+> Descarga un video de Facebook
+✧ !instagram | !ig | !igdl | !instadl
+> Descarga fotos o videos de Instagram
+✧ !play | !yta | !ytmp3 | !playdoc | !play2 | !ytv | !ytmp4 | !play2doc | !playaudio | !mp4
+> Busca y descarga audio o video de YouTube
+✧ !tiktok | !tt | !tiktokdl | !ttdl
+> Descarga un video de TikTok desde un enlace
+✧ !tiktokmp3 | !ttmp3 | !tiktokaudio
+> Descarga el audio de un video de TikTok en formato mp3
+✧ !twitter | !x | !xdl | !dlx | !twdl | !tw | !twt
+> Descarga un video o imagen de Twitter/X»
+
+» ˚୨•(🌸)• ⊹ Stickers ⊹
+✧ !setmeta | !setstickermeta
+> Establece el pack y autor por defecto para tus stickers
+✧ !delmeta | !delstickermeta
+> Restablece el pack y autor por defecto para tus stickers
+✧ !brat
+> Crea un sticker estilo brat con texto
+✧ !bratv
+> Crea un video-sticker estilo brat
+✧ !wm | !take
+> Cambia el nombre del pack y autor de un sticker citado
+✧ !emojimix | !mix
+> Fusiona dos emojis en un nuevo sticker
+✧ !qc | !quote
+> Transforma un texto citado en una tarjeta de sticker tipo frase
+✧ !circle | !redondo
+> Convierte una imagen en un sticker circular
+
+» ˚୨•(🌸)• ⊹ Utilidades ⊹
+✧ !chatgpt | !ia
+> Realiza peticiones a ChatGPT
+✧ !getpic | !pfp
+> Ver la foto de perfil de un usuario
+✧ !hd | !enhance | !remini
+> Mejora la calidad de una imagen
+✧ !toimg | !toimage
+> Convierte un sticker en imagen o video
+✧ !say | !decir
+> Repite un mensaje o multimedia como el bot
+✧ !rizz | !comorespondo | !respuesta | !sugerencia
+> Sugiere 3 respuestas para un mensaje, captura o texto que citás/pegás, en el tono que elijas
+✧ !opener | !abridor | !apertura
+> Genera 3 mensajes de apertura para iniciar una conversación, según la bio o descripción que le des
+✧ !practicar | !practice | !entrenar
+> Inicia una conversación de práctica con una IA que actúa como un match, para entrenar tu forma de ligar
+✧ !guardar | !guardarfrase
+> Guarda una de las últimas sugerencias de !rizz u !opener en tu biblioteca
+✧ !biblioteca | !misfrases | !library
+> Muestra tus frases guardadas, o borra una con !biblioteca borrar <número>
+✧ !clima | !weather
+> Consulta el estado del tiempo en cualquier ciudad
+✧ !traducir | !tr
+> Traduce un texto o mensaje citado a otro idioma
+✧ !calc | !calcular
+> Realiza cálculos y operaciones matemáticas rápidas
+✧ !encuesta | !poll
+> Genera una encuesta rápida para que el grupo vote
+
+» ˚୨•(🌸)• ⊹ Sub-Bot ⊹
+✧ !serbot | !jadibot | !subbot | !code
+> Vincula tu propio sub-bot (gratis, sin token)
+✧ !misubbot | !mivinculo | !mibot
+> Muestra el estado de tu sub-bot
+✧ !desvincular | !unlink | !delsub
+> Desvincula tu sub-bot y borra su sesión
+✧ !subbots | !listarbots | !listbots
+> Lista todos los sub-bots vinculados
+✧ !bots | !sockets
+> Ver el número de bots activos
+✧ !numdebug | !jiddebug | !debugnum
+> Muestra los campos crudos del JID del remitente (para depurar detección de números)
+✧ !join | !unir
+> Une al bot a un grupo mediante un enlace de invitación
+✧ !leave | !salir
+> Hace que el bot salga de un grupo
+✧ !logout
+> Cierra la sesión del Sub-Bot actual y borra sus datos
+✧ !reload
+> Reinicia la conexión de tu Sub-Bot
+✧ !self
+> Hace privado o público al bot (modo Self)
+✧ !setbanner | !setbotbanner
+> Cambia el banner del menú
+✧ !setcurrency | !setbotcurrency
+> Cambia el nombre de la moneda del bot
+✧ !seticon | !setboticon
+> Cambia el ícono (foto de perfil) del bot
+✧ !setname | !setbotname
+> Cambia el nombre del bot
+✧ !setprefix | !setbotprefix
+> Cambia el prefijo del bot
+✧ !setusername
+> Cambia el nombre de usuario de WhatsApp del bot
+✧ !setstatus
+> Cambia el estado (about) de WhatsApp del bot
+
+» ˚୨•(🌸)• ⊹ General ⊹
+✧ !afk | !ausente
+> Activa el modo ausente (AFK)
+✧ !ping | !p
+> Muestra la latencia del bot
+✧ !menu | !help | !ayuda
+> Muestra el listado de comandos disponibles
+✧ !baileys
+> Muestra la librería Baileys que usa Yuki
+✧ !info | !about
+> Información sobre el bot
+✧ !infobot | !botinfo
+> Obtener información del bot
+✧ !status | !estado
+> Ver el estado del bot
+✧ !suggest | !sug | !report | !reporte
+> Envía una sugerencia o reporte a los owners del bot
+✧ !pruebacolor
+> Prueba los estilos de formato de texto
+
+» ˚୨•(🌸)• ⊹ Otros ⊹
+✧ !autolearn | !autoaprendizaje
+> Ver el estado del proceso automático de generación de conocimiento
+✧ !cmdtoggle | !togglecmd
+> Activa o desactiva un comando del bot
+✧ !gitpull | !gitsync | !updatetoken
+> Actualiza el token de GitHub en el remoto y descarga los últimos cambios del repositorio
+✧ !botones | !btn | !buttons
+> Muestra un ejemplo de menú con botones interactivos
+✧ !setprimary | !botprincipal | !setbot
+> Designa qué instancia de bot responde en este grupo
+✧ !delprimary | !unsetprimary | !quitarprimary | !delbotprincipal
+> Quita el bot primario asignado en este grupo
+✧ !resetsession | !fixsession | !resyncsession
+> Borra la sesión de Signal con un contacto para forzar un handshake nuevo
+✧ !revoke | !restablecer
+> Restablece el enlace de invitación del grupo.
+✧ !apistatus | !apis | !checkapis | !tiktokapis | !ytapis
+> Verifica el estado de las APIs de TikTok y YouTube (descarga/búsqueda)
+✧ !dlp | !dlpa | !dlpv | !ytdlp | !apidl
+> Prueba la descarga de la API con yt-dlp por link o buscando por nombre (audio o video)
+✧ !minar | !mine | !mina
+> Baja a la mina y consigue minerales (¡con suerte, raros!)
+✧ !minerales | !mochila | !inventario | !ores
+> Muestra los minerales que tienes o el catálogo con probabilidades
+✧ !venderminerales | !vendermin | !vendertodo | !sellores
+> Vende todos tus minerales (o solo uno si lo indicas)
+✧ !suerte | !luck | !gachaluck
+> Revisa el historial de tiradas de un usuario y decide si el bot interviene dándole un personaje (owner/mods)
+✧ !sticker | !s
+> Convierte una imagen, video, gif, sticker o URL en sticker, con formas y efectos opcionales
+✧ !mistralstatus | !mistral | !iamistral | !testmistral
+> Verifica si la API de Mistral AI responde (señal, latencia y errores)
+✧ !iastatus | !apisia | !checkia | !iaapis | !estadoia
+> Prueba todas las APIs de IA (Gemini, Mistral, Groq, OpenRouter y respaldo) y muestra cuáles responden
+✧ !setpic | !setavatar | !setperfilpic
+> Establece la imagen o gif de tu perfil
+✧ !delpic | !delavatar
+> Borra la imagen o gif de tu perfil
+
+» ˚୨•(🌸)• ⊹ Acciones ⊹
+✧ !hug | !abrazar
+> Abraza a otro usuario
+✧ !kiss | !besar
+> Besa a otro usuario
+✧ !pat | !darpalmada
+> Da una palmada a otro usuario
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+
+        const fullMenuText = menuHeader + menuBody;
 
         try {
-            while (this.queue.length > 0) {
-                const task = this.queue.shift();
-
-                try {
-                    const delay = getRandomDelay(1500, 3500);
-                    await sleep(delay);
-                    await task();
-                } catch (error) {
-                    console.error("[MessageQueue Error]:", error);
-                }
-            }
-        } finally {
-            this.processing = false;
-        }
-    }
-}
-
-const messageQueue = new MessageQueue();
-
-// Función safeReply con simulación humana (1.2s - 6.3s) y protección para menús largos
-function safeReply(sock, jid, content, options = {}) {
-    const formattedContent = typeof content === 'string' ? { text: content } : content;
-    const textStr = formattedContent.text || '';
-
-    return new Promise((resolve, reject) => {
-        messageQueue.add(async () => {
-            try {
-                // 1. Avisamos que estamos "escribiendo..."
-                await sock.presenceSubscribe(jid);
-                await sock.sendPresenceUpdate('composing', jid);
-
-                // 2. Calculamos el retraso aleatorio entre 1.2s (1200ms) y 6.3s (6300ms)
-                const minMs = 1200;
-                const maxMs = 6300;
-                let typingDelay = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
-
-                // Protección para listas o textos muy largos (>250 caracteres):
-                if (textStr.length > 250) {
-                    typingDelay = Math.floor(Math.random() * 800) + 1200;
-                }
-
-                await sleep(typingDelay);
-
-                // 3. Enviamos el mensaje
-                const result = await sock.sendMessage(jid, formattedContent, options);
-
-                // 4. Pausamos el estado de escritura
-                await sock.sendPresenceUpdate('paused', jid);
-
-                resolve(result);
-            } catch (err) {
-                await sock.sendPresenceUpdate('paused', jid).catch(() => {});
-                reject(err);
-            }
-        });
-    });
-}
-// ---------------------------------------------------------------------
-
-app.get('/', (req, res) => {
-    res.send('Yuki Bot está activo.');
-});
-
-app.get('/health', (req, res) => {
-    res.status(200).type('text/plain').send('ok');
-});
-
-// API interna para generar el código de 8 dígitos desde la web
-// Solo funciona mientras Yuki NO está vinculada (requestPairingCode sobrescribe creds.me
-// de la sesión activa y hace que WhatsApp notifique al número indicado). Ver utils/pairingGuard.js
-const pairingGuard = createPairingGuard();
-app.get('/api/request-pairing', async (req, res) => {
-    const verdict = pairingGuard.check({ sock: currentSock, phone: req.query.phone, ip: req.ip });
-    if (!verdict.ok) {
-        return res.status(verdict.status).json({ error: verdict.error });
-    }
-
-    try {
-        const code = await currentSock.requestPairingCode(verdict.phone);
-        res.json({ code });
-    } catch (error) {
-        console.error('Error al generar código de emparejamiento:', error);
-        res.status(500).json({ error: 'No se pudo generar el código. Intenta de nuevo.' });
-    }
-});
-
-// Ruta web unificada (/qr) SIN CONTRASEÑA, con tarjeta de perfil y SIN RECARGAS AUTOMÁTICAS
-app.get('/qr', async (req, res) => {
-    res.set({
-        'Cache-Control': 'no-store, no-cache, must-revalidate, private',
-        'Content-Security-Policy': "default-src 'none'; img-src data: https:; style-src 'unsafe-inline' https:; script-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'",
-        'Referrer-Policy': 'no-referrer',
-        'X-Content-Type-Options': 'nosniff'
-    });
-
-    const qrSectionHtml = currentQrImage 
-        ? `<img src="${currentQrImage}" alt="Código QR de WhatsApp" class="qr-code">` 
-        : `<p style="color:#000; padding:2rem 0; font-size:0.9rem;">Cargando QR...</p>`;
-
-    res.type('html').send(`<!doctype html>
-<html lang="es">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Vincular Yuki-MD | StarLight Studios</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Quicksand:wght@700&display=swap" rel="stylesheet">
-<style>
-:root { --bg: #0f1016; --card: #181a24; --pink: #ff75a0; --purple: #c084fc; --text: #FFFDF9; --muted: #a0a5b8; --border: #2a2e3d; }
-body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text); text-align: center; margin: 0; padding: 2rem 1rem; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
-.card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; max-width: 420px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-
-/* Tarjeta de perfil */
-.profile-container { display: flex; align-items: center; background: rgba(255, 117, 160, 0.05); border: 1px solid rgba(255, 117, 160, 0.2); border-radius: 12px; padding: 12px; margin-bottom: 1.5rem; gap: 12px; text-align: left; }
-.profile-pic { width: 55px; height: 55px; border-radius: 50%; object-fit: cover; border: 2px solid var(--pink); box-shadow: 0 0 10px rgba(255, 117, 160, 0.3); }
-.profile-info h3 { font-family: 'Quicksand', sans-serif; margin: 0; font-size: 1.1rem; color: var(--text); }
-.profile-info p { margin: 2px 0 0 0; font-size: 0.75rem; color: var(--pink); display: flex; align-items: center; gap: 5px; }
-.status-dot { width: 8px; height: 8px; background-color: #22c55e; border-radius: 50%; display: inline-block; box-shadow: 0 0 6px #22c55e; }
-
-h1 { font-family: 'Quicksand', sans-serif; color: var(--pink); font-size: 1.5rem; margin-bottom: 0.5rem; }
-p { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.2rem; line-height: 1.4; }
-.tabs { display: flex; gap: 10px; margin-bottom: 1.5rem; background: rgba(0,0,0,0.3); padding: 4px; border-radius: 8px; }
-.tab { flex: 1; background: none; border: none; color: var(--muted); padding: 8px; font-weight: 600; cursor: pointer; border-radius: 6px; font-size: 0.85rem; transition: 0.2s; }
-.tab.active { background: var(--pink); color: #000; }
-.section { display: none; }
-.section.active { display: block; }
-.qr-container { background: #fff; padding: 12px; border-radius: 12px; display: inline-block; margin-bottom: 0.5rem; }
-img.qr-code { width: 100%; max-width: 240px; height: auto; display: block; border-radius: 6px; }
-input { width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 1rem; margin-bottom: 10px; box-sizing: border-box; text-align: center; }
-input:focus { outline: none; border-color: var(--pink); }
-button.btn { background: var(--pink); color: #000; border: none; padding: 12px; width: 100%; font-weight: 600; border-radius: 8px; cursor: pointer; font-size: 0.95rem; transition: 0.2s; }
-button.btn:hover { opacity: 0.9; }
-.code-box { background: rgba(192, 132, 252, 0.1); border: 1px dashed var(--purple); padding: 15px; border-radius: 8px; font-size: 1.8rem; font-family: monospace; color: var(--purple); letter-spacing: 3px; margin-top: 15px; font-weight: bold; word-break: break-all; }
-.error { color: #ff6b6b; font-size: 0.85rem; margin-top: 8px; }
-</style>
-</head>
-<body>
-<div class="card">
-    <!-- Tarjeta de perfil de Yuki -->
-    <div class="profile-container">
-        <img src="https://i.imgur.com/86kcc0x.jpeg" alt="Yuki Avatar" class="profile-pic">
-        <div class="profile-info">
-            <h3>Yuki-MD 🌸</h3>
-            <p><span class="status-dot"></span> Sistema en línea / Listo para vincular</p>
-        </div>
-    </div>
-
-    <h1>Vincular Dispositivo</h1>
-    
-    <div class="tabs">
-        <button class="tab active" onclick="switchTab('qr')">Código QR</button>
-        <button class="tab" onclick="switchTab('code')">Código de 8 Dígitos</button>
-    </div>
-
-    <!-- Pestaña QR -->
-    <div id="sec-qr" class="section active">
-        <p>Abre WhatsApp > Dispositivos vinculados > Vincular dispositivo y escanea.</p>
-        <div class="qr-container">
-            <div id="qr-box">
-                ${qrSectionHtml}
-            </div>
-        </div>
-        <p style="font-size:0.75rem; margin-top:0.5rem;">Actualiza la página manualmente si el QR expira.</p>
-    </div>
-
-    <!-- Pestaña Código de 8 Dígitos -->
-    <div id="sec-code" class="section">
-        <p>Introduce tu número con código de país (ej: 573001234567) sin símbolos.</p>
-        <input type="text" id="phoneInput" placeholder="Ej: 573001234567">
-        <button class="btn" onclick="requestPairingCode()">Obtener Código</button>
-        <div id="resultContainer"></div>
-    </div>
-</div>
-
-<script>
-    function switchTab(tab) {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        
-        if(tab === 'qr') {
-            document.querySelectorAll('.tab')[0].classList.add('active');
-            document.getElementById('sec-qr').classList.add('active');
-        } else {
-            document.querySelectorAll('.tab')[1].classList.add('active');
-            document.getElementById('sec-code').classList.add('active');
-        }
-    }
-
-    async function requestPairingCode() {
-        const phone = document.getElementById('phoneInput').value.trim();
-        const container = document.getElementById('resultContainer');
-        
-        if (!phone) {
-            container.innerHTML = '<div class="error">Por favor escribe un número válido.</div>';
-            return;
-        }
-
-        container.innerHTML = '<p style="margin-top:10px; color:var(--muted);">Generando código...</p>';
-
-        try {
-            const res = await fetch('/api/request-pairing?phone=' + encodeURIComponent(phone));
-            const data = await res.json();
-
-            if (res.ok && data.code) {
-                container.innerHTML = '<div class="code-box">' + data.code + '</div><p style="font-size:0.75rem; margin-top:8px; color:var(--muted);">Ingrésalo en WhatsApp > Vincular con número de teléfono.</p>';
-            } else {
-                container.innerHTML = '<div class="error">' + (data.error || 'Ocurrió un error') + '</div>';
-            }
-        } catch (err) {
-            container.innerHTML = '<div class="error">Error de conexión con el servidor.</div>';
-        }
-    }
-</script>
-</body>
-</html>`);
-});
-
-app.listen(port, () => {
-    console.log(`Servidor de Yuki escuchando en el puerto ${port}`);
-});
-
-// 🛡️ ESCUDO GLOBAL
-process.on('uncaughtException', (err) => {
-    console.error('⚠️ [Protector] Error crítico interceptado (El bot sigue en línea):', err.message);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-    console.error('⚠️ [Protector] Promesa rechazada no manejada:', reason);
-});
-
-const handler = new CommandHandler();
-const PREFIX = '!';
-
-async function loadAuthState() {
-    if (!authStatePromise) {
-        authStatePromise = (async () => {
-            if (!process.env.DATABASE_URL) {
-                console.warn('⚠️ DATABASE_URL no está configurada; la sesión se guardará en el disco local.');
-                const sessionPath = path.join(dataDir, 'sessions', 'main');
-                const authState = await useMultiFileAuthState(sessionPath);
-                return {
-                    ...authState,
-                    resetAuthState: async () => {
-                        await fs.rm(sessionPath, { recursive: true, force: true });
-                    }
-                };
-            }
-
-            if (!process.env.YUKI_AUTH_ENCRYPTION_KEY) {
-                throw new Error('Configura YUKI_AUTH_ENCRYPTION_KEY junto con DATABASE_URL.');
-            }
-
-            let databaseUrl;
-            try {
-                databaseUrl = new URL(process.env.DATABASE_URL);
-            } catch {
-                throw new Error('DATABASE_URL no es una URL válida.');
-            }
-
-            const pool = new Pool({
-                connectionString: process.env.DATABASE_URL,
-                ssl: { rejectUnauthorized: true },
-                max: 5,
-                connectionTimeoutMillis: 10000
-            });
-
-            try {
-                const authState = await createNeonAuthState(pool, process.env.YUKI_AUTH_ENCRYPTION_KEY);
-                console.log('✅ Sesión de WhatsApp cargada desde PostgreSQL persistente.');
-                return authState;
-            } catch (error) {
-                await pool.end().catch(closeError => {
-                    console.error('Error cerrando la conexión de Neon:', closeError.message);
-                });
-                throw error;
-            }
-        })();
-    }
-
-    try {
-        return await authStatePromise;
-    } catch (error) {
-        authStatePromise = null;
-        throw error;
-    }
-}
-
-function scheduleReconnect() {
-    if (reconnectTimer) return;
-    reconnectTimer = setTimeout(() => {
-        reconnectTimer = null;
-        startYuki().catch(error => {
-            console.error('❌ No se pudo restablecer la conexión de Yuki:', error.message);
-            scheduleReconnect();
-        });
-    }, 4000);
-}
-
-function resetLoggedOutSession() {
-    if (authResetPromise) return authResetPromise;
-
-    authResetPromise = (async () => {
-        const authState = await loadAuthState();
-        await authState.resetAuthState();
-        if (!process.env.DATABASE_URL) {
-            authStatePromise = null;
-        }
-        console.log('✅ Sesión revocada eliminada. Se solicitará un QR nuevo.');
-        scheduleReconnect();
-    })().catch(error => {
-        console.error('❌ No se pudo limpiar la sesión revocada:', error.message);
-        process.exit(1);
-    }).finally(() => {
-        authResetPromise = null;
-    });
-
-    return authResetPromise;
-}
-
-async function startYuki() {
-    console.log('📂 Cargando sesión de Yuki...');
-    if (db.ready) {
-        await db.ready;
-        console.log('✅ Datos del bot conectados a Neon.');
-    }
-    await gachaDatabaseReady;
-    
-    const { state, saveCreds } = await loadAuthState();
-    const hasRegisteredSession = Boolean(state.creds.registered && state.creds.me?.id);
-
-    if (hasRegisteredSession) {
-        console.log('✅ Se encontró una sesión de WhatsApp previamente vinculada.');
-    } else {
-        console.log('ℹ️ No hay una sesión vinculada guardada. El primer QR debe escanearse una vez.');
-    }
-    
-    const sock = makeWASocket({
-        auth: state,
-        logger: pino({ level: 'silent' }),
-        browser: ['YukiBot', 'Chrome', '120.0.0'],
-        syncFullHistory: false,
-        connectTimeoutMs: 60000,      // Margen extendido para evitar timeout 408
-        defaultQueryTimeoutMs: 60000  // Evita que las consultas expiren prematuramente
-    });
-
-    currentSock = sock; // Guardamos el socket activo globalmente para la API web
-    const contactNames = new Map();
-
-    const cacheContacts = (contacts) => {
-        for (const contact of contacts || []) {
-            const name = [contact.name, contact.notify, contact.verifiedName]
-                .find(value => typeof value === 'string' && value.trim() && value.trim() !== 'Usuario');
-            if (!name) continue;
-
-            const ids = [contact.id, contact.lid, contact.phoneNumber]
-                .filter(value => typeof value === 'string' && value.trim())
-                .map(value => value.includes('@') ? value : `${value}@s.whatsapp.net`);
-            for (const id of ids) contactNames.set(id, name.trim());
-            db.updateContactName(contact);
-        }
-    };
-
-    sock.ev.on('contacts.upsert', cacheContacts);
-    sock.ev.on('contacts.update', cacheContacts);
-
-    sock.ev.on('connection.update', async (update) => {
-        const { connection, lastDisconnect, qr } = update;
-        
-        if (qr) {
-            if (hasRegisteredSession) {
-                currentQr = null;
-                currentQrImage = null;
-                console.warn('⚠️ WhatsApp solicita un QR aunque hay una sesión guardada.');
-            } else {
-                if (qr !== currentQr || !currentQrImage) {
-                    currentQr = qr;
-                    currentQrImage = null;
-                    try {
-                        const qrImage = await QRCode.toDataURL(qr, {
-                            errorCorrectionLevel: 'H',
-                            margin: 4,
-                            width: 360
-                        });
-                        if (currentQr === qr) currentQrImage = qrImage;
-                    } catch (error) {
-                        if (currentQr === qr) currentQr = null;
-                        console.error('❌ No se pudo preparar el QR:', error.message);
-                    }
-                }
-                console.log('📱 QR o vinculación disponible en /qr.');
-            }
-        }
-
-        if (connection === 'close') {
-            currentQr = null;
-            currentQrImage = null;
-            currentSock = null; 
-            const statusCode = lastDisconnect?.error?.output?.statusCode;
+            const imageUrl = 'https://i.pinimg.com/736x/c7/52/42/c752425496a914f6e1e0a58da246fe20.jpg';
             
-            if (statusCode === DisconnectReason.loggedOut) {
-                console.warn('⚠️ WhatsApp revocó la sesión guardada.');
-                resetLoggedOutSession();
-                return;
-            }
-
-            if (statusCode === DisconnectReason.connectionReplaced) {
-                console.error('❌ WhatsApp reemplazó esta conexión (código 440).');
-                return;
-            }
-
-            console.log(`🔄 Conexión cerrada (Código: ${statusCode}). Reconectando en 4 segundos...`);
-            scheduleReconnect();
-        } else if (connection === 'open') {
-            if (reconnectTimer) {
-                clearTimeout(reconnectTimer);
-                reconnectTimer = null;
-            }
-            currentQr = null;
-            currentQrImage = null;
-            console.log(`\n⚡ ¡YUKI ESTÁ ONLINE Y CONECTADA! Prefijo activo: ${PREFIX}\n`);
-        }
-    });
-
-    let credentialSaveQueue = Promise.resolve();
-    sock.ev.on('creds.update', () => {
-        credentialSaveQueue = credentialSaveQueue.then(async () => {
-            for (let attempt = 1; attempt <= 3; attempt += 1) {
-                try {
-                    await saveCreds();
-                    return;
-                } catch (error) {
-                    if (attempt === 3) throw error;
-                    await new Promise(resolve => setTimeout(resolve, attempt * 1000));
-                }
-            }
-        }).catch(error => {
-            console.error('❌ No se pudieron guardar las credenciales:', error.message);
-            process.exit(1);
-        });
-    });
-
-    sock.ev.on('group-participants.update', async (update) => {
-        if (!['add', 'remove'].includes(update.action)) return;
-        db.getSafeGroup(update.id, async (err, settings) => {
-            if (err) return;
-
-            const isWelcome = update.action === 'add';
-            const enabled = isWelcome ? settings.welcome_enabled : settings.goodbye_enabled;
-            if (!enabled) return;
-
-            for (const participant of update.participants || []) {
-                const textTemplate = isWelcome ? settings.welcome_text : settings.goodbye_text;
-                const text = (textTemplate || (isWelcome ? '¡Bienvenid@ al grupo! 🌸' : 'Hasta luego... 👋'))
-                    .replace(/@user/g, `@${participant.split('@')[0]}`);
-                try {
-                    if (isWelcome && settings.welcome_image) {
-                        await safeReply(sock, update.id, {
-                            image: { url: settings.welcome_image },
-                            caption: text,
-                            mentions: [participant]
-                        });
-                    } else {
-                        await safeReply(sock, update.id, { text, mentions: [participant] });
-                    }
-                } catch (sendErr) {
-                    console.error('Error al enviar mensaje de bienvenida/despedida:', sendErr);
-                }
-            }
-        });
-    });
-
-    sock.ev.on('messages.upsert', async ({ messages }) => {
-        await recordGroupMessages(db, sock, messages);
-    });
-
-    sock.ev.on('messages.upsert', async ({ messages }) => {
-        const m = messages[0];
-        if (!m.message) return;
-
-        const sender = getMessageSenderJid(m, sock);
-        if (!sender) return;
-
-        const initialText = m.message?.conversation || m.message?.extendedTextMessage?.text || '';
-        const isAfkCommand = /^!(?:afk|ausente)(?:\s|$)/i.test(initialText);
-        const contactName = contactNames.get(sender)
-            || contactNames.get(m.key.participantAlt)
-            || contactNames.get(m.key.remoteJidAlt);
-        db.recordMessageActivity(
-            sender,
-            contactName || m.pushName,
-            {
-                incrementExp: !m.key.fromMe,
-                clearAfk: !m.key.fromMe && !isAfkCommand
-            },
-            err => { if (err) console.error('Error al registrar actividad:', err.message); }
-        );
-
-        if (!m.key.fromMe) {
-            const mentionedJids = m.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
-            for (const mentionedJid of mentionedJids) {
-                db.get(`SELECT afk_reason, afk_since FROM users WHERE jid = ? AND afk_since IS NOT NULL`, [mentionedJid], async (err, afkUser) => {
-                    if (err || !afkUser) return;
-                    const elapsed = Math.max(0, Date.now() - afkUser.afk_since);
-                    const minutes = Math.floor(elapsed / 60000);
-                    const away = minutes < 60 ? `${minutes} min` : `${Math.floor(minutes / 60)} h`;
-                    await safeReply(sock, m.key.remoteJid, {
-                        text: `「✿」 @${mentionedJid.split('@')[0]} está ausente desde hace ${away}.\nMotivo: ${afkUser.afk_reason || 'Sin motivo'} 💤`,
-                        mentions: [mentionedJid]
-                    }, { quoted: m });
-                });
-            }
-        }
-
-        const msgContent = getMessageContent(m.message);
-        const messageType = Object.keys(msgContent)[0];
-        const body = messageType === 'conversation' ? msgContent.conversation :
-                     messageType === 'extendedTextMessage' ? msgContent.extendedTextMessage.text : 
-                     messageType === 'imageMessage' ? msgContent.imageMessage.caption :
-                     messageType === 'videoMessage' ? msgContent.videoMessage.caption : '';
-
-        if (!body || typeof body !== 'string') return;
-
-        if (m.key.remoteJid.endsWith('@g.us') && /(?:chat\.whatsapp\.com\/|whatsapp\.com\/channel\/)/i.test(body)) {
-            db.getSafeGroup(m.key.remoteJid, async (settingsErr, settings) => {
-                if (settingsErr || !settings.antilink) return;
-
-                try {
-                    const metadata = await sock.groupMetadata(m.key.remoteJid);
-                    const participant = metadata.participants.find(item =>
-                        [item.id, item.jid, item.lid, item.phoneNumber].filter(Boolean).includes(sender)
-                    );
-                    if (participant?.admin) return;
-                    await sock.sendMessage(m.key.remoteJid, { delete: m.key });
-                    await safeReply(sock, m.key.remoteJid, {
-                        text: `「✿」 @${sender.split('@')[0]}, eliminé el enlace de invitación publicado. 🌸`,
-                        mentions: [sender]
-                    }, { quoted: m });
-                } catch (antilinkErr) {
-                    console.error('Error al moderar enlace:', antilinkErr);
+            const res = await fetch(imageUrl, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
                 }
             });
-        }
 
-        if (!m.key.fromMe && !m.key.remoteJid.endsWith('@g.us') && !body.startsWith(PREFIX) && practiceSessions.sessions.has(sender)) {
-            const replyText = practiceSessions.respond(body, practiceSessions.sessions.get(sender));
-            await safeReply(sock, m.key.remoteJid, { text: `「✿」 ${replyText}` }, { quoted: m });
-            return;
-        }
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
-        if (!body.startsWith(PREFIX)) return;
-        const usedPrefix = PREFIX;
+            const imageBuffer = Buffer.from(await res.arrayBuffer());
 
-        const args = body.slice(usedPrefix.length).trim().split(/ +/);
-        const command = args.shift().toLowerCase();
+            // 1. Envía el menú principal con imagen y texto citando al usuario
+            await sock.sendMessage(jid, {
+                image: imageBuffer,
+                caption: fullMenuText
+            }, { quoted: m });
 
-        console.log(`📥 [Comando recibido]: ${command} de @${sender.split('@')[0]}`);
+            // 2. Intenta descargar y enviar la burbuja circular de TikTok
+            const tiktokUrl = "https://www.tiktok.com/@reicol_/video/7608383703986801921";
+            const apiRes = `https://api.tikwm.com/api/?url=${encodeURIComponent(tiktokUrl)}`;
+            const jsonResp = await fetch(apiRes).then(r => r.json());
+            const videoDownloadUrl = jsonResp.data?.play;
 
-        try {
-            const ctx = {
-                sock,
-                m,
-                msg: m,
-                body,
-                usedPrefix,
-                command,
-                args,
-                sender,
-                reply: (content, options) => safeReply(sock, m.key.remoteJid, content, { quoted: m, ...options })
-            };
+            if (videoDownloadUrl) {
+                const vidRes = await fetch(videoDownloadUrl);
+                const videoBuffer = Buffer.from(await vidRes.arrayBuffer());
 
-            await handler.handle(sock, m, body, usedPrefix, command, args, ctx);
+                await sock.sendMessage(jid, {
+                    video: videoBuffer,
+                    ptv: true
+                }, { quoted: m });
+            }
+
         } catch (err) {
-            console.error(`❌ Error ejecutando el comando '${command}':`, err);
-            await safeReply(sock, m.key.remoteJid, { text: '❌ Ocurrió un error interno al procesar este comando.' }, { quoted: m });
+            // Si falla algo (como la API de TikTok), solo lo registramos en consola 
+            // y EVITAMOS mandar otro menú para que no se duplique nada.
+            console.error('⚠️ Error al cargar la nota de video de TikTok en el menú:', err.message);
         }
-    });
-}
-
-startYuki().catch(error => {
-    console.error('❌ No se pudo iniciar Yuki:', error);
-    process.exit(1);
-});
+    }
+};
