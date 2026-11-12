@@ -1,75 +1,54 @@
-const db = require('../../database/db');
-const duelCommand = require('./duelo');
-const { getMessageContent } = require('../../utils/messageContent');
-const { getMessageSenderJid } = require('../../utils/messageSender');
-
 module.exports = {
-    name: 'apostar',
-    aliases: ['bet', 'ruleta'],
+    name: 'apuesta',
+    aliases: ['casino', 'bet'],
     category: 'economy',
-    description: 'Apuesta contra el bot o reta a otro jugador si lo mencionas.',
+    description: 'Apuesta en el casino: ganas un porcentaje extra o pierdes solo una parte.',
 
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
-        const sender = getMessageSenderJid(m, sock);
-        const content = getMessageContent(m.message);
-        const context = content.extendedTextMessage?.contextInfo || {};
-        const mentionedJids = context.mentionedJid || [];
+        const input = args[0]?.toLowerCase();
 
-        if (mentionedJids.length) {
-            return duelCommand.execute(sock, m, args);
-        }
+        // Simulación de saldo actual en billetera (conectar a Neon/Postgres)
+        const saldoActual = 5000;
 
-        if (args.some(arg => arg.startsWith('@'))) {
-            return sock.sendMessage(jid, {
-                text: '「✿」 Para retar a un jugador, menciónalo correctamente: !apostar @usuario <cantidad>.'
+        if (!input) {
+            return await sock.sendMessage(jid, {
+                text: '🎰 *CASINO DE YUKI*\n\nIndica cuánto quieres apostar.\n*Uso:* `!apuesta <cantidad|todo>`'
             }, { quoted: m });
         }
 
-        if (args.length !== 1 || !/^\d+$/.test(args[0])) {
-            return sock.sendMessage(jid, {
-                text: '「✿」 Usa !apostar <cantidad> o !ruleta <cantidad> para jugar contra el bot. Para retar a alguien: !apostar @usuario <cantidad>.'
-            }, { quoted: m });
-        }
-        const amount = Number(args[0]);
-        if (!Number.isSafeInteger(amount) || amount <= 0) {
-            return sock.sendMessage(jid, {
-                text: '「✿」 Indica una cantidad entera positiva. Ejemplo: !apostar 50'
-            }, { quoted: m });
+        const monto = input === 'todo' ? saldoActual : parseInt(input);
+
+        if (isNaN(monto) || monto <= 0) {
+            return await sock.sendMessage(jid, { text: '⚠️ Ingresa una cantidad válida mayor a 0.' }, { quoted: m });
         }
 
-        db.getSafeUser(sender, (ensureErr, user) => {
-            if (ensureErr) {
-                console.error('Error al preparar cuenta para apuesta:', ensureErr.message);
-                return sock.sendMessage(jid, { text: '「✿」 No pude consultar tu billetera.' }, { quoted: m });
-            }
+        if (monto > saldoActual) {
+            return await sock.sendMessage(jid, { text: `❌ No tienes suficiente dinero en tu billetera (Saldo: ¥${saldoActual.toLocaleString()}).` }, { quoted: m });
+        }
 
-            if ((Number(user.wallet) || 0) < amount) {
-                return sock.sendMessage(jid, { text: '「✿」 No tienes suficiente saldo en la billetera para esa apuesta.' }, { quoted: m });
-            }
+        const gano = Math.random() >= 0.48; // 52% de probabilidad de ganar
 
-            const won = Math.random() < 0.5;
-            const maxWallet = Number.MAX_SAFE_INTEGER - amount;
-            const query = won
-                ? 'UPDATE users SET wallet = wallet + ? WHERE jid = ? AND wallet >= 0 AND wallet <= ?'
-                : 'UPDATE users SET wallet = wallet - ? WHERE jid = ? AND wallet >= ?';
-            const params = won
-                ? [amount, sender, maxWallet]
-                : [amount, sender, amount];
+        if (gano) {
+            // Gana entre el 30% y el 80% extra de lo apostado
+            const porcentaje = Math.floor(Math.random() * 51) + 30;
+            const ganancia = Math.floor(monto * (porcentaje / 100));
 
-            db.run(query, params, function(updateErr) {
-                if (updateErr || !this.changes) {
-                    if (updateErr) console.error('Error al procesar apuesta:', updateErr.message);
-                    return sock.sendMessage(jid, {
-                        text: '「✿」 No se pudo procesar la apuesta. Puede que tu saldo haya cambiado; consulta !balance e inténtalo de nuevo.'
-                    }, { quoted: m });
-                }
+            await sock.sendMessage(jid, {
+                text: `🎰 *¡GANASTE EN EL CASINO!* 🎰\n\n` +
+                      `📈 Multiplicador: *+${porcentaje}%*\n` +
+                      `💰 Ganancia neta: *+¥${ganancia.toLocaleString()}*`
+            }, { quoted: m });
+        } else {
+            // Solo pierde entre el 40% y el 70% de lo apostado
+            const porcentajePerdida = Math.floor(Math.random() * 31) + 40;
+            const perdida = Math.floor(monto * (porcentajePerdida / 100));
 
-                const result = won
-                    ? `「✿」 ¡Ganaste! 🎉 Duplicaste tu apuesta de *$${amount.toLocaleString('es-CO')}*.`
-                    : `「✿」 Esta vez perdiste. 🎲 Se descontaron *$${amount.toLocaleString('es-CO')}* de tu billetera.`;
-                sock.sendMessage(jid, { text: result }, { quoted: m });
-            });
-        });
+            await sock.sendMessage(jid, {
+                text: `📉 *MALA RACHA EN EL CASINO* 📉\n\n` +
+                      `🛡️ Lograste rescatar parte de tu apuesta, pero perdiste el *${porcentajePerdida}%*.\n` +
+                      `💸 Pérdida: *-¥${perdida.toLocaleString()}*`
+            }, { quoted: m });
+        }
     }
 };
