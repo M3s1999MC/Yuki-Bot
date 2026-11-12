@@ -3,58 +3,39 @@ const { getMessageSenderJid } = require('../../utils/messageSender');
 
 module.exports = {
     name: 'marry',
-    aliases: ['casarse'],
-    category: 'general',
-    description: 'Cásate con alguien mencionándolo o respondiendo a su mensaje.',
+    aliases: ['casar'],
+    category: 'profile',
+    description: 'Proponerle matrimonio a otro usuario.',
 
     async execute(sock, m) {
         const jid = m.key.remoteJid;
         const sender = getMessageSenderJid(m, sock);
-        const context = m.message?.extendedTextMessage?.contextInfo;
-        const target = context?.mentionedJid?.[0] || context?.participant;
-        if (!target) {
-            return sock.sendMessage(jid, { text: '「✿」 Menciona o responde a la persona con quien quieres casarte.' }, { quoted: m });
-        }
-        if (target === sender) {
-            return sock.sendMessage(jid, { text: '「✿」 No puedes casarte contigo mismo.' }, { quoted: m });
+        const target = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
+
+        if (!target || target === sender) {
+            return await sock.sendMessage(jid, { 
+                text: '「✿」 PROPUESTA DE MATRIMONIO 🌸\n\n⚠️ Debes mencionar al usuario con quien deseas casarte.' 
+            }, { quoted: m });
         }
 
-        db.getSafeUser(sender, (senderErr, currentUser) => {
-            if (senderErr) {
-                console.error('Error al registrar usuario para matrimonio:', senderErr.message);
-                return sock.sendMessage(jid, { text: '「✿」 No pude preparar tu perfil.' }, { quoted: m });
+        db.getSafeUser(sender, (err, senderData) => {
+            if (err || senderData.married) {
+                return sock.sendMessage(jid, { 
+                    text: '「✿」 MATRIMONIO 🌸\n\n❌ Ya estás casado/a con otra persona o ocurrió un error.' 
+                }, { quoted: m });
             }
-            if (currentUser.married && !currentUser.married.startsWith('Nadie')) {
-                return sock.sendMessage(jid, { text: '「✿」 Ya tienes pareja; primero debes usar !divorce.' }, { quoted: m });
-            }
-            db.getSafeUser(target, (targetErr, targetUser) => {
-                if (targetErr) {
-                    console.error('Error al registrar pareja:', targetErr.message);
-                    return sock.sendMessage(jid, { text: '「✿」 No pude preparar el perfil de la otra persona.' }, { quoted: m });
-                }
-                if (targetUser.married && !targetUser.married.startsWith('Nadie')) {
-                    return sock.sendMessage(jid, { text: '「✿」 Esa persona ya tiene pareja.' }, { quoted: m });
+
+            db.getSafeUser(target, (errTarget, targetData) => {
+                if (errTarget || targetData.married) {
+                    return sock.sendMessage(jid, { 
+                        text: '「✿」 MATRIMONIO 🌸\n\n❌ El usuario mencionado ya está casado con alguien más.' 
+                    }, { quoted: m });
                 }
 
-                db.run(`UPDATE users SET married = ? WHERE jid = ?`, [target, sender], (firstErr) => {
-                    if (firstErr) {
-                        console.error('Error al actualizar matrimonio:', firstErr.message);
-                        return sock.sendMessage(jid, { text: '「✿」 No se pudo registrar el matrimonio.' }, { quoted: m });
-                    }
-                    db.run(`UPDATE users SET married = ? WHERE jid = ?`, [sender, target], (secondErr) => {
-                        if (secondErr) {
-                            console.error('Error al actualizar pareja del matrimonio:', secondErr.message);
-                            db.run(`UPDATE users SET married = 'Nadie 💔' WHERE jid = ?`, [sender], (rollbackErr) => {
-                                if (rollbackErr) console.error('Error al revertir matrimonio incompleto:', rollbackErr.message);
-                            });
-                            return sock.sendMessage(jid, { text: '「✿」 No se pudo completar el matrimonio.' }, { quoted: m });
-                        }
-                        sock.sendMessage(jid, {
-                            text: `「✿」 ¡@${sender.split('@')[0]} y @${target.split('@')[0]} ahora son pareja! 💍🌸`,
-                            mentions: [sender, target]
-                        }, { quoted: m });
-                    });
-                });
+                sock.sendMessage(jid, {
+                    text: `「✿」 ¡PROPUESTA ENVIADA! 🌸\n\n💍 @${sender.split('@')[0]} le ha propuesto matrimonio a @${target.split('@')[0]}! 💕`,
+                    mentions: [sender, target]
+                }, { quoted: m });
             });
         });
     }
