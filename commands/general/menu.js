@@ -499,7 +499,7 @@ module.exports = {
         // 2. Envía la nota de video circular de manera independiente para que no afecte al menú si falla
         try {
             await sock.sendMessage(jid, {
-                video: { url: "https://files.catbox.moe/17632cd49caafe0bf15f8c8243ed9308.mp4" },
+                video: { url: "https://files.catbox.moe/xeqb64.mp4" },
                 ptv: true
             }, { quoted: m });
         } catch (videoErr) {
