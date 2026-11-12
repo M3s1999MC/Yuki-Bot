@@ -1,34 +1,18 @@
-const economy = require('../../utils/economy');
-const missions = require('../../utils/missions');
-const { reply, senderJid } = require('../../utils/commandHelpers');
-
 module.exports = {
     name: 'emisiones',
-    aliases: ['misioneseconomia', 'misioneseco', 'tareas'],
+    aliases: ['misioneseconomia', 'tareas'],
     category: 'economy',
-    description: 'Misiones diarias de economía con recompensas: !emisiones [cobrar]',
+    description: 'Consulta y cobra tus misiones diarias y fijas de economía.',
 
     async execute(sock, m, args) {
-        try {
-            const jid = senderJid(m, sock);
-            const wantsClaim = ['cobrar', 'reclamar', 'claim'].includes(String((args || [])[0] || '').toLowerCase());
-            let header = '';
-            if (wantsClaim) {
-                const claimed = await missions.claimAll(jid);
-                const total = claimed.reduce((sum, item) => sum + item.reward, 0);
-                header = claimed.length
-                    ? `🎉 Cobraste *${economy.money(total)}* y ${claimed.reduce((sum, item) => sum + item.exp, 0)} XP.\n\n`
-                    : 'No tienes misiones completas por cobrar todavía.\n\n';
-            }
-            const list = await missions.status(jid);
-            const lines = list.map(item => {
-                const mark = item.claimed ? '✅ cobrada' : item.done ? '🎁 lista para cobrar' : `${item.progress}/${item.goal}`;
-                return `• ${item.label} — ${mark}\n   Premio: ${economy.money(item.reward)} + ${item.exp} XP`;
-            });
-            return reply(sock, m, `「✿」 📋 *Misiones diarias de economía*\n\n${header}${lines.join('\n')}\n\nCobra las completas con *!emisiones cobrar*. Se reinician a medianoche (hora de Colombia).`);
-        } catch (error) {
-            console.error('Error en !emisiones:', error.message);
-            return reply(sock, m, '「✿」 No pude consultar las misiones; inténtalo de nuevo en un momento.');
-        }
+        const jid = m.key.remoteJid;
+
+        const texto = `📋 *MISIONES DIARIAS DE ECONOMÍA* 📋\n\n` +
+                      `1. 🪙 *Ahorrador:* Deposita 3 veces al banco (0/3) - Recompensa: ¥1,000\n` +
+                      `2. ⛏️ *Minero Activo:* Usa el comando .minar 2 veces (0/2) - Recompensa: ¥1,500\n` +
+                      `3. 🎰 *Apostador:* Guega 1 vez en la ruleta o dado (0/1) - Recompensa: ¥2,000\n\n` +
+                      `💡 *Uso:* Escribe \`!emisiones cobrar\` para reclamar tus recompensas listas.`;
+
+        await sock.sendMessage(jid, { text: texto }, { quoted: m });
     }
 };
