@@ -1,137 +1,583 @@
-'use strict';
+require('./utils/loadEnv')();
 
-const {
-    default: makeWASocket,
-    useMultiFileAuthState,
-    DisconnectReason,
-    fetchLatestBaileysVersion,
-    makeCacheableSignalKeyStore
-} = require('@whiskeysockets/baileys');
-const { Boom } = require('@hapi/boom');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
 const pino = require('pino');
-const fs = require('fs');
 const path = require('path');
+const fs = require('fs/promises');
+const { Pool } = require('pg');
+const { timingSafeEqual } = require('crypto');
+const QRCode = require('qrcode');
+const db = require('./database/db'); 
+const gachaDatabaseReady = require('./database/gacha_db');
+const CommandHandler = require('./handlers/commandHandler');
+const practiceSessions = require('./utils/practiceSessions');
+const { getMessageContent } = require('./utils/messageContent');
+const { getCanonicalMessageCountJid, getMessageSenderJid } = require('./utils/messageSender');
+const { recordGroupMessages } = require('./utils/groupMessageCounter');
+const { createNeonAuthState } = require('./utils/neonAuthState');
+const { pick, frases } = require('./utils/personality');
+
 const express = require('express');
-
-// --- 1. CONFIGURACIÓN DEL SERVIDOR WEB (EXPRESS PARA RENDER) ---
 const app = express();
-const PORT = process.env.PORT || 3000;
+const port = process.env.PORT || 8000;
+const dataDir = process.env.YUKI_DATA_DIR
+    ? path.resolve(process.env.YUKI_DATA_DIR)
+    : __dirname;
+let currentQr = null;
+let currentQrImage = null;
+let authStatePromise;
+let reconnectTimer;
+let authResetPromise;
 
-app.get('/', (req, res) => {
-    res.send('🌸 ¡YukiBot-MD está activo, conectado y funcionando correctamente! 🚀');
-});
+// --- COLA DE ENVÍO CON CONTROL DE VELOCIDAD ---
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-app.listen(PORT, () => {
-    console.log(`🌐 Servidor HTTP web escuchando en el puerto ${PORT}`);
-});
+const getRandomDelay = (min = 1500, max = 3500) => {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+};
 
-// --- 2. CARGADOR DE COMANDOS ---
-const commands = new Map();
-const aliases = new Map();
+const MAX_QUEUE_SIZE = 15;
 
-function loadCommands() {
-    const commandsPath = path.join(__dirname, 'commands');
-    if (!fs.existsSync(commandsPath)) {
-        console.log('⚠️ La carpeta "commands" no existe. Creándola...');
-        fs.mkdirSync(commandsPath, { recursive:umlah = true });
-        return;
+class MessageQueue {
+    constructor() {
+        this.queue = [];
+        this.processing = false;
     }
 
-    const categories = fs.readdirSync(commandsPath);
-    for (const category of categories) {
-        const categoryPath = path.join(commandsPath, category);
-        if (fs.statSync(categoryPath).isDirectory()) {
-            const commandFiles = fs.readdirSync(categoryPath).filter(file => file.endsWith('.js'));
-            for (const file of commandFiles) {
-                const filePath = path.join(categoryPath, file);
-                try {
-                    delete require.cache[require.resolve(filePath)];
-                    const command = require(filePath);
-                    if (command && command.name) {
-                        commands.set(command.name, command);
-                        if (command.aliases && Array.isArray(command.aliases)) {
-                            command.aliases.forEach(alias => aliases.set(alias, command.name));
-                        }
-                    }
-                } catch (err) {
-                    console.error(`❌ Error cargando el comando ${file}:`, err);
-                }
-            }
-        }
+    // Devuelve false si la cola está llena (se descarta la tarea para no soltar ráfagas)
+    add(task) {
+        if (this.queue.length >= MAX_QUEUE_SIZE) return false;
+        this.queue.push(task);
+        this.process();
+        return true;
     }
-    console.log(`✨ Se cargaron exitosamente ${commands.size} comandos.`);
-}
 
-// --- 3. INICIALIZACIÓN DE WHATSAPP CON BAILEYS ---
-async function startYukiBot() {
-    // Nota: Aquí puedes cambiar './auth_info' por tu conexión con Neon/Postgres si usas almacenamiento en nube
-    const { state, saveCreds } = await useMultiFileAuthState('./auth_info');
-    const { version, isLatest } = await fetchLatestBaileysVersion();
-
-    console.log(`📦 Usando Baileys v. ${version.join('.')}, es la última: ${isLatest}`);
-
-    const sock = makeWASocket({
-        version,
-        logger: pino({ level: 'silent' }),
-        auth: {
-            creds: state.creds,
-            keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' }))
-        },
-        browser: ['YukiBot-MD', 'Safari', '1.0.0']
-    });
-
-    loadCommands();
-
-    // Manejador de mensajes
-    sock.ev.on('messages.upsert', async ({ messages, type }) => {
-        if (type !== 'notify') return;
-        const m = messages[0];
-        if (!m.message || m.key.fromMe) return;
-
-        const messageType = Object.keys(m.message)[0];
-        let body = '';
-
-        if (messageType === 'conversation') {
-            body = m.message.conversation;
-        } else if (messageType === 'extendedTextMessage') {
-            body = m.message.extendedTextMessage.text;
-        } else if (messageType === 'imageMessage' && m.message.imageMessage.caption) {
-            body = m.message.imageMessage.caption;
-        }
-
-        // Definir prefijo (ej: '!', '.', etc.)
-        const prefix = '!';
-        if (!body || !body.startsWith(prefix)) return;
-
-        const args = body.slice(prefix.length).trim().split(/ +/);
-        const commandName = args.shift().toLowerCase();
-
-        const command = commands.get(commandName) || commands.get(aliases.get(commandName));
-        if (!command) return;
+    async process() {
+        if (this.processing) return;
+        this.processing = true;
 
         try {
-            console.log(`🤖 Ejecutando comando: ${commandName} solicitado por ${m.key.remoteJid}`);
-            await command.execute(sock, m, args);
-        } catch (error) {
-            console.error(`❌ Error al ejecutar el comando ${commandName}:`, error);
+            while (this.queue.length > 0) {
+                const task = this.queue.shift();
+
+                try {
+                    // Espera entre envíos como control de velocidad
+                    const delay = getRandomDelay(1500, 3500);
+                    await sleep(delay);
+
+                    await task();
+                } catch (error) {
+                    console.error("[MessageQueue Error]:", error);
+                }
+            }
+        } finally {
+            this.processing = false;
+        }
+    }
+}
+
+const messageQueue = new MessageQueue();
+
+// Helper de envío envuelto en la cola
+function safeReply(sock, jid, content, options = {}) {
+    const formattedContent = typeof content === 'string' ? { text: content } : content;
+
+    return new Promise((resolve, reject) => {
+        const accepted = messageQueue.add(async () => {
+            try {
+                const result = await sock.sendMessage(jid, formattedContent, options);
+                resolve(result);
+            } catch (err) {
+                reject(err);
+            }
+        });
+        if (!accepted) {
+            console.warn('⚠️ Cola de envío llena; se descartó una respuesta.');
+            resolve(null);
+        }
+    });
+}
+// ---------------------------------------------------------------------
+
+app.get('/', (req, res) => {
+    res.send('Yuki Bot está activo.');
+});
+
+app.get('/health', (req, res) => {
+    res.status(200).type('text/plain').send('ok');
+});
+
+app.get('/qr', async (req, res) => {
+    const accessToken = process.env.QR_ACCESS_TOKEN;
+    if (!accessToken || accessToken.length < 32) {
+        return res.status(503).send('Configura QR_ACCESS_TOKEN con al menos 32 caracteres en el entorno del servidor.');
+    }
+
+    const authorization = req.get('authorization') || '';
+    const credentialsMatch = authorization.match(/^Basic\s+([A-Za-z0-9+/]+={0,2})$/i);
+    const credentials = credentialsMatch
+        ? Buffer.from(credentialsMatch[1], 'base64').toString('utf8')
+        : '';
+    const separator = credentials.indexOf(':');
+    const password = Buffer.from(separator === -1 ? '' : credentials.slice(separator + 1));
+    const expectedPassword = Buffer.from(accessToken);
+
+    if (
+        separator === -1
+        || credentials.slice(0, separator) !== 'yuki'
+        || password.length !== expectedPassword.length
+        || !timingSafeEqual(password, expectedPassword)
+    ) {
+        res.set('WWW-Authenticate', 'Basic realm="YukiBot QR", charset="UTF-8"');
+        return res.sendStatus(401);
+    }
+
+    res.set({
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+        'Content-Security-Policy': "default-src 'none'; img-src data:; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'",
+        'Referrer-Policy': 'no-referrer',
+        'X-Content-Type-Options': 'nosniff'
+    });
+
+    if (!currentQrImage) {
+        return res.status(503).send('WhatsApp no está solicitando un QR. Revisa los logs de conexión del servidor.');
+    }
+
+    res.type('html').send(`<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vincular el número de Yuki</title>
+<style>
+body{font-family:system-ui,sans-serif;text-align:center;margin:2rem auto;padding:0 1rem;max-width:28rem}
+img{width:min(100%,360px);height:auto}
+</style>
+</head>
+<body>
+<h1>Vincular el número de Yuki</h1>
+<p>Con el teléfono del número de Yuki, abre WhatsApp &gt; Dispositivos vinculados &gt; Vincular un dispositivo y escanea este código.</p>
+<img src="${currentQrImage}" alt="Código QR para vincular el número de Yuki con WhatsApp">
+<p>Este QR vincula el número de Yuki al bot; no es un QR de contacto ni debe escanearse desde otros números.</p>
+<p>WhatsApp puede hacer caducar el código. Si ocurre, recarga esta página para consultar el nuevo código solicitado por WhatsApp.</p>
+</body>
+</html>`);
+});
+
+app.listen(port, () => {
+    console.log(`Servidor de Yuki escuchando en el puerto ${port}`);
+});
+
+// 🛡️ ESCUDO GLOBAL: Evita que cualquier error imprevisto apague el bot
+process.on('uncaughtException', (err) => {
+    console.error('⚠️ [Protector] Error crítico interceptado (El bot sigue en línea):', err.message);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('⚠️ [Protector] Promesa rechazada no manejada:', reason);
+});
+
+const handler = new CommandHandler();
+
+// Único prefijo permitido
+const PREFIX = '!';
+
+// --- COOLDOWN ALEATORIO POR USUARIO ---
+const cooldowns = new Map();
+const randomCooldown = (min = 4000, max = 8000) =>
+    Math.floor(Math.random() * (max - min + 1)) + min;
+
+function onCooldown(sender) {
+    const now = Date.now();
+    if (now < (cooldowns.get(sender) || 0)) return true;
+    cooldowns.set(sender, now + randomCooldown());
+    return false;
+}
+
+// Limpieza para que el Map no crezca sin parar
+setInterval(() => {
+    const now = Date.now();
+    for (const [jid, until] of cooldowns) {
+        if (now > until) cooldowns.delete(jid);
+    }
+}, 60 * 1000);
+
+// --- AVISO AFK SIN REPETIR (máximo uno cada 10 min por grupo y usuario) ---
+const afkNotified = new Map();
+const AFK_NOTICE_INTERVAL_MS = 10 * 60 * 1000;
+
+async function loadAuthState() {
+    if (!authStatePromise) {
+        authStatePromise = (async () => {
+            if (!process.env.DATABASE_URL) {
+                console.warn('⚠️ DATABASE_URL no está configurada; la sesión se guardará en el disco local y puede perderse al reiniciar el servidor.');
+                const sessionPath = path.join(dataDir, 'sessions', 'main');
+                const authState = await useMultiFileAuthState(sessionPath);
+                return {
+                    ...authState,
+                    resetAuthState: async () => {
+                        await fs.rm(sessionPath, { recursive: true, force: true });
+                    }
+                };
+            }
+
+            if (!process.env.YUKI_AUTH_ENCRYPTION_KEY) {
+                throw new Error('Configura YUKI_AUTH_ENCRYPTION_KEY junto con DATABASE_URL para proteger la sesión de WhatsApp.');
+            }
+
+            let databaseUrl;
+            try {
+                databaseUrl = new URL(process.env.DATABASE_URL);
+            } catch {
+                throw new Error('DATABASE_URL no es una URL válida. Configura la URL PostgreSQL completa de Neon sin comillas ni el prefijo DATABASE_URL=.');
+            }
+            if (!['postgres:', 'postgresql:'].includes(databaseUrl.protocol)) {
+                throw new Error('DATABASE_URL debe ser una URL PostgreSQL completa de Neon.');
+            }
+
+            const pool = new Pool({
+                connectionString: process.env.DATABASE_URL,
+                ssl: { rejectUnauthorized: true },
+                max: 5,
+                connectionTimeoutMillis: 10000
+            });
+
+            try {
+                const authState = await createNeonAuthState(pool, process.env.YUKI_AUTH_ENCRYPTION_KEY);
+                console.log('✅ Sesión de WhatsApp cargada desde PostgreSQL persistente.');
+                return authState;
+            } catch (error) {
+                await pool.end().catch(closeError => {
+                    console.error('Error cerrando la conexión de Neon tras fallar la carga de sesión:', closeError.message);
+                });
+                throw error;
+            }
+        })();
+    }
+
+    try {
+        return await authStatePromise;
+    } catch (error) {
+        authStatePromise = null;
+        throw error;
+    }
+}
+
+function scheduleReconnect() {
+    if (reconnectTimer) return;
+    reconnectTimer = setTimeout(() => {
+        reconnectTimer = null;
+        startYuki().catch(error => {
+            console.error('❌ No se pudo restablecer la conexión de Yuki:', error.message);
+            scheduleReconnect();
+        });
+    }, 4000);
+}
+
+function resetLoggedOutSession() {
+    if (authResetPromise) return authResetPromise;
+
+    authResetPromise = (async () => {
+        const authState = await loadAuthState();
+        await authState.resetAuthState();
+        if (!process.env.DATABASE_URL) {
+            authStatePromise = null;
+        }
+        console.log('✅ Sesión revocada eliminada. Se solicitará un QR nuevo.');
+        scheduleReconnect();
+    })().catch(error => {
+        console.error('❌ No se pudo limpiar la sesión revocada:', error.message);
+        process.exit(1);
+    }).finally(() => {
+        authResetPromise = null;
+    });
+
+    return authResetPromise;
+}
+
+async function startYuki() {
+    console.log('📂 Cargando sesión de Yuki...');
+    if (db.ready) {
+        await db.ready;
+        console.log('✅ Datos del bot conectados a Neon.');
+    }
+    await gachaDatabaseReady;
+
+    const { state, saveCreds } = await loadAuthState();
+    const hasRegisteredSession = Boolean(state.creds.registered && state.creds.me?.id);
+
+    if (hasRegisteredSession) {
+        console.log('✅ Se encontró una sesión de WhatsApp previamente vinculada.');
+    } else {
+        console.log('ℹ️ No hay una sesión vinculada guardada. El primer QR debe escanearse una vez.');
+    }
+
+    const sock = makeWASocket({
+        auth: state,
+        logger: pino({ level: 'silent' }),
+        browser: ['YukiBot', 'Chrome', '120.0.0'],
+        syncFullHistory: false
+    });
+    const contactNames = new Map();
+
+    const cacheContacts = (contacts) => {
+        for (const contact of contacts || []) {
+            const name = [contact.name, contact.notify, contact.verifiedName]
+                .find(value => typeof value === 'string' && value.trim() && value.trim() !== 'Usuario');
+            if (!name) continue;
+
+            const ids = [contact.id, contact.lid, contact.phoneNumber]
+                .filter(value => typeof value === 'string' && value.trim())
+                .map(value => value.includes('@') ? value : `${value}@s.whatsapp.net`);
+            for (const id of ids) contactNames.set(id, name.trim());
+            db.updateContactName(contact);
+        }
+    };
+
+    sock.ev.on('contacts.upsert', cacheContacts);
+    sock.ev.on('contacts.update', cacheContacts);
+
+    sock.ev.on('connection.update', async (update) => {
+        const { connection, lastDisconnect, qr } = update;
+
+        if (qr) {
+            if (hasRegisteredSession) {
+                currentQr = null;
+                currentQrImage = null;
+                console.warn('⚠️ WhatsApp solicita un QR aunque hay una sesión guardada. Comprueba que DATABASE_URL y YUKI_AUTH_ENCRYPTION_KEY no hayan cambiado y que solo haya una instancia del bot.');
+            } else {
+                if (qr !== currentQr || !currentQrImage) {
+                    currentQr = qr;
+                    currentQrImage = null;
+                    try {
+                        const qrImage = await QRCode.toDataURL(qr, {
+                            errorCorrectionLevel: 'H',
+                            margin: 4,
+                            width: 360
+                        });
+                        if (currentQr === qr) currentQrImage = qrImage;
+                    } catch (error) {
+                        if (currentQr === qr) currentQr = null;
+                        console.error('❌ No se pudo preparar el QR de vinculación de WhatsApp:', error.message);
+                    }
+                }
+                console.log('📱 QR para vincular el número de Yuki disponible en /qr. Configura QR_ACCESS_TOKEN para abrirlo.');
+            }
+        }
+
+        if (connection === 'close') {
+            currentQr = null;
+            currentQrImage = null;
+            const statusCode = lastDisconnect?.error?.output?.statusCode;
+
+            if (statusCode === DisconnectReason.loggedOut) {
+                console.warn('⚠️ WhatsApp revocó la sesión guardada. Limpiando solo la autenticación para solicitar un QR nuevo...');
+                resetLoggedOutSession();
+                return;
+            }
+
+            if (statusCode === DisconnectReason.connectionReplaced) {
+                console.error('❌ WhatsApp reemplazó esta conexión (código 440). Detén cualquier otra instancia de Yuki que use esta misma sesión y reinicia este servicio. Se pausó la reconexión automática para evitar un bucle.');
+                return;
+            }
+
+            console.log(`🔄 Conexión cerrada (Código: ${statusCode}). Reconectando en 4 segundos...`);
+            scheduleReconnect();
+        } else if (connection === 'open') {
+            if (reconnectTimer) {
+                clearTimeout(reconnectTimer);
+                reconnectTimer = null;
+            }
+            currentQr = null;
+            currentQrImage = null;
+            console.log(`\n⚡ ¡YUKI ESTÁ ONLINE Y CONECTADA! Prefijo activo: ${PREFIX}\n`);
         }
     });
 
-    // Actualización de credenciales y conexión
-    sock.ev.on('creds.update', saveCreds);
-
-    sock.ev.on('connection.update', (update) => {
-        const { connection, lastDisconnect } = update;
-        if (connection === 'close') {
-            const shouldReconnect = (lastDisconnect.error instanceof Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
-            console.log('⚠️ Conexión cerrada debido a:', lastDisconnect.error, ', reconectando:', shouldReconnect);
-            if (shouldReconnect) {
-                startYukiBot();
+    let credentialSaveQueue = Promise.resolve();
+    sock.ev.on('creds.update', () => {
+        credentialSaveQueue = credentialSaveQueue.then(async () => {
+            for (let attempt = 1; attempt <= 3; attempt += 1) {
+                try {
+                    await saveCreds();
+                    return;
+                } catch (error) {
+                    if (attempt === 3) throw error;
+                    await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+                }
             }
-        } else if (connection === 'open') {
-            console.log('🌸 ¡YukiBot-MD se ha conectado a WhatsApp exitosamente!');
+        }).catch(error => {
+            console.error('❌ No se pudieron guardar las credenciales de WhatsApp tras 3 intentos:', error.message);
+            process.exit(1);
+        });
+    });
+
+    sock.ev.on('group-participants.update', async (update) => {
+        if (!['add', 'remove'].includes(update.action)) return;
+        db.getSafeGroup(update.id, async (err, settings) => {
+            if (err) {
+                console.error('Error al leer la configuración de bienvenida:', err.message);
+                return;
+            }
+
+            const isWelcome = update.action === 'add';
+            const enabled = isWelcome ? settings.welcome_enabled : settings.goodbye_enabled;
+            if (!enabled) return;
+
+            for (const participant of update.participants || []) {
+                const textTemplate = isWelcome ? settings.welcome_text : settings.goodbye_text;
+                const text = (textTemplate || pick(isWelcome ? frases.bienvenida : frases.despedida))
+                    .replace(/@user/g, `@${participant.split('@')[0]}`);
+                try {
+                    if (isWelcome && settings.welcome_image) {
+                        await safeReply(sock, update.id, {
+                            image: { url: settings.welcome_image },
+                            caption: text,
+                            mentions: [participant]
+                        });
+                    } else {
+                        await safeReply(sock, update.id, { text, mentions: [participant] });
+                    }
+                } catch (sendErr) {
+                    console.error('Error al enviar mensaje de bienvenida/despedida:', sendErr);
+                }
+            }
+        });
+    });
+
+    sock.ev.on('messages.upsert', async ({ messages }) => {
+        await recordGroupMessages(db, sock, messages);
+    });
+
+    // ESCUCHADOR DE MENSAJES
+    sock.ev.on('messages.upsert', async ({ messages }) => {
+        const m = messages[0];
+        if (!m.message) return;
+
+        // 🟢 IDENTIFICAR AL REMITENTE
+        const sender = getMessageSenderJid(m, sock);
+        if (!sender) {
+            console.error('❌ No se pudo identificar al remitente; se omite el mensaje para proteger las cuentas.');
+            return;
+        }
+
+        const initialText = m.message?.conversation || m.message?.extendedTextMessage?.text || '';
+        const isAfkCommand = /^!(?:afk|ausente)(?:\s|$)/i.test(initialText);
+        const contactName = contactNames.get(sender)
+            || contactNames.get(m.key.participantAlt)
+            || contactNames.get(m.key.remoteJidAlt);
+        db.recordMessageActivity(
+            sender,
+            contactName || m.pushName,
+            {
+                incrementExp: !m.key.fromMe,
+                clearAfk: !m.key.fromMe && !isAfkCommand
+            },
+            err => {
+                if (err) console.error('Error al registrar la actividad del usuario:', err.message);
+            }
+        );
+        if (!m.key.fromMe) {
+            const mentionedJids = m.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+            for (const mentionedJid of mentionedJids) {
+                // Evita avisar de nuevo si ya se avisó hace poco en este chat
+                const afkKey = `${m.key.remoteJid}:${mentionedJid}`;
+                if (Date.now() - (afkNotified.get(afkKey) || 0) < AFK_NOTICE_INTERVAL_MS) continue;
+
+                db.get(`SELECT afk_reason, afk_since FROM users WHERE jid = ? AND afk_since IS NOT NULL`, [mentionedJid], async (err, afkUser) => {
+                    if (err) {
+                        console.error('Error al consultar estado AFK:', err.message);
+                        return;
+                    }
+                    if (!afkUser) return;
+                    afkNotified.set(afkKey, Date.now());
+                    const elapsed = Math.max(0, Date.now() - afkUser.afk_since);
+                    const minutes = Math.floor(elapsed / 60000);
+                    const away = minutes < 60 ? `${minutes} min` : `${Math.floor(minutes / 60)} h`;
+                    await safeReply(sock, m.key.remoteJid, {
+                        text: frases.afk(mentionedJid, away, afkUser.afk_reason),
+                        mentions: [mentionedJid]
+                    }, { quoted: m });
+                });
+            }
+        }
+        const msgContent = getMessageContent(m.message);
+
+        const messageType = Object.keys(msgContent)[0];
+        const body = messageType === 'conversation' ? msgContent.conversation :
+                     messageType === 'extendedTextMessage' ? msgContent.extendedTextMessage.text : 
+                     messageType === 'imageMessage' ? msgContent.imageMessage.caption :
+                     messageType === 'videoMessage' ? msgContent.videoMessage.caption : '';
+
+        if (!body || typeof body !== 'string') return;
+
+        if (m.key.remoteJid.endsWith('@g.us') && /(?:chat\.whatsapp\.com\/|whatsapp\.com\/channel\/)/i.test(body)) {
+            db.getSafeGroup(m.key.remoteJid, async (settingsErr, settings) => {
+                if (settingsErr) {
+                    console.error('Error al consultar protección antilink:', settingsErr.message);
+                    return;
+                }
+                if (!settings.antilink) return;
+
+                try {
+                    const metadata = await sock.groupMetadata(m.key.remoteJid);
+                    const participant = metadata.participants.find(item =>
+                        [item.id, item.jid, item.lid, item.phoneNumber].filter(Boolean).includes(sender)
+                    );
+                    if (participant?.admin) return;
+                    await sock.sendMessage(m.key.remoteJid, { delete: m.key });
+                    await safeReply(sock, m.key.remoteJid, {
+                        text: frases.linkEliminado(sender),
+                        mentions: [sender]
+                    }, { quoted: m });
+                } catch (antilinkErr) {
+                    console.error('Error al moderar enlace del grupo:', antilinkErr);
+                    await safeReply(sock, m.key.remoteJid, { text: pick(frases.noPudeModerar) }, { quoted: m });
+                }
+            });
+        }
+
+        if (!m.key.fromMe && !m.key.remoteJid.endsWith('@g.us') && !body.startsWith(PREFIX) && practiceSessions.sessions.has(sender)) {
+            const replyText = practiceSessions.respond(body, practiceSessions.sessions.get(sender));
+            await safeReply(sock, m.key.remoteJid, { text: `「✿」 ${replyText}` }, { quoted: m });
+            return;
+        }
+
+        if (!body.startsWith(PREFIX)) return;
+        const usedPrefix = PREFIX;
+
+        const args = body.slice(usedPrefix.length).trim().split(/ +/);
+        const command = args.shift().toLowerCase();
+
+        // Cooldown aleatorio por usuario: se ignora en silencio, sin responder
+        if (!m.key.fromMe && onCooldown(sender)) return;
+
+        console.log(`📥 [Comando recibido]: ${command} de @${sender.split('@')[0]}`);
+
+        // Ejecución del comando
+        try {
+            // Contexto que redirige todas las respuestas de los comandos a la cola
+            const ctx = {
+                sock,
+                m,
+                msg: m,
+                body,
+                usedPrefix,
+                command,
+                args,
+                sender,
+                reply: (content, options) => safeReply(sock, m.key.remoteJid, content, { quoted: m, ...options })
+            };
+
+            await handler.handle(sock, m, body, usedPrefix, command, args, ctx);
+        } catch (err) {
+            console.error(`❌ Error ejecutando el comando '${command}':`, err);
+            await safeReply(sock, m.key.remoteJid, { text: pick(frases.errorInterno) }, { quoted: m });
         }
     });
 }
 
-startYukiBot();
+startYuki().catch(error => {
+    console.error('❌ No se pudo iniciar Yuki:', error);
+    process.exit(1);
+});
