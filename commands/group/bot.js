@@ -25,7 +25,7 @@ module.exports = {
                 console.error('Error al registrar configuración del grupo:', ensureErr.message);
                 return sock.sendMessage(jid, { text: '「✿」 No pude cargar la configuración del grupo.' }, { quoted: m });
             }
-            db.run(`UPDATE group_settings SET yuki_active = ? WHERE group_jid = ?`, [enabled ? 1 : 0, jid], (err) => {
+            db.run(`UPDATE group_settings SET bot_active = ? WHERE group_jid = ?`, [enabled ? 1 : 0, jid], (err) => {
                 if (err) {
                     console.error('Error al actualizar Yuki_active:', err.message);
                     return sock.sendMessage(jid, { text: '「✿」 No se pudo guardar la configuración.' }, { quoted: m });
