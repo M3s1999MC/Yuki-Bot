@@ -5,6 +5,10 @@ module.exports = {
     description: 'Muestra el menú principal y la lista completa de comandos disponibles de Yuki.',
 
     async execute(sock, m, args) {
+        // Evitamos doble ejecución si el mensaje ya fue procesado o respondido en el mismo tick
+        if (m.isProcessed) return;
+        m.isProcessed = true;
+
         const jid = m.key.remoteJid;
 
         const menuHeader = `꧁༺ 𝐇𝐨λ𝐚! 𝐒𝐨𝐲 𝓨𝓾𝓴𝓲 ༻꧂\nᴀǫᴜɪ ᴛɪᴇɴᴇs ʟᴀ ʟɪsᴛᴀ ᴅᴇ cₒᴍᴀɴᴅₒs\n╭┈ ↷\n│ ✐ 𝓓𝓮𝔀𝓮𝓵𝓸𝓹𝓮𝓭 𝓫𝔂 𝓘𝓷𝓴𝓻𝓪 𝓢𝓽𝓾𝓭𝓲𝓸𝓼 🌸\n│ ✐ ꒷ꕤ💎 𝓒𝓪𝓷𝓪𝓵 𝐎𝐟𝐢𝐜𝐢𝐚𝓵 ෴\n│ https://whatsapp.com/channel/0029Vb9AOpk9WtC12RHEEj0Y\n│ ✐ 𝓓𝓮𝔀𝓮𝓵𝓸𝓹𝓮𝓭 𝓫𝔂 𝙳𝓾𝚟𝓪𝓵𝓲𝓷 🌸\n│ ✐ ꒷ꕤ💎 𝓒𝓪𝓷𝓪𝓵 𝓟𝓪𝓽𝓻𝓸𝓬𝓲𝓷𝓪𝓭𝓸 ෴\n│ https://whatsapp.com/channel/0029Vb92LdaCnA7rdqUbdw38\n╰─────────────────\n\n`;
@@ -440,7 +444,7 @@ module.exports = {
 > Prueba la descarga de la API con yt-dlp por link o buscando por nombre (audio o video)
 ✧ !minar | !mine | !mina
 > Baja a la mina y consigue minerales (¡con suerte, raros!)
-✧ !minerales | !mochila | !inventario | !ores
+✧ !minerales | !mochila | let !inventario | !ores
 > Muestra los minerales que tienes o el catálogo con probabilidades
 ✧ !venderminerales | !vendermin | !vendertodo | !sellores
 > Vende todos tus minerales (or solo uno si lo indicas)
@@ -471,7 +475,7 @@ module.exports = {
 
         try {
             const imageUrl = 'https://i.pinimg.com/736x/c7/52/42/c752425496a914f6e1e0a58da246fe20.jpg';
-            
+
             const res = await fetch(imageUrl, {
                 headers: {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -482,7 +486,7 @@ module.exports = {
 
             const imageBuffer = Buffer.from(await res.arrayBuffer());
 
-            // 1. Envía el menú principal con imagen y texto
+            // 1. Envía el menú principal con imagen y texto (una sola vez)
             await sock.sendMessage(jid, {
                 image: imageBuffer,
                 caption: fullMenuText
@@ -491,7 +495,7 @@ module.exports = {
             // 2. Envía la nota de video circular con el enlace directo en .mp4
             await sock.sendMessage(jid, {
                 video: { url: "https://files.catbox.moe/17632cd49caafe0bf15f8c8243ed9308.mp4" },
-                ptv: true // Esto activa el formato circular automático
+                ptv: true
             }, { quoted: m });
 
         } catch (err) {
