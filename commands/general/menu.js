@@ -337,7 +337,7 @@ module.exports = {
 ✧ !practicar | !practice | !entrenar
 > Inicia una conversación de práctica con una IA que actúa como un match, para entrenar tu forma de ligar
 ✧ !guardar | !guardarfrase
-> Guarda una de las últimas sugerencias de !rizz u !opener в tu biblioteca
+> Guarda una de las últimas sugerencias de !rizz u !opener en tu biblioteca
 ✧ !biblioteca | !misfrases | !library
 > Muestra tus frases guardadas, o borra una con !biblioteca borrar <número>
 ✧ !clima | !weather
@@ -433,7 +433,7 @@ module.exports = {
 ✧ !minerales | !mochila | !inventario | !ores
 > Muestra los minerales que tienes o el catálogo con probabilidades
 ✧ !venderminerales | !vendermin | !vendertodo | !sellores
-> Vende todos tus minerales (o solo uno si lo indicas)
+> Vende todos tus minerales (or solo uno si lo indicas)
 ✧ !suerte | !luck | !gachaluck
 > Revisa el historial de tiradas de un usuario y decide si el bot interviene dándole un personaje (owner/mods)
 ✧ !sticker | !s
@@ -472,32 +472,20 @@ module.exports = {
 
             const imageBuffer = Buffer.from(await res.arrayBuffer());
 
-            // 1. Envía el menú principal con imagen y texto citando el comando del usuario
+            // 1. Envía el menú principal con imagen y texto
             await sock.sendMessage(jid, {
                 image: imageBuffer,
                 caption: fullMenuText
             }, { quoted: m });
 
-            // 2. Descarga el video de TikTok y lo envía de inmediato como nota circular
-            const tiktokUrl = "https://www.tiktok.com/@reicol_/video/7608383703986801921";
-            const apiRes = `https://api.tikwm.com/api/?url=${encodeURIComponent(tiktokUrl)}`;
-            const jsonResp = await fetch(apiRes).then(r => r.json());
-            const videoDownloadUrl = jsonResp.data?.play;
-
-            if (videoDownloadUrl) {
-                const vidRes = await fetch(videoDownloadUrl);
-                const videoBuffer = Buffer.from(await vidRes.arrayBuffer());
-
-                await sock.sendMessage(jid, {
-                    video: videoBuffer,
-                    ptv: true
-                }, { quoted: m });
-            }
+            // 2. Envía la nota de video circular con el enlace directo en .mp4
+            await sock.sendMessage(jid, {
+                video: { url: "https://files.catbox.moe/17632cd49caafe0bf15f8c8243ed9308.mp4" },
+                ptv: true // Esto activa el formato circular automático
+            }, { quoted: m });
 
         } catch (err) {
             console.error('⚠️ Error al cargar el menú o la nota de video:', err.message);
-            // Si algo falla, mandamos solo texto plano una única vez como respaldo de seguridad
-            await sock.sendMessage(jid, { text: fullMenuText }, { quoted: m });
         }
     }
 };
