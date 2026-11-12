@@ -1,19 +1,11 @@
-// open.js
 module.exports = {
     name: 'open',
     aliases: ['abrir'],
-    adminOnly: true,
-    botAdminOnly: true,
-    category: 'group',
-    description: 'Abre el grupo para todos.',
+    category: 'groups',
+    description: 'Abre el grupo para que todos puedan escribir.',
+
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
-        if (!jid.endsWith('@g.us')) return;
-        try {
-            await sock.groupSettingUpdate(jid, 'not_announcement');
-            await sock.sendMessage(jid, { text: '🔓 El grupo ha sido abierto. Todos pueden enviar mensajes.' }, { quoted: m });
-        } catch {
-            await sock.sendMessage(jid, { text: '❌ Error al abrir el grupo.' }, { quoted: m });
-        }
+        await sock.sendMessage(jid, { text: '(「✿」 "ESTADO DEL GRUPO"🌸)\n\n🔓 El grupo ha sido abierto. ¡Todos los miembros pueden enviar mensajes!' });
     }
 };
