@@ -2,19 +2,16 @@ module.exports = {
     name: 'allw',
     aliases: ['todostrabajos'],
     category: 'economy',
-    description: 'Reclama automáticamente todos los trabajos disponibles que no tengan espera.',
+    description: 'Reclamar todos los trabajos disponibles.',
 
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
+        const total = 4500;
 
-        // Simulación de cobro masivo de oficios
-        const totalGanado = 4500;
+        const text = `(「✿」 "COBRO DE OFICIOS GENERAL"🌸)\n\n` +
+                     `✨ Has reclamado todos tus trabajos pendientes.\n` +
+                     `💰 Total obtenido: *+¥${total.toLocaleString()}*`;
 
-        const texto = `🛠️ *OFICINA DE EMPLEOS - RECLAMO GENERAL* 🛠️\n\n` +
-                      `✨ Has reclamado los beneficios de tus turnos pendientes.\n` +
-                      `💰 Ganancia total obtenida: *+¥${totalGanado.toLocaleString()}* en tu billetera.\n\n` +
-                      `⏳ Los enfriamientos de cada oficio han vuelto a empezar.`;
-
-        await sock.sendMessage(jid, { text: texto }, { quoted: m });
+        await sock.sendMessage(jid, { text }, { quoted: m });
     }
 };
