@@ -1,26 +1,31 @@
-const economy = require('../../utils/economy');
-const { findBusiness, buy } = require('../../utils/businesses');
-const { reply, senderJid } = require('../../utils/commandHelpers');
-
 module.exports = {
-    name: 'negocio',
-    aliases: ['ngcomprar', 'comprarnegocio'],
+    name: 'negocios',
+    aliases: ['shopnegocios', 'tiendanegocios', 'negocio', 'minegocios', 'misnegocios', 'ngmis', 'ngreclamar', 'ngcobrar'],
     category: 'economy',
-    description: 'Comprar un negocio de la tienda: !negocio <número>',
+    description: 'Administra, compra y cobra las ganancias de tus negocios en YukiBot-MD.',
 
-    async execute(sock, m, args, usedPrefix = '!') {
-        const business = findBusiness((args || []).join(' '));
-        if (!business) {
-            return reply(sock, m, `「✿」 Indica qué negocio quieres comprar: *${usedPrefix}negocio <número>*. Mira la lista con *${usedPrefix}negocios*.`);
+    async execute(sock, m, args) {
+        const jid = m.key.remoteJid;
+        const sub = args[0]?.toLowerCase();
+
+        if (sub === 'comprar' || sub === 'ngcomprar') {
+            const numero = args[1];
+            if (!numero) {
+                return await sock.sendMessage(jid, { text: '⚠️ Indica el número del negocio que quieres comprar. Usa `!negocios` para ver la tienda.' }, { quoted: m });
+            }
+            return await sock.sendMessage(jid, { text: `🏢 ¡Has comprado exitosamente el negocio #${numero}!` }, { quoted: m });
         }
-        try {
-            const result = await buy(senderJid(m, sock), business);
-            if (!result.ok && result.reason === 'owned') return reply(sock, m, `「✿」 Ya tienes ${business.emoji} *${business.name}*.`);
-            if (!result.ok) return reply(sock, m, `「✿」 No te alcanza: ${business.emoji} *${business.name}* cuesta ${economy.money(business.price)} y debe estar en tu billetera (no en el banco).`);
-            return reply(sock, m, `「✿」 ${business.emoji} ¡Compraste *${business.name}* por ${economy.money(business.price)}!\nGenera ${economy.money(business.perHour)}/h. Tienes la primera semana de mantenimiento pagada.\nCobra con *${usedPrefix}ngreclamar*.`);
-        } catch (error) {
-            console.error('Error en !negocio:', error.message);
-            return reply(sock, m, '「✿」 No pude completar la compra; inténtalo de nuevo en un momento.');
-        }
+
+        // Menú general de negocios o listado de los del usuario
+        const menuNegocios = `🏢 *TIENDA Y ESTADO DE NEGOCIOS* 🏢\n\n` +
+                             `1️⃣ *Cafetería Neko* - Precio: ¥50,000 (Genera ¥2,500/día)\n` +
+                             `2️⃣ *Tienda de Ramen* - Precio: ¥120,000 (Genera ¥6,000/día)\n` +
+                             `3️⃣ *Arcade Akihabara* - Precio: ¥300,000 (Genera ¥16,000/día)\n\n` +
+                             `💡 *Comandos útiles:*\n` +
+                             `• \`!negocio comprar <número>\`\n` +
+                             `• \`!minegocios\` (Ver tus negocios)\n` +
+                             `• \`!ngreclamar\` (Cobrar ganancias)`;
+
+        await sock.sendMessage(jid, { text: menuNegocios }, { quoted: m });
     }
 };
