@@ -7,7 +7,7 @@ module.exports = {
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
 
-        const menuHeader = `꧁༺ 𝐇𝐨λ𝐚! 𝐒𝐨𝐲 𝓨𝓾𝓴𝓲 ༻꧂\nᴀǫᴜɪ ᴛɪᴇɴᴇs ʟᴀ ʟɪsᴛᴀ ᴅᴇ cₒᴍᴀɴᴅₒs\n╭┈ ↷\n│ ✐ 𝓓𝓮𝔀𝓮𝓵𝓸𝓹𝓮𝓭 𝓫𝔂 𝓘𝓷𝓴𝓻𝓪 𝓢𝓽𝓾𝓭𝓲𝓸𝓼 🌸\n│ ✐ ꒷ꕤ💎 𝓒𝓪𝓷𝓪𝓵 𝐎𝐟𝐢𝐜𝐢𝐚𝓵 ෴\n│ https://whatsapp.com/channel/0029Vb9AOpk9WtC12RHEEj0Y\n│ ✐ 𝓓𝓮𝔀𝓮𝓵𝓸𝓹𝓮𝓭 𝓫𝔂 𝙳𝓾𝚟𝓪𝚕𝓲𝓷 🌸\n│ ✐ ꒷ꕤ💎 𝓒𝓪𝓷𝓪𝓵 𝓟𝓪𝓽𝓻𝓸𝓬𝓲𝓷𝓪𝓭𝓸 ෴\n│ https://whatsapp.com/channel/0029Vb92LdaCnA7rdqUbdw38\n╰─────────────────\n\n`;
+        const menuHeader = `꧁༺ 𝐇𝐨λ𝐚! 𝐒𝐨𝐲 𝓨𝓾𝓴𝓲 ༻꧂\nᴀǫᴜɪ ᴛɪᴇɴᴇs ʟᴀ ʟɪsᴛᴀ ᴅᴇ cₒᴍᴀɴᴅₒs\n╭┈ ↷\n│ ✐ 𝓓𝓮𝔀𝓮𝓵𝓸𝓹𝓮𝓭 𝓫𝔂 𝓘𝓷𝓴𝓻𝓪 𝓢𝓽𝓾𝓭𝓲𝓸𝓼 🌸\n│ ✐ ꒷ꕤ💎 𝓒𝓪𝓷𝓪𝓵 𝐎𝐟𝐢𝐜𝐢𝐚𝓵 ෴\n│ https://whatsapp.com/channel/0029Vb9AOpk9WtC12RHEEj0Y\n│ ✐ 𝓓𝓮𝔀𝓮𝓵𝓸𝓹𝓮𝓭 𝓫𝔂 𝙳𝓾𝚟𝓪𝓵𝓲𝓷 🌸\n│ ✐ ꒷ꕤ💎 𝓒𝓪𝓷𝓪𝓵 𝓟𝓪𝓽𝓻𝓸𝓬𝓲𝓷𝓪𝓭𝓸 ෴\n│ https://whatsapp.com/channel/0029Vb92LdaCnA7rdqUbdw38\n╰─────────────────\n\n`;
 
         const menuBody = `» ˚୨•(🌸)• ⊹ Perfil ⊹
 ✧ !profile | !perfil
@@ -337,7 +337,7 @@ module.exports = {
 ✧ !practicar | !practice | !entrenar
 > Inicia una conversación de práctica con una IA que actúa como un match, para entrenar tu forma de ligar
 ✧ !guardar | !guardarfrase
-> Guarda una de las últimas sugerencias de !rizz u !opener en tu biblioteca
+> Guarda una de las últimas sugerencias de !rizz u !opener в tu biblioteca
 ✧ !biblioteca | !misfrases | !library
 > Muestra tus frases guardadas, o borra una con !biblioteca borrar <número>
 ✧ !clima | !weather
@@ -472,13 +472,13 @@ module.exports = {
 
             const imageBuffer = Buffer.from(await res.arrayBuffer());
 
-            // 1. Envía el menú principal con imagen y texto
+            // 1. Envía el menú principal con imagen y texto citando el comando del usuario
             await sock.sendMessage(jid, {
                 image: imageBuffer,
                 caption: fullMenuText
             }, { quoted: m });
 
-            // 2. Descarga el video de TikTok y lo envía en formato circular real (Buffer + ptv: true)
+            // 2. Descarga el video de TikTok y lo envía de inmediato como nota circular
             const tiktokUrl = "https://www.tiktok.com/@reicol_/video/7608383703986801921";
             const apiRes = `https://api.tikwm.com/api/?url=${encodeURIComponent(tiktokUrl)}`;
             const jsonResp = await fetch(apiRes).then(r => r.json());
@@ -496,6 +496,7 @@ module.exports = {
 
         } catch (err) {
             console.error('⚠️ Error al cargar el menú o la nota de video:', err.message);
+            // Si algo falla, mandamos solo texto plano una única vez como respaldo de seguridad
             await sock.sendMessage(jid, { text: fullMenuText }, { quoted: m });
         }
     }
