@@ -154,8 +154,16 @@ module.exports = {
 > Le devuelve los permisos de uso de comandos a un usuario
 
 » ˚୨•(🌸)• ⊹ Economía ⊹
+✧ !afk
+> Activar o desactivar el modo AFK
 ✧ !balance | !bal | !saldo
 > Muestra tu saldo (billetera y banco)
+✧ !alltop / !tops
+> Ver los primeros puestos de todos los rankings en un solo mensaje
+✧ !banco / !bal / !bank [@usuario | responder a un mensaje
+> Consultar tu saldo o el de otro usuario (etiquetándolo o respondiendo a su mensaje)
+✧ !cofre / !chest
+> Abre un cofre misterioso (cada 24 horas)
 ✧ !daily
 > Reclama tu recompensa diaria
 ✧ !apostar <cantidad> | !ruleta <cantidad> | !bet <cantidad>
@@ -201,7 +209,7 @@ module.exports = {
 ✧ !emisiones | !misioneseconomia | !tareas [cobrar]
 > Misiones diarias de economía con recompensas
 ✧ !prestamo | !prestar
-> Solicita un préstamo al banco de Yuki
+> Solicita un préstamo al banco del Yuki; el límite sube con tu nivel hasta 500k y se paga en un máximo de 6 días
 ✧ !pagardeuda | !pagarprestamo
 > Paga las cuotas o salda la deuda de tu préstamo
 ✧ !cofre | !chest
