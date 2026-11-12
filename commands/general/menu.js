@@ -5,7 +5,7 @@ module.exports = {
     description: 'Muestra el menú principal y la lista completa de comandos disponibles de Yuki.',
 
     async execute(sock, m, args) {
-        // Evitamos doble ejecución si el mensaje ya fue procesado o respondido en el mismo tick
+        // Evitamos doble ejecución si el mensaje ya fue procesado en el mismo tick
         if (m.isProcessed) return;
         m.isProcessed = true;
 
@@ -40,6 +40,8 @@ module.exports = {
 > Establece tu género
 ✧ !delgenre
 > Elimina tu género del perfil
+
+» ˚୨•(🌸)• ⊹ Perfil (Nuevos) ⊹
 ✧ !boda | !bodas
 > Muestra los detalles y tiempo de tu matrimonio actual
 ✧ !intereses | !gustos
@@ -311,7 +313,7 @@ module.exports = {
 ✧ !tiktokmp3 | !ttmp3 | !tiktokaudio
 > Descarga el audio de un video de TikTok en formato mp3
 ✧ !twitter | !x | !xdl | !dlx | !twdl | !tw | !twt
-> Descarga un video o imagen de Twitter/X»
+> Descarga un video o imagen de Twitter/X
 
 » ˚୨•(🌸)• ⊹ Stickers ⊹
 ✧ !setmeta | !setstickermeta
@@ -442,10 +444,10 @@ module.exports = {
 > Prueba la descarga de la API con yt-dlp por link o buscando por nombre (audio o video)
 ✧ !minar | !mine | !mina
 > Baja a la mina y consigue minerales (¡con suerte, raros!)
-✧ !minerales | !mochila | let !inventario | !ores
+✧ !minerales | !mochila | !inventario | !ores
 > Muestra los minerales que tienes o el catálogo con probabilidades
 ✧ !venderminerales | !vendermin | !vendertodo | !sellores
-> Vende todos tus minerales (or solo uno si lo indicas)
+> Vende todos tus minerales (o solo uno si lo indicas)
 ✧ !suerte | !luck | !gachaluck
 > Revisa el historial de tiradas de un usuario y decide si el bot interviene dándole un personaje (owner/mods)
 ✧ !sticker | !s
@@ -471,6 +473,7 @@ module.exports = {
 
         const fullMenuText = menuHeader + menuBody;
 
+        // 1. Envía el menú principal con imagen y texto de forma independiente
         try {
             const imageUrl = 'https://i.pinimg.com/736x/c7/52/42/c752425496a914f6e1e0a58da246fe20.jpg';
 
@@ -484,20 +487,23 @@ module.exports = {
 
             const imageBuffer = Buffer.from(await res.arrayBuffer());
 
-            // 1. Envía el menú principal con imagen y texto (una sola vez)
             await sock.sendMessage(jid, {
                 image: imageBuffer,
                 caption: fullMenuText
             }, { quoted: m });
 
-            // 2. Envía la nota de video circular con el enlace directo en .mp4
+        } catch (err) {
+            console.error('⚠️ Error al cargar la imagen del menú:', err.message);
+        }
+
+        // 2. Envía la nota de video circular de manera independiente para que no afecte al menú si falla
+        try {
             await sock.sendMessage(jid, {
                 video: { url: "https://files.catbox.moe/17632cd49caafe0bf15f8c8243ed9308.mp4" },
                 ptv: true
             }, { quoted: m });
-
-        } catch (err) {
-            console.error('⚠️ Error al cargar el menú o la nota de video:', err.message);
+        } catch (videoErr) {
+            console.error('⚠️ No se pudo enviar la nota de video circular:', videoErr.message);
         }
     }
 };
