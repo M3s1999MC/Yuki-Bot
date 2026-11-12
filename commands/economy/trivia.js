@@ -1,4 +1,5 @@
 const economy = require('../../utils/economy');
+const missions = require('../../utils/missions');
 const { claim, formatDuration } = require('../../utils/cooldowns');
 const { TRIVIA } = require('../../utils/ecoConfig');
 const { QUESTIONS } = require('../../utils/triviaQuestions');
@@ -65,6 +66,7 @@ module.exports = {
                 if (choice === active.answerIndex) {
                     await economy.credit(jid, REWARD);
                     await economy.addExp(jid, EXP);
+                    await missions.track(jid, 'trivia');
                     return reply(sock, m, `「✿」 ✅ ¡Correcto! *${active.options[active.answerIndex]}*\n\n*+${economy.money(REWARD)}* y *+${EXP} XP* 🌸`);
                 }
                 return reply(sock, m, `「✿」 ❌ Esa no era. La respuesta correcta era *${LETTERS[active.answerIndex].toUpperCase()}) ${active.options[active.answerIndex]}*.`);

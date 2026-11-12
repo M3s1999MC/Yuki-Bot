@@ -184,8 +184,18 @@ module.exports = {
 > Revisa el estado detallado e intereses de tu cuenta bancaria
 ✧ !invertir | !inversion
 > Arriesga parte de tu saldo en un fondo de inversión simulado
-✧ !negocio | !miempresa
-> Revisa y cobra las ganancias de tu negocio simulado
+✧ !negocios | !shopnegocios | !tiendanegocios
+> Ver la tienda de negocios disponibles para comprar
+✧ !negocio | !ngcomprar | !comprarnegocio <número>
+> Comprar un negocio de la tienda
+✧ !minegocios | !misnegocios | !ngmis | !miempresa
+> Ver el estado de tus negocios
+✧ !ngreclamar | !ngcobrar | !ngclaim | !reclamarnegocios | !cobrarnegocios
+> Cobrar el dinero acumulado de tus negocios (hasta 24 h)
+✧ !ngpagar | !pagarnegocios | !ngmantenimiento [número|todos]
+> Pagar el mantenimiento semanal de tus negocios
+✧ !emisiones | !misioneseconomia | !tareas [cobrar]
+> Misiones diarias de economía con recompensas
 ✧ !prestamo | !prestar
 > Solicita un préstamo al banco de Yuki
 ✧ !pagardeuda | !pagarprestamo

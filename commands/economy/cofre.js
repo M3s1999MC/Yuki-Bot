@@ -2,6 +2,7 @@ const economy = require('../../utils/economy');
 const { claim, formatDuration } = require('../../utils/cooldowns');
 const { CHEST } = require('../../utils/ecoConfig');
 const { reply, senderJid } = require('../../utils/commandHelpers');
+const missions = require('../../utils/missions');
 
 // Probabilidades acumuladas: común 60 %, raro 30 %, épico 9 %, legendario 1 %.
 const TIERS = [
@@ -33,6 +34,7 @@ module.exports = {
             }
             const { tier, amount } = openChest();
             await economy.credit(jid, amount);
+            await missions.track(jid, 'cofre');
             return reply(sock, m, `「✿」 ${tier.emoji} Abriste un cofre *${tier.name}*.\n\n*+${economy.money(amount)}* 🌸`);
         } catch (error) {
             console.error('Error en !cofre:', error.message);
