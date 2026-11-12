@@ -4,7 +4,7 @@ const { getMessageSenderJid } = require('../../utils/messageSender');
 module.exports = {
     name: 'profile',
     aliases: ['perfil'],
-    category: 'general',
+    category: 'profile',
     description: 'Muestra tu tarjeta de perfil o la de otra persona.',
 
     async execute(sock, m) {
@@ -16,18 +16,24 @@ module.exports = {
         db.getSafeUser(target, async (err, data) => {
             if (err) {
                 console.error('Error al consultar perfil:', err.message);
-                return sock.sendMessage(jid, { text: '「✿」 No pude consultar ese perfil.' }, { quoted: m });
+                return sock.sendMessage(jid, { text: '「✿」 No pude consultar ese perfil 🌸' }, { quoted: m });
             }
+
             const spouseIsJid = /^.+@(?:s\.whatsapp\.net|lid)$/.test(data.married || '');
             const spouse = spouseIsJid ? `@${data.married.split('@')[0]}` : (data.married || 'Nadie 💔');
             const mentions = [target, ...(spouseIsJid ? [data.married] : [])];
-            const text = `「✿」 Perfil de @${target.split('@')[0]} 🌸\n\n` +
+            const displayName = data.custom_name ? `${data.custom_name} (@${target.split('@')[0]})` : `@${target.split('@')[0]}`;
+
+            const text = `「✿」 Perfil de ${displayName} 🌸\n\n` +
                 `⭐ Nivel: *${data.level || 1}* · ✨ EXP: *${data.exp || 0}*\n` +
                 `💍 Pareja: *${spouse}*\n` +
                 `🎂 Cumpleaños: *${data.birthday || 'No registrado'}*\n` +
+                `🎮 Juego favorito: *${data.game || 'Sin asignar'}*\n` +
+                `🎵 Música favorita: *${data.music || 'Sin asignar'}*\n` +
                 `🎨 Pasatiempo: *${data.hobby || 'Sin asignar'}*\n` +
                 `⚥ Género: *${data.gender || 'Sin asignar'}*\n` +
                 `♡ Bio: _${data.bio || 'Sin asignar'}_`;
+
             try {
                 const photoUrl = await sock.profilePictureUrl(target, 'image');
                 await sock.sendMessage(jid, { image: { url: photoUrl }, caption: text, mentions }, { quoted: m });
@@ -41,7 +47,10 @@ module.exports = {
                         console.error('No se pudo cargar foto de perfil:', fileErr.message);
                     }
                 }
-                await sock.sendMessage(jid, { text: `「✿」 No pude obtener la foto de perfil de WhatsApp; te muestro los datos en texto.\n\n${text}`, mentions }, { quoted: m });
+                await sock.sendMessage(jid, { 
+                    text: `「✿」 No pude obtener la foto de perfil de WhatsApp; te muestro los datos en texto 🌸\n\n${text}`, 
+                    mentions 
+                }, { quoted: m });
             }
         });
     }
