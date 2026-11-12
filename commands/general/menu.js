@@ -40,8 +40,6 @@ module.exports = {
 > Establece tu género
 ✧ !delgenre
 > Elimina tu género del perfil
-
-» ˚୨•(🌸)• ⊹ Perfil (Nuevos) ⊹
 ✧ !boda | !bodas
 > Muestra los detalles y tiempo de tu matrimonio actual
 ✧ !intereses | !gustos
