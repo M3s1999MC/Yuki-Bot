@@ -2,40 +2,26 @@ const db = require('../../database/db');
 const { getMessageSenderJid } = require('../../utils/messageSender');
 
 module.exports = {
-    name: 'divorce',
-    aliases: ['divorciarse'],
-    category: 'general',
-    description: 'Finaliza tu relación actual.',
+    name: 'divorciar',
+    aliases: ['divorce'],
+    category: 'profile',
+    description: 'Separarte de tu pareja actual.',
 
     async execute(sock, m) {
         const jid = m.key.remoteJid;
         const sender = getMessageSenderJid(m, sock);
-        db.getSafeUser(sender, (err, user) => {
-            if (err) {
-                console.error('Error al consultar pareja para divorcio:', err.message);
-                return sock.sendMessage(jid, { text: '「✿」 No pude consultar tu perfil.' }, { quoted: m });
-            }
-            const partner = user.married;
-            if (!partner || partner.startsWith('Nadie')) {
-                return sock.sendMessage(jid, { text: '「✿」 No tienes una pareja registrada. 💔' }, { quoted: m });
-            }
-            db.run(`UPDATE users SET married = 'Nadie 💔' WHERE jid = ?`, [sender], (selfErr) => {
-                if (selfErr) {
-                    console.error('Error al actualizar divorcio:', selfErr.message);
-                    return sock.sendMessage(jid, { text: '「✿」 No se pudo completar el divorcio.' }, { quoted: m });
-                }
-                const partnerIsJid = /^.+@(?:s\.whatsapp\.net|lid)$/.test(partner);
-                if (partnerIsJid) {
-                    db.run(`UPDATE users SET married = 'Nadie 💔' WHERE jid = ? AND married = ?`, [partner, sender], (partnerErr) => {
-                        if (partnerErr) console.error('Error al actualizar estado de la expareja:', partnerErr.message);
-                    });
-                }
-                const partnerTag = partnerIsJid ? `@${partner.split('@')[0]}` : partner.replace(/^@/, '@');
-                sock.sendMessage(jid, {
-                    text: `「✿」 El vínculo entre @${sender.split('@')[0]} y ${partnerTag} terminó. 💔`,
-                    mentions: [sender, ...(partnerIsJid ? [partner] : [])]
+
+        db.getSafeUser(sender, (err, data) => {
+            if (err || !data.married) {
+                return sock.sendMessage(jid, { 
+                    text: '「✿」 DIVORCIO 🌸\n\n❌ No estás casado/a con nadie actualmente.' 
                 }, { quoted: m });
-            });
+            }
+
+            sock.sendMessage(jid, {
+                text: `「✿」 REGISTRO CIVIL - DIVORCIO 🌸\n\n💔 @${sender.split('@')[0]} se ha divorciado. Ahora estás soltero/a.`,
+                mentions: [sender]
+            }, { quoted: m });
         });
     }
 };
