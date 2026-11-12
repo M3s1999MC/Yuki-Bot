@@ -1,6 +1,3 @@
-const db = require('../../database/db');
-const { getMessageSenderJid } = require('../../utils/messageSender');
-
 module.exports = {
     name: 'crime',
     aliases: ['crimen'],
@@ -9,36 +6,18 @@ module.exports = {
 
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
-        const sender = getMessageSenderJid(m, sock);
-
         const success = Math.random() > 0.4;
-        const amount = Math.floor(Math.random() * 1500) + 300;
-        db.getSafeUser(sender, (ensureErr, user) => {
-            if (ensureErr) {
-                console.error('Error al registrar usuario para crimen:', ensureErr.message);
-                return sock.sendMessage(jid, { text: '「✿」 No pude preparar tu billetera.' }, { quoted: m });
-            }
-            const loss = Math.min(Number(user.wallet) || 0, amount);
-            const change = success ? amount : -loss;
-            db.run(
-                `UPDATE users
-                 SET wallet = CASE
-                     WHEN COALESCE(wallet, 0) + ? < 0 THEN 0
-                     ELSE COALESCE(wallet, 0) + ?
-                 END
-                 WHERE jid = ?`,
-                [change, change, sender],
-                (err) => {
-                    if (err) {
-                        console.error('Error al procesar resultado de crimen:', err.message);
-                        return sock.sendMessage(jid, { text: '「✿」 No se pudo actualizar tu billetera.' }, { quoted: m });
-                    }
-                    const text = success
-                        ? `「✿」 ¡Escapaste! Ganaste *+$${amount.toLocaleString('es-CO')}*. 🦹`
-                        : `「✿」 Te atraparon y perdiste *$${loss.toLocaleString('es-CO')}* en multas. 🚨`;
-                    sock.sendMessage(jid, { text }, { quoted: m });
-                }
-            );
-        });
+
+        if (success) {
+            const reward = Math.floor(Math.random() * 2000) + 1000;
+            await sock.sendMessage(jid, { 
+                text: `(「✿」 "GOLPE DELICTIVO EXITOSO"🌸)\n\n🦹‍♂️ Lograste saquear el distrito comercial sin dejar rastro.\n💰 Botín: *+¥${reward.toLocaleString()}*` 
+            }, { quoted: m });
+        } else {
+            const fine = Math.floor(Math.random() * 1000) + 500;
+            await sock.sendMessage(jid, { 
+                text: `(「✿」 "¡OPERACIÓN FRACASADA!"🌸)\n\n🚨 ¡La policía te atrapó huyendo de la escena!\n💸 Multa pagada: *-¥${fine.toLocaleString()}*` 
+            }, { quoted: m });
+        }
     }
 };
