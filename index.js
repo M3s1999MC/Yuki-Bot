@@ -472,32 +472,23 @@ module.exports = {
 
             const imageBuffer = Buffer.from(await res.arrayBuffer());
 
-            // 1. Envía el menú principal con imagen y texto citando al usuario
+            // 1. Envía el menú principal con imagen y texto
             await sock.sendMessage(jid, {
                 image: imageBuffer,
                 caption: fullMenuText
             }, { quoted: m });
 
-            // 2. Intenta descargar y enviar la burbuja circular de TikTok
-            const tiktokUrl = "https://www.tiktok.com/@reicol_/video/7608383703986801921";
-            const apiRes = `https://api.tikwm.com/api/?url=${encodeURIComponent(tiktokUrl)}`;
-            const jsonResp = await fetch(apiRes).then(r => r.json());
-            const videoDownloadUrl = jsonResp.data?.play;
+            // 2. Envía directamente el video usando un enlace web estático en formato .mp4
+            // (Reemplaza este enlace por un link directo real que termine en .mp4 de un servidor estable)
+            const directVideoUrl = "https://example.com/tu-video-circular.mp4"; 
 
-            if (videoDownloadUrl) {
-                const vidRes = await fetch(videoDownloadUrl);
-                const videoBuffer = Buffer.from(await vidRes.arrayBuffer());
-
-                await sock.sendMessage(jid, {
-                    video: videoBuffer,
-                    ptv: true
-                }, { quoted: m });
-            }
+            await sock.sendMessage(jid, {
+                video: { url: directVideoUrl },
+                ptv: true // Esto lo convierte automáticamente en burbuja circular de nota de video
+            }, { quoted: m });
 
         } catch (err) {
-            // Si falla algo (como la API de TikTok), solo lo registramos en consola 
-            // y EVITAMOS mandar otro menú para que no se duplique nada.
-            console.error('⚠️ Error al cargar la nota de video de TikTok en el menú:', err.message);
+            console.error('⚠️ Error al cargar el menú o la nota de video:', err.message);
         }
     }
 };
