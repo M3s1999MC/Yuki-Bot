@@ -5,7 +5,7 @@ module.exports = {
     name: 'menu',
     aliases: ['help', 'ayuda', 'commands'],
     category: 'general',
-    description: 'Muestra el menú principal y la lista completa de comandos disponibles de Yuki.',
+    description: 'Muestra el menú principal con imagen y luego envía la nota de video PTV.',
 
     async execute(sock, m, args) {
         if (m.isProcessed) return;
@@ -13,7 +13,7 @@ module.exports = {
 
         const jid = m.key.remoteJid;
 
-        const menuHeader = `꧁༺ 𝐇𝐨λ𝐚! 𝐒𝐨𝐲 𝓨𝓾𝓴𝓲 ༻꧂\nᴀǫᴜɪ ᴛɪᴇɴᴇs ʟᴀ ʟɪsᴛᴀ ᴅᴇ cₒᴍᴀɴᴅₒs\n╭┈ ↷\n│ ✐ 𝓓𝓮𝔀𝓮𝓵𝓸𝓹𝓮𝓭 𝓫𝔂 𝓘𝓷𝓴𝓻𝓪 𝓢𝓽𝓾𝓭𝓲𝓸𝓼 🌸\n│ ✐ ꒷ꕤ💎 𝓒𝓪𝓷𝓪𝓵 𝐎𝐟𝐢𝐜𝐢𝐚𝓵 ෴\n│ https://whatsapp.com/channel/0029Vb9AOpk9WtC12RHEEj0Y\n│ ✐ 𝓓𝓮𝔀𝓮𝓵𝓸𝓹𝓮𝓭 𝓫𝔂 𝙳𝓾𝚟𝓪𝓵𝓲𝓷 🌸\n│ ✐ ꒷ꕤ💎 𝓒𝓪𝓷𝓪𝓵 𝓟𝓪𝓽𝓻𝓸𝓬𝓲𝓷𝓪𝓭𝓸 ෴\n│ https://whatsapp.com/channel/0029Vb92LdaCnA7rdqUbdw38\n╰─────────────────\n\n`;
+        const menuHeader = `꧁༺ 𝐇𝐨λ𝐚! 𝐒𝐨𝐲 𝓨𝓾𝓴𝓲 ༻꧂\nᴀǫᴜɪ ᴛɪᴇɴᴇs ʟᴀ ʟɪsᴛᴀ ᴅᴇ cₒᴍᴀɴᴅₒs\n╭┈ ↷\n│ ✐ 𝓓𝓮𝔀𝓮𝓵𝓸𝓹𝓮𝓭 𝓫𝔂 𝓘𝓷ᴋʀᴀ 𝓢𝓽𝓾𝓭𝓲𝓸𝓼 🌸\n│ ✐ ꒷ꕤ💎 𝓒𝓪𝓷𝓪𝓵 𝐎𝐟𝐢𝐜𝐢𝐚𝓵 ෴\n│ https://whatsapp.com/channel/0029Vb9AOpk9WtC12RHEEj0Y\n│ ✐ 𝓓𝓮𝔀𝓮𝓵𝓸𝓹𝓮𝓭 𝓫𝔂 𝙳𝓾𝚟𝓪𝓵𝓲𝓷 🌸\n│ ✐ ꒷ꕤ💎 𝓒𝓪𝓷𝓪𝓵 𝓟𝓪𝓽𝓻𝓸𝓬𝓲𝓷𝓪𝓭𝓸 ෴\n│ https://whatsapp.com/channel/0029Vb92LdaCnA7rdqUbdw38\n╰─────────────────\n\n`;
 
         const menuBody = `» ˚୨•(🌸)• ⊹ Perfil ⊹
 ✧ !profile | !perfil
@@ -463,7 +463,7 @@ module.exports = {
 ✧ !sticker | !s
 > Convierte una imagen, video, gif, sticker o URL en sticker, con formas y efectos opcionales
 ✧ !mistralstatus | !mistral | !iamistral | !testmistral
-> Verifica si la API de Mistral AI responde (señal, latencia y errors)
+> Verifica si la API de Mistral AI responde (señal, latencia y errores)
 ✧ !iastatus | !apisia | !checkia | !iaapis | !estadoia
 > Prueba todas las APIs de IA (Gemini, Mistral, Groq, OpenRouter y respaldo) y muestra cuáles responden
 ✧ !setpic | !setavatar | !setperfilpic
@@ -484,22 +484,31 @@ module.exports = {
         const fullMenuText = menuHeader + menuBody;
 
         try {
-            // Buscamos el archivo multimedia local en la raíz
-            const mediaPath = path.join(process.cwd(), 'media', 'Orihime edit.mp4');
+            // 1. Enviar el menú con imagen (Asegúrate de tener la imagen en media/menu.jpg o cámbiale el nombre)
+            const imagePath = path.join(process.cwd(), 'media', 'menu.jpg'); // Cambia por tu imagen del menú
 
-            if (fs.existsSync(mediaPath)) {
-                const mediaBuffer = await fs.promises.readFile(mediaPath);
-
-                // Enviamos el video JUNTO con el texto del menú como caption en un solo mensaje
+            if (fs.existsSync(imagePath)) {
+                const imageBuffer = await fs.promises.readFile(imagePath);
                 await sock.sendMessage(jid, {
-                    video: mediaBuffer,
-                    caption: fullMenuText,
-                    gifPlayback: false
+                    image: imageBuffer,
+                    caption: fullMenuText
                 }, { quoted: m });
             } else {
-                // Si por alguna razón no encuentra el video, envía solo el texto para que no falle el menú
-                console.warn('⚠️ No se encontró media/Orihime edit.mp4, enviando solo texto.');
+                // Si no hay imagen, manda solo el texto de respaldo
                 await sock.sendMessage(jid, { text: fullMenuText }, { quoted: m });
+            }
+
+            // 2. Inmediatamente después, enviar el video en nota circular (PTV)
+            const videoPath = path.join(process.cwd(), 'media', 'Orihime edit.mp4');
+
+            if (fs.existsSync(videoPath)) {
+                const videoBuffer = await fs.promises.readFile(videoPath);
+                await sock.sendMessage(jid, {
+                    video: videoBuffer,
+                    ptv: true
+                });
+            } else {
+                console.warn('⚠️ No se encontró el archivo media/Orihime edit.mp4 para el PTV');
             }
 
         } catch (error) {
