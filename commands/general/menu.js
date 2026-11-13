@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 module.exports = {
-    name: 'menu',
+    name: 'yukimenu',
     aliases: ['help', 'ayuda', 'commands'],
     category: 'general',
     description: 'Muestra el menú principal con imagen y luego envía la nota de video PTV.',
