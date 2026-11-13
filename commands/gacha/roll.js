@@ -1,5 +1,5 @@
 const axios = require('axios');
-const https = https = require('https');
+const https = require('https');
 const db = require('../../database/db');
 
 const jikanApi = axios.create({
@@ -14,8 +14,6 @@ const jikanApi = axios.create({
 });
 
 async function getOrSaveRandomCharacter() {
-    // Generamos un ID aleatorio entre 1 y 30000 (personajes populares y conocidos de anime)
-    // Esto evita por completo el endpoint pesado de /random/characters y responde al instante.
     const randomId = Math.floor(Math.random() * 25000) + 1;
 
     try {
@@ -47,14 +45,10 @@ async function getOrSaveRandomCharacter() {
         });
 
     } catch (error) {
-        // Si por casualidad ese ID aleatorio no existe (404), intentamos recursivamente con otro al instante o usamos el respaldo local
-        console.warn(`⚠️ ID ${randomId} no encontrado o falló la red, reintentando...`);
-        
-        // Plan B inmediato: si falla, tiramos de la base de datos local para que JAMÁS se quede colgado
         return new Promise((resolve, reject) => {
             db.get(`SELECT * FROM gacha_characters ORDER BY RANDOM() LIMIT 1`, (err, fallbackRow) => {
                 if (err || !fallbackRow) {
-                    return reject(new Error('No se pudo conectar a Jikan en este intento y la BD local está vacía. Vuelve a tirar.'));
+                    return reject(new Error('No se pudo conectar a Jikan y la BD local está vacía. Intenta de nuevo.'));
                 }
                 resolve(fallbackRow);
             });
@@ -75,7 +69,6 @@ module.exports = {
         const jid = m.key.remoteJid;
 
         try {
-            // Ya no ponemos el mensaje de "Buscando..." para que la respuesta se sienta inmediata y de golpe
             const character = await getOrSaveRandomCharacter();
 
             await sock.sendMessage(jid, {
