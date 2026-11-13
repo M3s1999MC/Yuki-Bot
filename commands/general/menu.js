@@ -200,13 +200,13 @@ module.exports = {
 > Arriesga parte de tu saldo en un fondo de inversión simulado
 ✧ !negocios | !shopnegocios | !tiendanegocios
 > Ver la tienda de negocios disponibles para comprar
-✧ !negocio | !ngcomprar | !comprarnegocio <número>
+✧ !negocio | !ngyukicomprar | !compraryukisnegocio <número>
 > Comprar un negocio de la tienda
-✧ !minegocios | !misnegocios | !ngmis | !miempresa
+✧ !minegocios | !misnegocios | !yukingmis | !miempresa
 > Ver el estado de tus negocios
-✧ !ngreclamar | !ngcobrar | !ngclaim | !reclamarnegocios | !cobrarnegocios
+✧ !yukireclamar | !yukicobrar | !yukiclaim | !reclamarnegocios | !cobrarnegocios
 > Cobrar el dinero acumulado de tus negocios (hasta 24 h)
-✧ !ngpagar | !pagarnegocios | !ngmantenimiento [número|todos]
+✧ !yukipagar | !pagarnegocios | !ngmantenimiento [número|todos]
 > Pagar el mantenimiento semanal de tus negocios
 ✧ !emisiones | !misioneseconomia | !tareas [cobrar]
 > Misiones diarias de economía con recompensas
