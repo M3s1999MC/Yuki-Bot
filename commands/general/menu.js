@@ -8,7 +8,6 @@ module.exports = {
     description: 'Muestra el menú principal y la lista completa de comandos disponibles de Yuki.',
 
     async execute(sock, m, args) {
-        // Evitamos doble ejecución si el mensaje ya fue procesado en el mismo tick
         if (m.isProcessed) return;
         m.isProcessed = true;
 
@@ -464,7 +463,7 @@ module.exports = {
 ✧ !sticker | !s
 > Convierte una imagen, video, gif, sticker o URL en sticker, con formas y efectos opcionales
 ✧ !mistralstatus | !mistral | !iamistral | !testmistral
-> Verifica si la API de Mistral AI responde (señal, latencia y errores)
+> Verifica si la API de Mistral AI responde (señal, latencia y errors)
 ✧ !iastatus | !apisia | !checkia | !iaapis | !estadoia
 > Prueba todas las APIs de IA (Gemini, Mistral, Groq, OpenRouter y respaldo) y muestra cuáles responden
 ✧ !setpic | !setavatar | !setperfilpic
@@ -482,26 +481,25 @@ module.exports = {
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 
-        // Aquí unimos correctamente las dos partes en la variable fullMenuText
         const fullMenuText = menuHeader + menuBody;
 
         try {
-            // 1. Enviar el texto completo del menú usando fullMenuText
-            await sock.sendMessage(jid, { text: fullMenuText }, { quoted: m });
+            // Buscamos el archivo multimedia local en la raíz
+            const mediaPath = path.join(process.cwd(), 'media', 'Orihime edit.mp4');
 
-            // 2. Buscar directamente en la carpeta media de la raíz con process.cwd()
-            const videoPath = path.join(process.cwd(), 'media', 'Orihime edit.mp4');
+            if (fs.existsSync(mediaPath)) {
+                const mediaBuffer = await fs.promises.readFile(mediaPath);
 
-            if (fs.existsSync(videoPath)) {
-                const videoBuffer = await fs.promises.readFile(videoPath);
-
-                // 3. Enviar como nota de video circular (PTV)
+                // Enviamos el video JUNTO con el texto del menú como caption en un solo mensaje
                 await sock.sendMessage(jid, {
-                    video: videoBuffer,
-                    ptv: true
-                });
+                    video: mediaBuffer,
+                    caption: fullMenuText,
+                    gifPlayback: false
+                }, { quoted: m });
             } else {
-                console.warn('⚠️ No se encontró el archivo en la raíz: media/Orihime edit.mp4');
+                // Si por alguna razón no encuentra el video, envía solo el texto para que no falle el menú
+                console.warn('⚠️ No se encontró media/Orihime edit.mp4, enviando solo texto.');
+                await sock.sendMessage(jid, { text: fullMenuText }, { quoted: m });
             }
 
         } catch (error) {
