@@ -1,9 +1,8 @@
-const axios = require('axios'); // Asegúrate de tener axios instalado, o usa fetch nativo de Node.js
+const axios = require('axios');
 const db = require('../../database/db');
 
 async function getOrSaveRandomCharacter() {
     try {
-        // Petición directa a la API pública de Jikan (v4)
         const response = await axios.get('https://api.jikan.moe/v4/random/characters', { timeout: 10000 });
         const char = response.data.data;
         
@@ -17,7 +16,7 @@ async function getOrSaveRandomCharacter() {
                 if (err) return reject(err);
                 
                 if (row) {
-                    resolve(row); // Ya existe en la base de datos local
+                    resolve(row);
                 } else {
                     db.run(
                         `INSERT INTO gacha_characters (mal_id, name, image, anime) VALUES (?, ?, ?, ?)`,
@@ -36,3 +35,39 @@ async function getOrSaveRandomCharacter() {
         throw new Error(`Fallo en Jikan: ${error.message}`);
     }
 }
+
+module.exports = {
+    name: 'roll',
+    aliases: ['rw', 'rollwaifu', 'waifu'], // ¡Los aliases restaurados para que responda a todo!
+    category: 'gacha',
+    description: 'Tira un personaje aleatorio de Jikan y lo guarda automáticamente en la base de datos.',
+
+    async execute(sock, m, args) {
+        if (m.isProcessed) return;
+        m.isProcessed = true;
+
+        const jid = m.key.remoteJid;
+
+        try {
+            await sock.sendMessage(jid, { text: '☕ Buscando personaje en el multiverso del anime... 🌸' }, { quoted: m });
+
+            const character = await getOrSaveRandomCharacter();
+
+            if (!character) {
+                return await sock.sendMessage(jid, { text: '🌸 Ups, no se pudo obtener el personaje. Inténtalo de nuevo.' }, { quoted: m });
+            }
+
+            await sock.sendMessage(jid, {
+                image: { url: character.image },
+                caption: `「✿」 **¡HAS OBTENIDO UN PERSONAJE!** 🌸\n\n` +
+                         `• **Nombre:** ${character.name}\n` +
+                         `• **Anime:** ${character.anime}\n\n` +
+                         `💡 Usa tu comando de claim para reclamarlo a tu harem.`
+            }, { quoted: m });
+
+        } catch (error) {
+            console.error('Error en el comando roll:', error.message);
+            await sock.sendMessage(jid, { text: `「✿」 Error técnico: ${error.message}` }, { quoted: m });
+        }
+    }
+};
