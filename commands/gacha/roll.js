@@ -42,7 +42,7 @@ module.exports = {
     category: 'gacha',
     description: 'Tira un personaje de la API de Jikan de forma dinámica y lo guarda en la base de datos.',
 
-    async execute(sock, m, args) {
+async execute(sock, m, args) {
         if (m.isProcessed) return;
         m.isProcessed = true;
 
@@ -66,8 +66,8 @@ module.exports = {
             }, { quoted: m });
 
         } catch (error) {
-            console.error('Error en el comando roll:', error.message);
-            await sock.sendMessage(jid, { text: '「✿」 Ocurrió un error inesperado al tirar el gacha. 🌸' }, { quoted: m });
+            // ¡Esto imprimirá el error real en la consola de Render para saber qué falló!
+            console.error('DETALLE EXACTO DEL ERROR EN ROLL:', error);
+            await sock.sendMessage(jid, { text: `「✿」 Error técnico: ${error.message}` }, { quoted: m });
         }
     }
-};
