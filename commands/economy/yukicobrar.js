@@ -4,8 +4,8 @@ const missions = require('../../utils/missions');
 const { reply, senderJid } = require('../../utils/commandHelpers');
 
 module.exports = {
-    name: 'ngreclamar',
-    aliases: ['ngcobrar', 'ngclaim', 'reclamarnegocios', 'cobrarnegocios'],
+    name: 'yukicobrar',
+    aliases: ['yukiclaim', 'reclamarnegocios', 'cobrarnegocios', 'ygc'],
     category: 'economy',
     description: 'Cobrar el dinero acumulado de tus negocios',
 
@@ -19,7 +19,7 @@ module.exports = {
             const detail = result.details.map(item => `${item.business.emoji} ${item.business.name}: ${economy.money(item.amount)}`).join('\n');
             return reply(sock, m, `「✿」 💰 *Ganancias cobradas*\n\n${detail}\n\n*Total: +${economy.money(result.total)}* 🌸`);
         } catch (error) {
-            console.error('Error en !ngreclamar:', error.message);
+            console.error('Error en !yukicobrar:', error.message);
             return reply(sock, m, '「✿」 No pude cobrar; inténtalo de nuevo en un momento.');
         }
     }
