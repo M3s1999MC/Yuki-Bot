@@ -1,11 +1,12 @@
-const axios = require('axios');
-const db = require('../db'); // cambia 'db' por el nombre exacto de tu archivo
+const { random } = require('jikan-nodejs'); // Módulo de personajes/aleatorios del wrapper
+const db = require('./db'); // Conexión a Neon/PostgreSQL (db.js dentro de la misma carpeta database)
 
 async function getOrSaveRandomCharacter() {
     try {
-        // 1. Pedimos un personaje aleatorio a Jikan
-        const response = await axios.get('https://api.jikan.moe/v4/random/characters');
-        const char = response.data.data;
+        // 1. Pedimos un personaje aleatorio usando la librería del repositorio
+        // (Dependiendo de la versión del wrapper, suele tener un método para random o personajes)
+        const response = await random.random('characters');
+        const char = response.data;
         
         const malId = char.mal_id;
         const name = char.name;
@@ -17,10 +18,10 @@ async function getOrSaveRandomCharacter() {
         let result = await db.query(queryCheck, [malId]);
 
         if (result.rows.length > 0) {
-            // Ya existe en la BD local, lo devolvemos de aquí (¡sin gastar peticiones a la API!)
+            // Ya existe en la BD local, lo devolvemos directo de la BD (cero llamadas extra a la API)
             return result.rows[0];
         } else {
-            // 3. Si no existe, lo guardamos automáticamente en la BD
+            // 3. Si no existe, lo guardamos automáticamente en la BD para las próximas veces
             let queryInsert = `
                 INSERT INTO gacha_characters (mal_id, name, image, anime) 
                 VALUES ($1, $2, $3, $4) 
@@ -31,7 +32,7 @@ async function getOrSaveRandomCharacter() {
         }
 
     } catch (error) {
-        console.error('Error en el sistema de gacha inteligente:', error.message);
+        console.error('Error al obtener personaje con jikan-nodejs:', error.message);
         return null;
     }
 }
