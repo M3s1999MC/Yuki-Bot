@@ -2,15 +2,16 @@ const axios = require('axios');
 const https = require('https');
 const db = require('../../database/db');
 
-// Instancia de axios optimizada para forzar IPv4 y evitar el ETIMEDOUT en Render
+// Instancia optimizada para engañar al firewall de Cloudflare que protege Jikan
 const jikanApi = axios.create({
     baseURL: 'https://api.jikan.moe/v4',
     timeout: 15000,
     httpsAgent: new https.Agent({ keepAlive: true }),
-    family: 4, // Fuerza IPv4 para solucionar el bloqueo de red en la nube
+    family: 4, // Fuerza IPv4 para evitar bloqueos de red en Render
     headers: {
-        'User-Agent': 'YukiBot-MD/1.0',
-        'Accept': 'application/json'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8'
     }
 });
 
@@ -53,7 +54,7 @@ module.exports = {
     name: 'roll',
     aliases: ['rw', 'rollwaifu', 'waifu'],
     category: 'gacha',
-    description: 'Tira un personaje aleatorio de Jikan y lo guarda automáticamente en la base de datos.',
+    description: 'Tira un personaje aleatorio directamente de la API de Jikan.',
 
     async execute(sock, m, args) {
         if (m.isProcessed) return;
@@ -65,10 +66,6 @@ module.exports = {
             await sock.sendMessage(jid, { text: '☕ Buscando personaje en el multiverso del anime... 🌸' }, { quoted: m });
 
             const character = await getOrSaveRandomCharacter();
-
-            if (!character) {
-                return await sock.sendMessage(jid, { text: '🌸 Ups, no se pudo obtener el personaje. Inténtalo de nuevo.' }, { quoted: m });
-            }
 
             await sock.sendMessage(jid, {
                 image: { url: character.image },
