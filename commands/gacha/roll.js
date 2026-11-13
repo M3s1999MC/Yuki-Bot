@@ -1,9 +1,22 @@
 const axios = require('axios');
+const https = https = require('https');
 const db = require('../../database/db');
+
+// Instancia de axios optimizada para forzar IPv4 y evitar el ETIMEDOUT en Render
+const jikanApi = axios.create({
+    baseURL: 'https://api.jikan.moe/v4',
+    timeout: 15000,
+    httpsAgent: new https.Agent({ keepAlive: true }),
+    family: 4, // Fuerza IPv4 para solucionar el bloqueo de red en la nube
+    headers: {
+        'User-Agent': 'YukiBot-MD/1.0',
+        'Accept': 'application/json'
+    }
+});
 
 async function getOrSaveRandomCharacter() {
     try {
-        const response = await axios.get('https://api.jikan.moe/v4/random/characters', { timeout: 10000 });
+        const response = await jikanApi.get('/random/characters');
         const char = response.data.data;
         
         const malId = char.mal_id;
@@ -38,7 +51,7 @@ async function getOrSaveRandomCharacter() {
 
 module.exports = {
     name: 'roll',
-    aliases: ['rw', 'rollwaifu', 'waifu'], // ¡Los aliases restaurados para que responda a todo!
+    aliases: ['rw', 'rollwaifu', 'waifu'], // Todos tus aliases listos y salvados
     category: 'gacha',
     description: 'Tira un personaje aleatorio de Jikan y lo guarda automáticamente en la base de datos.',
 
