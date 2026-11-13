@@ -1,7 +1,6 @@
 const { random } = require('jikan-nodejs');
-const db = require('../../database/db'); // Ajusta la ruta a tu archivo db.js según dónde esté tu comando
+const db = require('../../database/db');
 
-// Función para obtener o guardar el personaje aleatorio de Jikan
 async function getOrSaveRandomCharacter() {
     try {
         const response = await random.random('characters');
@@ -12,7 +11,6 @@ async function getOrSaveRandomCharacter() {
         const image = char.images.jpg.image_url;
         const anime = char.anime[0]?.anime?.name || "Original / Desconocido";
 
-        // Si estás usando SQLite local
         return new Promise((resolve, reject) => {
             db.get(`SELECT * FROM gacha_characters WHERE mal_id = ?`, [malId], (err, row) => {
                 if (err) return reject(err);
@@ -38,33 +36,38 @@ async function getOrSaveRandomCharacter() {
     }
 }
 
-// Dentro de tu comando execute (o handler de tu bot):
-async function execute(sock, m, args) {
-    const jid = m.key.remoteJid;
+module.exports = {
+    name: 'roll',
+    aliases: ['rw', 'rollwaifu', 'waifu'],
+    category: 'gacha',
+    description: 'Tira un personaje de la API de Jikan de forma dinámica y lo guarda en la base de datos.',
 
-    try {
-        // Mensaje de carga opcional
-        await sock.sendMessage(jid, { text: '「✿」 Buscando personaje en el multiverso del anime... 🌸' }, { quoted: m });
+    async execute(sock, m, args) {
+        if (m.isProcessed) return;
+        m.isProcessed = true;
 
-        const character = await getOrSaveRandomCharacter();
+        const jid = m.key.remoteJid;
 
-        if (!character) {
-            return await sock.sendMessage(jid, { text: '「✿」 Ups, la API de Jikan tardó en responder o hubo un error. Inténtalo de nuevo. 🌸' }, { quoted: m });
+        try {
+            await sock.sendMessage(jid, { text: '「✿」 Buscando personaje en el multiverso del anime... 🌸' }, { quoted: m });
+
+            const character = await getOrSaveRandomCharacter();
+
+            if (!character) {
+                return await sock.sendMessage(jid, { text: '「✿」 Ups, la API de Jikan tardó en responder o hubo un error. Inténtalo de nuevo. 🌸' }, { quoted: m });
+            }
+
+            await sock.sendMessage(jid, {
+                image: { url: character.image },
+                caption: `「✿」 **¡HAS OBTENIDO UN PERSONAJE!** 🌸\n\n` +
+                         `• **Nombre:** ${character.name}\n` +
+                         `• **Anime:** ${character.anime}\n\n` +
+                         `💡 Usa tu comando de claim para reclamarlo a tu harem.`
+            }, { quoted: m });
+
+        } catch (error) {
+            console.error('Error en el comando roll:', error.message);
+            await sock.sendMessage(jid, { text: '「✿」 Ocurrió un error inesperado al tirar el gacha. 🌸' }, { quoted: m });
         }
-
-        // Enviamos la imagen y los datos del personaje con el formato oficial de Yuki
-        await sock.sendMessage(jid, {
-            image: { url: character.image },
-            caption: `「✿」 **¡HAS OBTENIDO UN PERSONAJE!** 🌸\n\n` +
-                     `• **Nombre:** ${character.name}\n` +
-                     `• **Anime:** ${character.anime}\n\n` +
-                     `💡 Usa tu comando de claim para reclamarlo a tu harem.`
-        }, { quoted: m });
-
-    } catch (error) {
-        console.error('Error en el comando roll:', error);
-        await sock.sendMessage(jid, { text: '「✿」 Ocurrió un error inesperado al tirar el gacha. 🌸' }, { quoted: m });
     }
-}
-
-module.exports = { execute };
+};
