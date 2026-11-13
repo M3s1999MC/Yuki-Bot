@@ -1,3 +1,6 @@
+const fs = require('fs');
+const path = require('path');
+
 module.exports = {
     name: 'menu',
     aliases: ['help', 'ayuda', 'commands'],
@@ -162,7 +165,7 @@ module.exports = {
 > Ver los primeros puestos de todos los rankings en un solo mensaje
 ✧ !banco / !bal / !bank [@usuario | responder a un mensaje
 > Consultar tu saldo o el de otro usuario (etiquetándolo o respondiendo a su mensaje)
-✧ !cofre / !chest
+✧ !cofre | !chest
 > Abre un cofre misterioso (cada 24 horas)
 ✧ !daily
 > Reclama tu recompensa diaria
@@ -479,11 +482,12 @@ module.exports = {
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 
+        // Aquí unimos correctamente las dos partes en la variable fullMenuText
         const fullMenuText = menuHeader + menuBody;
 
         try {
-            // 1. Enviar el texto del menú
-            await sock.sendMessage(jid, { text: menuText }, { quoted: m });
+            // 1. Enviar el texto completo del menú usando fullMenuText
+            await sock.sendMessage(jid, { text: fullMenuText }, { quoted: m });
 
             // 2. Buscar directamente en la carpeta media de la raíz con process.cwd()
             const videoPath = path.join(process.cwd(), 'media', 'Orihime edit.mp4');
