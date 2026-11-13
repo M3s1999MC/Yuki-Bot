@@ -1,71 +1,39 @@
-const db = require('./db');
-const roster = require('../utils/gachaRoster');
-const { ensureUniqueHaremEntries } = require('./gachaMigrations');
+const axios = require('axios');
+const db = require('../database'); // Tu conexión a PostgreSQL/Neon
 
-function run(sql, params = []) {
-    return new Promise((resolve, reject) => {
-        db.run(sql, params, error => error ? reject(error) : resolve());
-    });
-}
+async function getOrSaveRandomCharacter() {
+    try {
+        // 1. Pedimos un personaje aleatorio a Jikan
+        const response = await axios.get('https://api.jikan.moe/v4/random/characters');
+        const char = response.data.data;
+        
+        const malId = char.mal_id;
+        const name = char.name;
+        const image = char.images.jpg.image_url;
+        const anime = char.anime[0]?.anime?.name || "Original / Desconocido";
 
-function all(sql, params = []) {
-    return new Promise((resolve, reject) => {
-        db.all(sql, params, (error, rows) => error ? reject(error) : resolve(rows));
-    });
-}
+        // 2. Verificamos si ya lo tenemos guardado en nuestra base de datos local
+        let queryCheck = 'SELECT * FROM gacha_characters WHERE mal_id = $1';
+        let result = await db.query(queryCheck, [malId]);
 
-async function initializeGachaDatabase() {
-    if (db.ready) await db.ready;
-
-    await run(`CREATE TABLE IF NOT EXISTS characters (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT UNIQUE,
-        serie TEXT,
-        price INTEGER DEFAULT 1000,
-        image_url TEXT,
-        is_curated INTEGER DEFAULT 0
-    )`);
-    await run(`CREATE TABLE IF NOT EXISTS user_harem (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_jid TEXT,
-        character_id INTEGER,
-        FOREIGN KEY(character_id) REFERENCES characters(id)
-    )`);
-    await run(`CREATE TABLE IF NOT EXISTS waifu_market (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        seller_jid TEXT,
-        character_id INTEGER,
-        price INTEGER,
-        FOREIGN KEY(character_id) REFERENCES characters(id)
-    )`);
-    await ensureUniqueHaremEntries(db);
-
-    if (!db.isNeon) {
-        const columns = await all(`PRAGMA table_info(characters)`);
-        if (!columns.some(column => column.name === 'is_curated')) {
-            await run(`ALTER TABLE characters ADD COLUMN is_curated INTEGER DEFAULT 0`);
+        if (result.rows.length > 0) {
+            // Ya existe en la BD local, lo devolvemos de aquí (¡sin gastar peticiones a la API!)
+            return result.rows[0];
+        } else {
+            // 3. Si no existe, lo guardamos automáticamente en la BD
+            let queryInsert = `
+                INSERT INTO gacha_characters (mal_id, name, image, anime) 
+                VALUES ($1, $2, $3, $4) 
+                RETURNING *;
+            `;
+            let newChar = await db.query(queryInsert, [malId, name, image, anime]);
+            return newChar.rows[0];
         }
-    }
 
-    for (const { name, serie, imageUrl } of roster) {
-        const configuredImageUrl = typeof imageUrl === 'string' && imageUrl.trim()
-            ? imageUrl.trim()
-            : null;
-        await run(
-            `INSERT INTO characters (name, serie, price, image_url, is_curated)
-             SELECT ?, ?, 1000, ?, 1
-             WHERE NOT EXISTS (
-                 SELECT 1 FROM characters WHERE name = ? AND serie = ?
-             )`,
-            [name, serie, configuredImageUrl, name, serie]
-        );
-        await run(
-            `UPDATE characters
-             SET is_curated = 1, image_url = ?
-             WHERE name = ? AND serie = ?`,
-            [configuredImageUrl, name, serie]
-        );
+    } catch (error) {
+        console.error('Error en el sistema de gacha inteligente:', error.message);
+        return null;
     }
 }
 
-module.exports = initializeGachaDatabase();
+module.exports = { getOrSaveRandomCharacter };
