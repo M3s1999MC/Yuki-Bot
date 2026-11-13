@@ -105,21 +105,15 @@ db.serialize(() => {
         if (err) console.error('Error al crear wa_contacts:', err.message);
     });
 
-    CREATE TABLE IF NOT EXISTS gacha_characters (
-        mal_id INT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
+    // Tabla integrada para el nuevo Gacha Dinámico con Jikan API
+    db.run(`CREATE TABLE IF NOT EXISTS gacha_characters (
+        mal_id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
         image TEXT NOT NULL,
-        anime VARCHAR(255)
-    );
-        
-        db.run(`CREATE TABLE IF NOT EXISTS harem (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            owner_jid TEXT,
-            character_name TEXT,
-            series TEXT,
-            image_url TEXT,
-            value INTEGER
-        )`);
+        anime TEXT
+    )`, (err) => {
+        if (err) console.error('Error al crear gacha_characters:', err.message);
+    });
 
     db.run(`CREATE TABLE IF NOT EXISTS market (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -193,7 +187,6 @@ db.serialize(() => {
     console.log('📦 Todas las tablas del sistema de Yuki se han verificado/creado correctamente.');
 });
 
-// Función para registrar usuarios instantáneamente al escribir
 db.registerUser = function(jid, name = 'Usuario', callback) {
     if (!jid) return;
     const displayName = typeof name === 'string' ? name.trim() : '';
