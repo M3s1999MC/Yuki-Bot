@@ -481,37 +481,27 @@ module.exports = {
 
         const fullMenuText = menuHeader + menuBody;
 
-        // 1. Envía el menú principal con imagen y texto de forma independiente
         try {
-            const imageUrl = 'https://i.pinimg.com/736x/c7/52/42/c752425496a914f6e1e0a58da246fe20.jpg';
+            // 1. Enviar el texto del menú
+            await sock.sendMessage(jid, { text: menuText }, { quoted: m });
 
-            const res = await fetch(imageUrl, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-                }
-            });
+            // 2. Buscar directamente en la carpeta media de la raíz con process.cwd()
+            const videoPath = path.join(process.cwd(), 'media', 'Orihime edit.mp4');
 
-            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+            if (fs.existsSync(videoPath)) {
+                const videoBuffer = await fs.promises.readFile(videoPath);
 
-            const imageBuffer = Buffer.from(await res.arrayBuffer());
+                // 3. Enviar como nota de video circular (PTV)
+                await sock.sendMessage(jid, {
+                    video: videoBuffer,
+                    ptv: true
+                });
+            } else {
+                console.warn('⚠️ No se encontró el archivo en la raíz: media/Orihime edit.mp4');
+            }
 
-            await sock.sendMessage(jid, {
-                image: imageBuffer,
-                caption: fullMenuText
-            }, { quoted: m });
-
-        } catch (err) {
-            console.error('⚠️ Error al cargar la imagen del menú:', err.message);
-        }
-
-        // 2. Envía la nota de video circular de manera independiente para que no afecte al menú si falla
-        try {
-            await sock.sendMessage(jid, {
-                video: { url: "https://litter.catbox.moe/u31murst29062ta5.mp4" },
-                ptv: true
-            }, { quoted: m });
-        } catch (videoErr) {
-            console.error('⚠️ No se pudo enviar la nota de video circular:', videoErr.message);
+        } catch (error) {
+            console.error('Error en el comando menu:', error.message);
         }
     }
 };
