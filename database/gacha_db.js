@@ -1,5 +1,5 @@
 const axios = require('axios');
-const db = require('../db.js'); // Tu conexión a PostgreSQL/Neon
+const db = require('../db'); // cambia 'db' por el nombre exacto de tu archivo
 
 async function getOrSaveRandomCharacter() {
     try {
