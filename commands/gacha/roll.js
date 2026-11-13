@@ -1,10 +1,11 @@
-const { random } = require('jikan-nodejs');
+const axios = require('axios'); // Asegúrate de tener axios instalado, o usa fetch nativo de Node.js
 const db = require('../../database/db');
 
 async function getOrSaveRandomCharacter() {
     try {
-        const response = await random.random('characters');
-        const char = response.data;
+        // Petición directa a la API pública de Jikan (v4)
+        const response = await axios.get('https://api.jikan.moe/v4/random/characters', { timeout: 10000 });
+        const char = response.data.data;
         
         const malId = char.mal_id;
         const name = char.name;
@@ -31,43 +32,7 @@ async function getOrSaveRandomCharacter() {
         });
 
     } catch (error) {
-        console.error('Error al obtener personaje con Jikan:', error.message);
-        return null;
+        console.error('Error directo en Jikan API:', error.message);
+        throw new Error(`Fallo en Jikan: ${error.message}`);
     }
 }
-
-module.exports = {
-    name: 'roll',
-    aliases: ['rw', 'rollwaifu', 'waifu'],
-    category: 'gacha',
-    description: 'Tira un personaje de la API de Jikan de forma dinámica y lo guarda en la base de datos.',
-
-async execute(sock, m, args) {
-        if (m.isProcessed) return;
-        m.isProcessed = true;
-
-        const jid = m.key.remoteJid;
-
-        try {
-            await sock.sendMessage(jid, { text: '「✿」 Buscando personaje en el multiverso del anime... 🌸' }, { quoted: m });
-
-            const character = await getOrSaveRandomCharacter();
-
-            if (!character) {
-                return await sock.sendMessage(jid, { text: '「✿」 Ups, la API de Jikan tardó en responder o hubo un error. Inténtalo de nuevo. 🌸' }, { quoted: m });
-            }
-
-            await sock.sendMessage(jid, {
-                image: { url: character.image },
-                caption: `「✿」 **¡HAS OBTENIDO UN PERSONAJE!** 🌸\n\n` +
-                         `• **Nombre:** ${character.name}\n` +
-                         `• **Anime:** ${character.anime}\n\n` +
-                         `💡 Usa tu comando de claim para reclamarlo a tu harem.`
-            }, { quoted: m });
-
-        } catch (error) {
-            // ¡Esto imprimirá el error real en la consola de Render para saber qué falló!
-            console.error('DETALLE EXACTO DEL ERROR EN ROLL:', error);
-            await sock.sendMessage(jid, { text: `「✿」 Error técnico: ${error.message}` }, { quoted: m });
-        }
-    }
