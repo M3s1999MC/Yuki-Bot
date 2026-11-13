@@ -1,5 +1,5 @@
 const axios = require('axios');
-const https = https = require('https');
+const https = require('https');
 const db = require('../../database/db');
 
 // Instancia de axios optimizada para forzar IPv4 y evitar el ETIMEDOUT en Render
@@ -51,7 +51,7 @@ async function getOrSaveRandomCharacter() {
 
 module.exports = {
     name: 'roll',
-    aliases: ['rw', 'rollwaifu', 'waifu'], // Todos tus aliases listos y salvados
+    aliases: ['rw', 'rollwaifu', 'waifu'],
     category: 'gacha',
     description: 'Tira un personaje aleatorio de Jikan y lo guarda automáticamente en la base de datos.',
 
