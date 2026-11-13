@@ -1,5 +1,5 @@
 const axios = require('axios');
-const db = require('../database'); // Tu conexión a PostgreSQL/Neon
+const db = require('../db.js'); // Tu conexión a PostgreSQL/Neon
 
 async function getOrSaveRandomCharacter() {
     try {
