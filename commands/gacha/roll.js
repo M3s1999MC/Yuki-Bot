@@ -1,23 +1,25 @@
 const axios = require('axios');
-const https = require('https');
+const https = https = require('https');
 const db = require('../../database/db');
 
-// Instancia optimizada para engañar al firewall de Cloudflare que protege Jikan
 const jikanApi = axios.create({
     baseURL: 'https://api.jikan.moe/v4',
-    timeout: 15000,
+    timeout: 8000,
     httpsAgent: new https.Agent({ keepAlive: true }),
-    family: 4, // Fuerza IPv4 para evitar bloqueos de red en Render
+    family: 4,
     headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        'Accept': 'application/json, text/plain, */*',
-        'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8'
+        'Accept': 'application/json'
     }
 });
 
 async function getOrSaveRandomCharacter() {
+    // Generamos un ID aleatorio entre 1 y 30000 (personajes populares y conocidos de anime)
+    // Esto evita por completo el endpoint pesado de /random/characters y responde al instante.
+    const randomId = Math.floor(Math.random() * 25000) + 1;
+
     try {
-        const response = await jikanApi.get('/random/characters');
+        const response = await jikanApi.get(`/characters/${randomId}`);
         const char = response.data.data;
         
         const malId = char.mal_id;
@@ -45,8 +47,18 @@ async function getOrSaveRandomCharacter() {
         });
 
     } catch (error) {
-        console.error('Error directo en Jikan API:', error.message);
-        throw new Error(`Fallo en Jikan: ${error.message}`);
+        // Si por casualidad ese ID aleatorio no existe (404), intentamos recursivamente con otro al instante o usamos el respaldo local
+        console.warn(`⚠️ ID ${randomId} no encontrado o falló la red, reintentando...`);
+        
+        // Plan B inmediato: si falla, tiramos de la base de datos local para que JAMÁS se quede colgado
+        return new Promise((resolve, reject) => {
+            db.get(`SELECT * FROM gacha_characters ORDER BY RANDOM() LIMIT 1`, (err, fallbackRow) => {
+                if (err || !fallbackRow) {
+                    return reject(new Error('No se pudo conectar a Jikan en este intento y la BD local está vacía. Vuelve a tirar.'));
+                }
+                resolve(fallbackRow);
+            });
+        });
     }
 }
 
@@ -54,7 +66,7 @@ module.exports = {
     name: 'roll',
     aliases: ['rw', 'rollwaifu', 'waifu'],
     category: 'gacha',
-    description: 'Tira un personaje aleatorio directamente de la API de Jikan.',
+    description: 'Tira un personaje de Jikan de forma instantánea mediante ID directo.',
 
     async execute(sock, m, args) {
         if (m.isProcessed) return;
@@ -63,8 +75,7 @@ module.exports = {
         const jid = m.key.remoteJid;
 
         try {
-            await sock.sendMessage(jid, { text: '☕ Buscando personaje en el multiverso del anime... 🌸' }, { quoted: m });
-
+            // Ya no ponemos el mensaje de "Buscando..." para que la respuesta se sienta inmediata y de golpe
             const character = await getOrSaveRandomCharacter();
 
             await sock.sendMessage(jid, {
@@ -77,7 +88,7 @@ module.exports = {
 
         } catch (error) {
             console.error('Error en el comando roll:', error.message);
-            await sock.sendMessage(jid, { text: `「✿」 Error técnico: ${error.message}` }, { quoted: m });
+            await sock.sendMessage(jid, { text: `「✿」 Error: ${error.message}` }, { quoted: m });
         }
     }
 };
