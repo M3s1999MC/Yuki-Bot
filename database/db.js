@@ -105,14 +105,22 @@ db.serialize(() => {
         if (err) console.error('Error al crear wa_contacts:', err.message);
     });
 
-    db.run(`CREATE TABLE IF NOT EXISTS harem (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        owner_jid TEXT,
-        character_name TEXT,
-        series TEXT,
-        image_url TEXT,
-        value INTEGER
-    )`);
+    CREATE TABLE IF NOT EXISTS gacha_characters (
+        mal_id INT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        image TEXT NOT NULL,
+        anime VARCHAR(255)
+    );
+        
+        db.run(`CREATE TABLE IF NOT EXISTS harem (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            owner_jid TEXT,
+            character_name TEXT,
+            series TEXT,
+            image_url TEXT,
+            value INTEGER
+        )`);
+
     db.run(`CREATE TABLE IF NOT EXISTS market (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         seller_jid TEXT,
