@@ -1,17 +1,12 @@
-const { getRandomCharacter } = require('../../utils/gachaApi');
+const { getOrSaveRandomCharacter } = require('../../database/gacha_db');
 
-// Dentro de tu comando execute:
-const character = await getRandomCharacter();
-
+// Dentro de execute:
+const character = await getOrSaveRandomCharacter();
 if (!character) {
-    return await sock.sendMessage(jid, { text: '「✿」 Ups, la API de Jikan tardó en responder, intenta de nuevo 🌸' }, { quoted: m });
+    return await sock.sendMessage(jid, { text: '「✿」 Ups, ocurrió un error al buscar el personaje 🌸' }, { quoted: m });
 }
 
-// Envías la tirada con la imagen que trae la API automáticamente
 await sock.sendMessage(jid, {
     image: { url: character.image },
-    caption: `「✿」 **¡HAS OBTENIDO UN PERSONAJE!** 🌸\n\n` +
-             `• **Nombre:** ${character.name}\n` +
-             `• **Serie:** ${character.anime}\n\n` +
-             `💡 Usa *!claim* para reclamarlo a tu harem.`
+    caption: `☕ **¡PERSONAJE OBTENIDO!** 🌸\n\n• **Nombre:** ${character.name}\n• **Anime:** ${character.anime}`
 }, { quoted: m });
