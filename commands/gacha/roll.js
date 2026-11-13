@@ -1,6 +1,5 @@
 const axios = require('axios');
 const https = require('https');
-const db = require('../../database/db');
 
 const jikanApi = axios.create({
     baseURL: 'https://api.jikan.moe/v4',
@@ -13,54 +12,14 @@ const jikanApi = axios.create({
     }
 });
 
-async function getOrSaveRandomCharacter() {
-    const randomId = Math.floor(Math.random() * 25000) + 1;
-
-    try {
-        const response = await jikanApi.get(`/characters/${randomId}`);
-        const char = response.data.data;
-        
-        const malId = char.mal_id;
-        const name = char.name;
-        const image = char.images.jpg.image_url;
-        const anime = char.anime[0]?.anime?.name || "Original / Desconocido";
-
-        return new Promise((resolve, reject) => {
-            db.get(`SELECT * FROM gacha_characters WHERE mal_id = ?`, [malId], (err, row) => {
-                if (err) return reject(err);
-                
-                if (row) {
-                    resolve(row);
-                } else {
-                    db.run(
-                        `INSERT INTO gacha_characters (mal_id, name, image, anime) VALUES (?, ?, ?, ?)`,
-                        [malId, name, image, anime],
-                        (insertErr) => {
-                            if (insertErr) return reject(insertErr);
-                            resolve({ mal_id: malId, name, image, anime });
-                        }
-                    );
-                }
-            });
-        });
-
-    } catch (error) {
-        return new Promise((resolve, reject) => {
-            db.get(`SELECT * FROM gacha_characters ORDER BY RANDOM() LIMIT 1`, (err, fallbackRow) => {
-                if (err || !fallbackRow) {
-                    return reject(new Error('No se pudo conectar a Jikan y la BD local está vacía. Intenta de nuevo.'));
-                }
-                resolve(fallbackRow);
-            });
-        });
-    }
-}
+// Lista de IDs reales y seguros de MyAnimeList para evitar fallos de red o búsquedas lentas
+const safeIds = [1, 2, 3, 4, 5, 17, 18, 20, 21, 40, 62, 71, 80, 117, 407, 73, 79, 81, 82, 89, 90, 155, 307, 469, 111, 314, 1176, 209, 300, 301, 311, 499, 1182, 1999, 2197, 7111, 10255, 13742];
 
 module.exports = {
     name: 'roll',
     aliases: ['rw', 'rollwaifu', 'waifu'],
     category: 'gacha',
-    description: 'Tira un personaje de Jikan de forma instantánea mediante ID directo.',
+    description: 'Tira un personaje directo de Jikan al instante.',
 
     async execute(sock, m, args) {
         if (m.isProcessed) return;
@@ -69,7 +28,17 @@ module.exports = {
         const jid = m.key.remoteJid;
 
         try {
-            const character = await getOrSaveRandomCharacter();
+            // Seleccionamos un ID al azar de la lista segura de personajes populares
+            const randomId = safeIds[Math.floor(Math.random() * safeIds.length)];
+
+            const response = await jikanApi.get(`/characters/${randomId}`);
+            const char = response.data.data;
+
+            const character = {
+                name: char.name,
+                image: char.images.jpg.image_url,
+                anime: char.anime[0]?.anime?.name || "Original / Desconocido"
+            };
 
             await sock.sendMessage(jid, {
                 image: { url: character.image },
@@ -81,7 +50,7 @@ module.exports = {
 
         } catch (error) {
             console.error('Error en el comando roll:', error.message);
-            await sock.sendMessage(jid, { text: `「✿」 Error: ${error.message}` }, { quoted: m });
+            await sock.sendMessage(jid, { text: `「✿」 Ups, la API de Jikan no respondió a tiempo. Inténtalo de nuevo. 🌸` }, { quoted: m });
         }
     }
 };
