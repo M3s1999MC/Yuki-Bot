@@ -1,25 +1,33 @@
 const axios = require('axios');
 const https = require('https');
 
-const jikanApi = axios.create({
-    baseURL: 'https://api.jikan.moe/v4',
+const danbooruApi = axios.create({
+    baseURL: 'https://danbooru.donmai.us',
     timeout: 8000,
     httpsAgent: new https.Agent({ keepAlive: true }),
     family: 4,
     headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'User-Agent': 'YukiBot/1.0 (by tu-usuario)',
         'Accept': 'application/json'
     }
 });
 
-// Lista de IDs reales y seguros de MyAnimeList para evitar fallos de red o búsquedas lentas
-const safeIds = [1, 2, 3, 4, 5, 17, 18, 20, 21, 40, 62, 71, 80, 117, 407, 73, 79, 81, 82, 89, 90, 155, 307, 469, 111, 314, 1176, 209, 300, 301, 311, 499, 1182, 1999, 2197, 7111, 10255, 13742];
+// Función para sacar la rareza según tu suerte, bro
+function getRareza() {
+    const num = Math.floor(Math.random() * 1000) + 1; // 1 al 1000
+
+    if (num <= 600) return { nombre: 'Común', emoji: '⚪' };
+    if (num <= 850) return { nombre: 'Rara', emoji: '🔵' };
+    if (num <= 970) return { nombre: 'Épica', emoji: '🟣' };
+    if (num <= 995) return { nombre: 'Legendaria', emoji: '🟡' };
+    return { nombre: 'Mítica', emoji: '🔴' }; // 996 al 1000, 0.5% bro
+}
 
 module.exports = {
     name: 'roll',
     aliases: ['rw', 'rollwaifu', 'waifu'],
     category: 'gacha',
-    description: 'Tira un personaje directo de Jikan al instante.',
+    description: 'Tira un personaje directo de Danbooru al instante.',
 
     async execute(sock, m, args) {
         if (m.isProcessed) return;
@@ -28,29 +36,40 @@ module.exports = {
         const jid = m.key.remoteJid;
 
         try {
-            // Seleccionamos un ID al azar de la lista segura de personajes populares
-            const randomId = safeIds[Math.floor(Math.random() * safeIds.length)];
+            // Pedimos 1 post random, solo safe, bro
+            const response = await danbooruApi.get(`/posts.json?tags=rating:safe+order:random&limit=1`);
+            const post = response.data[0];
 
-            const response = await jikanApi.get(`/characters/${randomId}`);
-            const char = response.data.data;
+            if (!post || !post.file_url) {
+                throw new Error('Sin imagen');
+            }
 
-            const character = {
-                name: char.name,
-                image: char.images.jpg.image_url,
-                anime: char.anime[0]?.anime?.name || "Original / Desconocido"
-            };
+            // Danbooru te da los tags, bro. Sacamos personaje y serie de ahí
+            // tag_string_character = "hatsune_miku" -> lo dejamos bonito
+            // tag_string_copyright = "vocaloid" -> la serie
+            let rawChar = post.tag_string_character.split(' ')[0] || 'Desconocido';
+            let rawSerie = post.tag_string_copyright.split(' ')[0] || 'Original / Desconocido';
+
+            // Para que se vea bonito: hatsune_miku -> Hatsune Miku
+            const nombre = rawChar.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            const serie = rawSerie.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+            const rareza = getRareza();
+
+            const imagen = post.large_file_url || post.file_url;
 
             await sock.sendMessage(jid, {
-                image: { url: character.image },
+                image: { url: imagen },
                 caption: `「✿」 **¡HAS OBTENIDO UN PERSONAJE!** 🌸\n\n` +
-                         `• **Nombre:** ${character.name}\n` +
-                         `• **Anime:** ${character.anime}\n\n` +
+                         `• **Nombre:** ${nombre}\n` +
+                         `• **Serie / Anime:** ${serie}\n` +
+                         `• **Rareza:** ${rareza.emoji} ${rareza.nombre}\n\n` +
                          `💡 Usa tu comando de claim para reclamarlo a tu harem.`
             }, { quoted: m });
 
         } catch (error) {
             console.error('Error en el comando roll:', error.message);
-            await sock.sendMessage(jid, { text: `「✿」 Ups, la API de Jikan no respondió a tiempo. Inténtalo de nuevo. 🌸` }, { quoted: m });
+            await sock.sendMessage(jid, { text: `「✿」 Ups, Danbooru no respondió a tiempo. Inténtalo de nuevo. 🌸` }, { quoted: m });
         }
     }
 };
