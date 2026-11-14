@@ -36,26 +36,33 @@ module.exports = {
         const jid = m.key.remoteJid;
 
         try {
-            // Pedimos 1 post random, solo safe, bro
-            const response = await danbooruApi.get(`/posts.json?tags=rating:safe+order:random&limit=1`);
-            const post = response.data[0];
+            let post = null;
+            let intentos = 0;
 
-            if (!post || !post.file_url) {
-                throw new Error('Sin imagen');
+            // Re-intento automático, bro. Busca hasta que salga uno con personaje
+            while (!post && intentos < 5) {
+                intentos++;
+                const response = await danbooruApi.get(`/posts.json?tags=rating:safe+order:random&limit=1`);
+                const candidato = response.data[0];
+
+                // Si no tiene imagen o no tiene personaje, lo descartamos y buscamos otro, bro
+                if (!candidato || !candidato.file_url) continue;
+                if (!candidato.tag_string_character || candidato.tag_string_character.trim() === '') continue;
+
+                post = candidato;
             }
 
-            // Danbooru te da los tags, bro. Sacamos personaje y serie de ahí
-            // tag_string_character = "hatsune_miku" -> lo dejamos bonito
-            // tag_string_copyright = "vocaloid" -> la serie
-            let rawChar = post.tag_string_character.split(' ')[0] || 'Desconocido';
-            let rawSerie = post.tag_string_copyright.split(' ')[0] || 'Original / Desconocido';
+            if (!post) {
+                throw new Error('No se encontró personaje con imagen');
+            }
 
-            // Para que se vea bonito: hatsune_miku -> Hatsune Miku
+            let rawChar = post.tag_string_character.split(' ')[0];
+            let rawSerie = post.tag_string_copyright.split(' ')[0] || 'Original';
+
             const nombre = rawChar.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
             const serie = rawSerie.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
             const rareza = getRareza();
-
             const imagen = post.large_file_url || post.file_url;
 
             await sock.sendMessage(jid, {
