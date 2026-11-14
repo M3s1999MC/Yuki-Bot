@@ -44,7 +44,6 @@ class MessageQueue {
         this.processing = false;
     }
 
-    // Devuelve false si la cola está llena (se descarta la tarea para no soltar ráfagas)
     add(task) {
         if (this.queue.length >= MAX_QUEUE_SIZE) return false;
         this.queue.push(task);
@@ -55,16 +54,12 @@ class MessageQueue {
     async process() {
         if (this.processing) return;
         this.processing = true;
-
         try {
             while (this.queue.length > 0) {
                 const task = this.queue.shift();
-
                 try {
-                    // Espera entre envíos como control de velocidad
                     const delay = getRandomDelay(1500, 3500);
                     await sleep(delay);
-
                     await task();
                 } catch (error) {
                     console.error("[MessageQueue Error]:", error);
@@ -78,10 +73,8 @@ class MessageQueue {
 
 const messageQueue = new MessageQueue();
 
-// Helper de envío envuelto en la cola
 function safeReply(sock, jid, content, options = {}) {
     const formattedContent = typeof content === 'string' ? { text: content } : content;
-
     return new Promise((resolve, reject) => {
         const accepted = messageQueue.add(async () => {
             try {
@@ -97,8 +90,8 @@ function safeReply(sock, jid, content, options = {}) {
         }
     });
 }
-// ---------------------------------------------------------------------
 
+// --- SERVIDOR WEB ---
 app.get('/', (req, res) => {
     res.send('Yuki Bot está activo.');
 });
@@ -112,7 +105,6 @@ app.get('/qr', async (req, res) => {
     if (!accessToken || accessToken.length < 32) {
         return res.status(503).send('Configura QR_ACCESS_TOKEN con al menos 32 caracteres en el entorno del servidor.');
     }
-
     const authorization = req.get('authorization') || '';
     const credentialsMatch = authorization.match(/^Basic\s+([A-Za-z0-9+/]+={0,2})$/i);
     const credentials = credentialsMatch
@@ -121,7 +113,6 @@ app.get('/qr', async (req, res) => {
     const separator = credentials.indexOf(':');
     const password = Buffer.from(separator === -1 ? '' : credentials.slice(separator + 1));
     const expectedPassword = Buffer.from(accessToken);
-
     if (
         separator === -1
         || credentials.slice(0, separator) !== 'yuki'
@@ -131,18 +122,15 @@ app.get('/qr', async (req, res) => {
         res.set('WWW-Authenticate', 'Basic realm="YukiBot QR", charset="UTF-8"');
         return res.sendStatus(401);
     }
-
     res.set({
         'Cache-Control': 'no-store, no-cache, must-revalidate, private',
         'Content-Security-Policy': "default-src 'none'; img-src data:; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'",
         'Referrer-Policy': 'no-referrer',
         'X-Content-Type-Options': 'nosniff'
     });
-
     if (!currentQrImage) {
         return res.status(503).send('WhatsApp no está solicitando un QR. Revisa los logs de conexión del servidor.');
     }
-
     res.type('html').send(`<!doctype html>
 <html lang="es">
 <head>
@@ -168,33 +156,44 @@ app.listen(port, () => {
     console.log(`Servidor de Yuki escuchando en el puerto ${port}`);
 });
 
-// 🛡️ ESCUDO GLOBAL: Evita que cualquier error imprevisto apague el bot
+// --- PINGER INTERNO CADA 5 MINUTOS PARA RENDER ---
+const SELF_URL = process.env.RENDER_EXTERNAL_URL || process.env.SELF_URL || process.env.PUBLIC_URL || '';
+async function doSelfPing() {
+    if (!SELF_URL) return;
+    try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000);
+        const res = await fetch(SELF_URL.replace(/\/$/, '') + '/health', { signal: controller.signal });
+        clearTimeout(timeout);
+        console.log(`[Pinger] Yuki sigue viva. Status: ${res.status}`);
+    } catch (e) {
+        console.log('[Pinger] Falló el ping: ' + (e.message || e));
+    }
+}
+setInterval(doSelfPing, 5 * 60 * 1000);
+setTimeout(doSelfPing, 10000);
+
+// 🛡️ ESCUDO GLOBAL
 process.on('uncaughtException', (err) => {
     console.error('⚠️ [Protector] Error crítico interceptado (El bot sigue en línea):', err.message);
 });
-
-process.on('unhandledRejection', (reason, promise) => {
+process.on('unhandledRejection', (reason) => {
     console.error('⚠️ [Protector] Promesa rechazada no manejada:', reason);
 });
 
 const handler = new CommandHandler();
-
-// Único prefijo permitido
 const PREFIX = '!';
 
-// --- COOLDOWN ALEATORIO POR USUARIO ---
+// --- COOLDOWN ---
 const cooldowns = new Map();
 const randomCooldown = (min = 4000, max = 8000) =>
     Math.floor(Math.random() * (max - min + 1)) + min;
-
 function onCooldown(sender) {
     const now = Date.now();
     if (now < (cooldowns.get(sender) || 0)) return true;
     cooldowns.set(sender, now + randomCooldown());
     return false;
 }
-
-// Limpieza para que el Map no crezca sin parar
 setInterval(() => {
     const now = Date.now();
     for (const [jid, until] of cooldowns) {
@@ -202,7 +201,7 @@ setInterval(() => {
     }
 }, 60 * 1000);
 
-// --- AVISO AFK SIN REPETIR (máximo uno cada 10 min por grupo y usuario) ---
+// --- AVISO AFK ---
 const afkNotified = new Map();
 const AFK_NOTICE_INTERVAL_MS = 10 * 60 * 1000;
 
@@ -220,11 +219,9 @@ async function loadAuthState() {
                     }
                 };
             }
-
             if (!process.env.YUKI_AUTH_ENCRYPTION_KEY) {
                 throw new Error('Configura YUKI_AUTH_ENCRYPTION_KEY junto con DATABASE_URL para proteger la sesión de WhatsApp.');
             }
-
             let databaseUrl;
             try {
                 databaseUrl = new URL(process.env.DATABASE_URL);
@@ -234,14 +231,12 @@ async function loadAuthState() {
             if (!['postgres:', 'postgresql:'].includes(databaseUrl.protocol)) {
                 throw new Error('DATABASE_URL debe ser una URL PostgreSQL completa de Neon.');
             }
-
             const pool = new Pool({
                 connectionString: process.env.DATABASE_URL,
                 ssl: { rejectUnauthorized: true },
                 max: 5,
                 connectionTimeoutMillis: 10000
             });
-
             try {
                 const authState = await createNeonAuthState(pool, process.env.YUKI_AUTH_ENCRYPTION_KEY);
                 console.log('✅ Sesión de WhatsApp cargada desde PostgreSQL persistente.');
@@ -254,7 +249,6 @@ async function loadAuthState() {
             }
         })();
     }
-
     try {
         return await authStatePromise;
     } catch (error) {
@@ -276,7 +270,6 @@ function scheduleReconnect() {
 
 function resetLoggedOutSession() {
     if (authResetPromise) return authResetPromise;
-
     authResetPromise = (async () => {
         const authState = await loadAuthState();
         await authState.resetAuthState();
@@ -291,7 +284,6 @@ function resetLoggedOutSession() {
     }).finally(() => {
         authResetPromise = null;
     });
-
     return authResetPromise;
 }
 
@@ -302,16 +294,13 @@ async function startYuki() {
         console.log('✅ Datos del bot conectados a Neon.');
     }
     await gachaDatabaseReady;
-
     const { state, saveCreds } = await loadAuthState();
     const hasRegisteredSession = Boolean(state.creds.registered && state.creds.me?.id);
-
     if (hasRegisteredSession) {
         console.log('✅ Se encontró una sesión de WhatsApp previamente vinculada.');
     } else {
         console.log('ℹ️ No hay una sesión vinculada guardada. El primer QR debe escanearse una vez.');
     }
-
     const sock = makeWASocket({
         auth: state,
         logger: pino({ level: 'silent' }),
@@ -319,13 +308,11 @@ async function startYuki() {
         syncFullHistory: false
     });
     const contactNames = new Map();
-
     const cacheContacts = (contacts) => {
         for (const contact of contacts || []) {
             const name = [contact.name, contact.notify, contact.verifiedName]
                 .find(value => typeof value === 'string' && value.trim() && value.trim() !== 'Usuario');
             if (!name) continue;
-
             const ids = [contact.id, contact.lid, contact.phoneNumber]
                 .filter(value => typeof value === 'string' && value.trim())
                 .map(value => value.includes('@') ? value : `${value}@s.whatsapp.net`);
@@ -333,13 +320,10 @@ async function startYuki() {
             db.updateContactName(contact);
         }
     };
-
     sock.ev.on('contacts.upsert', cacheContacts);
     sock.ev.on('contacts.update', cacheContacts);
-
     sock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect, qr } = update;
-
         if (qr) {
             if (hasRegisteredSession) {
                 currentQr = null;
@@ -364,23 +348,19 @@ async function startYuki() {
                 console.log('📱 QR para vincular el número de Yuki disponible en /qr. Configura QR_ACCESS_TOKEN para abrirlo.');
             }
         }
-
         if (connection === 'close') {
             currentQr = null;
             currentQrImage = null;
             const statusCode = lastDisconnect?.error?.output?.statusCode;
-
             if (statusCode === DisconnectReason.loggedOut) {
                 console.warn('⚠️ WhatsApp revocó la sesión guardada. Limpiando solo la autenticación para solicitar un QR nuevo...');
                 resetLoggedOutSession();
                 return;
             }
-
             if (statusCode === DisconnectReason.connectionReplaced) {
                 console.error('❌ WhatsApp reemplazó esta conexión (código 440). Detén cualquier otra instancia de Yuki que use esta misma sesión y reinicia este servicio. Se pausó la reconexión automática para evitar un bucle.');
                 return;
             }
-
             console.log(`🔄 Conexión cerrada (Código: ${statusCode}). Reconectando en 4 segundos...`);
             scheduleReconnect();
         } else if (connection === 'open') {
@@ -393,7 +373,6 @@ async function startYuki() {
             console.log(`\n⚡ ¡YUKI ESTÁ ONLINE Y CONECTADA! Prefijo activo: ${PREFIX}\n`);
         }
     });
-
     let credentialSaveQueue = Promise.resolve();
     sock.ev.on('creds.update', () => {
         credentialSaveQueue = credentialSaveQueue.then(async () => {
@@ -411,7 +390,6 @@ async function startYuki() {
             process.exit(1);
         });
     });
-
     sock.ev.on('group-participants.update', async (update) => {
         if (!['add', 'remove'].includes(update.action)) return;
         db.getSafeGroup(update.id, async (err, settings) => {
@@ -419,11 +397,9 @@ async function startYuki() {
                 console.error('Error al leer la configuración de bienvenida:', err.message);
                 return;
             }
-
             const isWelcome = update.action === 'add';
             const enabled = isWelcome ? settings.welcome_enabled : settings.goodbye_enabled;
             if (!enabled) return;
-
             for (const participant of update.participants || []) {
                 const textTemplate = isWelcome ? settings.welcome_text : settings.goodbye_text;
                 const text = (textTemplate || pick(isWelcome ? frases.bienvenida : frases.despedida))
@@ -445,22 +421,18 @@ async function startYuki() {
         });
     });
 
+    // --- UN SOLO ESCUCHADOR DE MENSAJES (CORREGIDO) ---
     sock.ev.on('messages.upsert', async ({ messages }) => {
-        await recordGroupMessages(db, sock, messages);
-    });
+        // 1. Contador de mensajes del grupo
+        await recordGroupMessages(db, sock, messages).catch(e => console.error('Error recordGroupMessages:', e.message));
 
-    // ESCUCHADOR DE MENSAJES
-    sock.ev.on('messages.upsert', async ({ messages }) => {
         const m = messages[0];
         if (!m.message) return;
-
-        // 🟢 IDENTIFICAR AL REMITENTE
         const sender = getMessageSenderJid(m, sock);
         if (!sender) {
             console.error('❌ No se pudo identificar al remitente; se omite el mensaje para proteger las cuentas.');
             return;
         }
-
         const initialText = m.message?.conversation || m.message?.extendedTextMessage?.text || '';
         const isAfkCommand = /^!(?:afk|ausente)(?:\s|$)/i.test(initialText);
         const contactName = contactNames.get(sender)
@@ -480,10 +452,8 @@ async function startYuki() {
         if (!m.key.fromMe) {
             const mentionedJids = m.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
             for (const mentionedJid of mentionedJids) {
-                // Evita avisar de nuevo si ya se avisó hace poco en este chat
                 const afkKey = `${m.key.remoteJid}:${mentionedJid}`;
                 if (Date.now() - (afkNotified.get(afkKey) || 0) < AFK_NOTICE_INTERVAL_MS) continue;
-
                 db.get(`SELECT afk_reason, afk_since FROM users WHERE jid = ? AND afk_since IS NOT NULL`, [mentionedJid], async (err, afkUser) => {
                     if (err) {
                         console.error('Error al consultar estado AFK:', err.message);
@@ -502,15 +472,12 @@ async function startYuki() {
             }
         }
         const msgContent = getMessageContent(m.message);
-
         const messageType = Object.keys(msgContent)[0];
         const body = messageType === 'conversation' ? msgContent.conversation :
                      messageType === 'extendedTextMessage' ? msgContent.extendedTextMessage.text : 
                      messageType === 'imageMessage' ? msgContent.imageMessage.caption :
                      messageType === 'videoMessage' ? msgContent.videoMessage.caption : '';
-
         if (!body || typeof body !== 'string') return;
-
         if (m.key.remoteJid.endsWith('@g.us') && /(?:chat\.whatsapp\.com\/|whatsapp\.com\/channel\/)/i.test(body)) {
             db.getSafeGroup(m.key.remoteJid, async (settingsErr, settings) => {
                 if (settingsErr) {
@@ -518,7 +485,6 @@ async function startYuki() {
                     return;
                 }
                 if (!settings.antilink) return;
-
                 try {
                     const metadata = await sock.groupMetadata(m.key.remoteJid);
                     const participant = metadata.participants.find(item =>
@@ -536,27 +502,18 @@ async function startYuki() {
                 }
             });
         }
-
         if (!m.key.fromMe && !m.key.remoteJid.endsWith('@g.us') && !body.startsWith(PREFIX) && practiceSessions.sessions.has(sender)) {
             const replyText = practiceSessions.respond(body, practiceSessions.sessions.get(sender));
             await safeReply(sock, m.key.remoteJid, { text: `「✿」 ${replyText}` }, { quoted: m });
             return;
         }
-
         if (!body.startsWith(PREFIX)) return;
         const usedPrefix = PREFIX;
-
         const args = body.slice(usedPrefix.length).trim().split(/ +/);
         const command = args.shift().toLowerCase();
-
-        // Cooldown aleatorio por usuario: se ignora en silencio, sin responder
         if (!m.key.fromMe && onCooldown(sender)) return;
-
         console.log(`📥 [Comando recibido]: ${command} de @${sender.split('@')[0]}`);
-
-        // Ejecución del comando
         try {
-            // Contexto que redirige todas las respuestas de los comandos a la cola
             const ctx = {
                 sock,
                 m,
@@ -568,7 +525,6 @@ async function startYuki() {
                 sender,
                 reply: (content, options) => safeReply(sock, m.key.remoteJid, content, { quoted: m, ...options })
             };
-
             await handler.handle(sock, m, body, usedPrefix, command, args, ctx);
         } catch (err) {
             console.error(`❌ Error ejecutando el comando '${command}':`, err);
