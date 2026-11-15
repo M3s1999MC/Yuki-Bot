@@ -188,7 +188,7 @@
     "ws": "^8.22.0",
     "yallist": "^4.0.0",
     "yt-search": "^2.13.1",
-    "yt-dlp-exec": "^2.1.0"
+    "yt-dlp-exec": "^1.0.2"
   },
   "scripts": {
     "start": "node index.js",
