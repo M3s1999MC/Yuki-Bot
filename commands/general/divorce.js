@@ -14,14 +14,14 @@ module.exports = {
             if (err || !data.married) {
                 return sock.sendMessage(jid, { text: '「✿」 No estás casado/a con nadie, no tienes de quién divorciarte.' }, { quoted: m });
             }
-            const ex = data.marriedTo;
+            const ex = data.married;
             if (db.updateUser) {
-                db.updateUser(sender, { married: false, marriedTo: null });
-                if (ex) db.updateUser(ex, { married: false, marriedTo: null });
+                db.updateUser(sender, { married: null });
+                db.updateUser(ex, { married: null });
             }
             sock.sendMessage(jid, {
-                text: `「✿」 DIVORCIO 💔\n\n@${sender.split('@')[0]} se divorció ${ex ? `de @${ex.split('@')[0]}` : ''}. Ya puedes volver a casarte.`,
-                mentions: ex ? [sender, ex] : [sender]
+                text: `「✿」 DIVORCIO 💔\n\n@${sender.split('@')[0]} se divorció de @${ex.split('@')[0]}. Ya puedes volver a casarte.`,
+                mentions: [sender, ex]
             }, { quoted: m });
         });
     }
