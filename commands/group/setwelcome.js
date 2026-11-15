@@ -9,12 +9,16 @@ module.exports = {
 
         if (!mensaje) {
             return await sock.sendMessage(jid, {
-                text: '(「✿」 "CONFIGURAR BIENVENIDA"🌸)\n\n⚠️ Escribe el mensaje usando broches como `{usuario}`, `{grupo}`, `{miembros}`.\n*Uso:* `!setwelcome ¡Hola {usuario} a {grupo}!`'
+                text: '「✿」 "CONFIGURAR BIENVENIDA"🌸\n\n⚠️ Escribe el mensaje usando broches como `{usuario}`, `{grupo}`, `{miembros}`.\n*Uso:* `!setwelcome ¡Hola {usuario} a {grupo}!`'
             }, { quoted: m });
         }
 
+        // AQUÍ GUARDAS EL MENSAJE EN TU BASE DE DATOS O ARCHIVO
+        // Ejemplo: global.db.data.chats[jid].welcomeMessage = mensaje;
+        // O si usas una BD tipo SQLite / JSON, guárdalo asociado al `jid` del grupo.
+
         await sock.sendMessage(jid, {
-            text: '(「✿」 "BIENVENIDA GUARDADA"🌸)\n\n✅ El mensaje personalizado de bienvenida ha sido actualizado con éxito.'
+            text: '「✿」 "BIENVENIDA GUARDADA"🌸\n\n✅ El mensaje personalizado de bienvenida ha sido actualizado con éxito.'
         }, { quoted: m });
     }
 };
