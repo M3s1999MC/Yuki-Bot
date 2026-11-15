@@ -1,46 +1,48 @@
-const { downloadMedia, searchYouTube, validateMediaUrl } = require('../../utils/mediaDownloader');
-const { getMessageContent } = require('../../utils/messageContent');
+const yts = require('yt-search');
+const { lastPlay } = require('../../utils/yt');
 
 module.exports = {
     name: 'play',
-    aliases: ['yta', 'ytmp3', 'playdoc', 'play2', 'ytv', 'ytmp4', 'play2doc', 'playaudio', 'mp4'],
-    category: 'downloads',
-    description: 'Busca y descarga audio o video de YouTube.',
+    category: 'downloader',
+    description: 'Busca en YouTube, muestra la portada y pregunta con botones si quieres audio o video.',
 
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
-        const query = args.join(' ').trim();
-        const content = getMessageContent(m.message);
-        const body = content.conversation || content.extendedTextMessage?.text || content.imageMessage?.caption || '';
-        const invokedAs = body.replace(/^!/, '').trim().split(/\s+/)[0].toLowerCase();
-        const audio = ['yta', 'ytmp3', 'playaudio', 'play2', 'play2doc'].includes(invokedAs);
-
+        const query = args.join(' ');
         if (!query) {
-            return await sock.sendMessage(jid, { text: '⚠️ Por favor ingresa el nombre o enlace del video de YouTube que deseas descargar.\n\n*Ejemplo:* `!play El hijo de Hernández`' }, { quoted: m });
+            return await sock.sendMessage(jid, { text: '⚠️ Mamón, pon algo. Ej: `!play Feid Luna`' }, { quoted: m });
         }
 
+        await sock.sendMessage(jid, { text: '🔎 Buscando en YouTube, weon...' }, { quoted: m });
+
         try {
-            await sock.sendMessage(jid, { text: `📥 Procesando contenido de YouTube: *${query}*...` }, { quoted: m });
-            let url;
-            try { url = validateMediaUrl(query); } catch {
-                const results = await searchYouTube(query);
-                if (!results.length) return sock.sendMessage(jid, { text: '「✿」 No encontré resultados.' }, { quoted: m });
-                url = results[0].url;
+            const r = await yts(query);
+            if (!r.videos.length) {
+                return await sock.sendMessage(jid, { text: '⚠️ No encontré nada, weon.' }, { quoted: m });
             }
-            const media = await downloadMedia(url, { audio });
-            if (audio) {
-                await sock.sendMessage(jid, { audio: media.buffer, mimetype: media.mimetype, fileName: `${media.title || 'audio'}${media.ext}`, ptt: false }, { quoted: m });
-            } else {
-                await sock.sendMessage(jid, {
-                    video: media.buffer,
-                    mimetype: 'video/mp4',
-                    fileName: `${media.title || 'youtube'}.mp4`,
-                    caption: `🎬 ${media.title || 'Descarga de YouTube'}`
-                }, { quoted: m });
-            }
-        } catch (err) {
-            console.error('Error en !play:', err.message);
-            await sock.sendMessage(jid, { text: `❌ No se pudo obtener el contenido. ${err.message}` }, { quoted: m });
+
+            const video = r.videos[0];
+
+            // Guardamos el primer resultado, weon
+            lastPlay.set(jid, { video });
+
+            // La portada del video es video.thumbnail, weon. Esa es la miniatura de YouTube, mamón
+            const portada = video.thumbnail;
+
+            await sock.sendMessage(jid, {
+                image: { url: portada }, // Aquí va la portada, weon
+                caption: `(「✿」 "ENCONTRADO"🌸)\n\n🎵 *${video.title}*\n👤 ${video.author.name} | ⏱️ ${video.timestamp} | 👀 ${video.views}\n\n¿Qué quieres, mamón?`,
+                footer: 'Yuki Bot 🌸',
+                buttons: [
+                    { buttonId: '!audio', buttonText: { displayText: '🎧 Audio' }, type: 1 },
+                    { buttonId: '!video', buttonText: { displayText: '📹 Video' }, type: 1 }
+                ],
+                headerType: 4 // 4 = con imagen, weon. Para que salga la portada arriba, mamón
+            }, { quoted: m });
+
+        } catch (e) {
+            console.error('Error !play:', e);
+            await sock.sendMessage(jid, { text: '⚠️ YouTube está mamón hoy, weon. Intenta de nuevo.' }, { quoted: m });
         }
     }
 };
