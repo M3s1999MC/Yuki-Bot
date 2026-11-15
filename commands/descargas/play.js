@@ -1,48 +1,85 @@
 const yts = require('yt-search');
 const { lastPlay } = require('../../utils/yt');
+const { generateWAMessageFromContent, proto } = require('@whiskeysockets/baileys');
 
 module.exports = {
     name: 'play',
     category: 'downloader',
-    description: 'Busca en YouTube, muestra la portada y pregunta con botones si quieres audio o video.',
+    description: 'Busca en YouTube y pregunta con botones nuevos si quieres audio o video.',
 
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
         const query = args.join(' ');
         if (!query) {
-            return await sock.sendMessage(jid, { text: '⚠️ Mamón, pon algo. Ej: `!play Feid Luna`' }, { quoted: m });
+            return await sock.sendMessage(jid, { text: '⚠️ porfavor poner algo para buscar. Ej: `!play Feid Luna`' }, { quoted: m });
         }
 
-        await sock.sendMessage(jid, { text: '🔎 Buscando en YouTube, weon...' }, { quoted: m });
+        await sock.sendMessage(jid, { text: '🔎 Buscando en YouTube...' }, { quoted: m });
 
         try {
             const r = await yts(query);
             if (!r.videos.length) {
-                return await sock.sendMessage(jid, { text: '⚠️ No encontré nada, weon.' }, { quoted: m });
+                return await sock.sendMessage(jid, { text: '⚠️ No encontramos nada.' }, { quoted: m });
             }
 
             const video = r.videos[0];
-
-            // Guardamos el primer resultado, weon
             lastPlay.set(jid, { video });
 
-            // La portada del video es video.thumbnail, weon. Esa es la miniatura de YouTube, mamón
-            const portada = video.thumbnail;
+            const caption = ` 「✿」 "ENCONTRADO"🌸 \n\n🎵 *${video.title}*\n👤 ${video.author.name} | ⏱️ ${video.timestamp} | 👀 ${video.views}\n\n ¿prefieres descargar el video o el audio??`;
 
-            await sock.sendMessage(jid, {
-                image: { url: portada }, // Aquí va la portada, weon
-                caption: `(「✿」 "ENCONTRADO"🌸)\n\n🎵 *${video.title}*\n👤 ${video.author.name} | ⏱️ ${video.timestamp} | 👀 ${video.views}\n\n¿Qué quieres, mamón?`,
-                footer: 'Yuki Bot 🌸',
-                buttons: [
-                    { buttonId: '!audio', buttonText: { displayText: '🎧 Audio' }, type: 1 },
-                    { buttonId: '!video', buttonText: { displayText: '📹 Video' }, type: 1 }
-                ],
-                headerType: 4 // 4 = con imagen, weon. Para que salga la portada arriba, mamón
+            // Botones nuevos, weon. Estos sí jalan en WhatsApp actual, mamón
+            const msg = generateWAMessageFromContent(jid, {
+                viewOnceMessage: {
+                    message: {
+                        messageContextInfo: {
+                            deviceListMetadata: {},
+                            deviceListMetadataVersion: 2
+                        },
+                        interactiveMessage: proto.Message.InteractiveMessage.create({
+                            body: proto.Message.InteractiveMessage.Body.create({
+                                text: caption
+                            }),
+                            footer: proto.Message.InteractiveMessage.Footer.create({
+                                text: 'Yuki Bot 🌸'
+                            }),
+                            header: proto.Message.InteractiveMessage.Header.create({
+                                title: 'ENCONTRADO 🌸',
+                                subtitle: video.title,
+                                hasMediaAttachment: true,
+                                imageMessage: {
+                                    url: video.thumbnail, // Portada, weon
+                                    mimetype: 'image/jpeg',
+                                    caption: caption
+                                }
+                            }),
+                            nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.create({
+                                buttons: [
+                                    {
+                                        name: 'quick_reply',
+                                        buttonParamsJson: JSON.stringify({
+                                            display_text: '🎧 Audio',
+                                            id: '!audio'
+                                        })
+                                    },
+                                    {
+                                        name: 'quick_reply',
+                                        buttonParamsJson: JSON.stringify({
+                                            display_text: '📹 Video',
+                                            id: '!video'
+                                        })
+                                    }
+                                ]
+                            })
+                        })
+                    }
+                }
             }, { quoted: m });
+
+            await sock.relayMessage(jid, msg.message, { messageId: msg.key.id });
 
         } catch (e) {
             console.error('Error !play:', e);
-            await sock.sendMessage(jid, { text: '⚠️ YouTube está mamón hoy, weon. Intenta de nuevo.' }, { quoted: m });
+            await sock.sendMessage(jid, { text: '⚠️ No encontramos un video con lo que buscaste. Intenta de nuevo.' }, { quoted: m });
         }
     }
 };
