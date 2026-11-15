@@ -1,7 +1,6 @@
 const db = require('../../database/db');
 const { getMessageSenderJid } = require('../../utils/messageSender');
 
-// Guardamos propuestas pendientes en memoria: targetJid -> { sender, jid, timeout }
 const pending = new Map();
 
 module.exports = {
@@ -9,7 +8,6 @@ module.exports = {
     aliases: ['casar'],
     category: 'profile',
     description: 'Proponerle matrimonio a otro usuario.',
-
     async execute(sock, m) {
         const jid = m.key.remoteJid;
         const sender = getMessageSenderJid(m, sock);
@@ -25,12 +23,11 @@ module.exports = {
             if (err) {
                 return sock.sendMessage(jid, { text: '「✿」 MATRIMONIO 🌸\n\n❌ Ocurrió un error con tu perfil.' }, { quoted: m });
             }
-            // Si ya está casado, decir CON QUIÉN
+            // AQUÍ ESTÁ EL ARREGLO: married es un JID, no un true/false
             if (senderData.married) {
-                const pareja = senderData.marriedTo ? `@${senderData.marriedTo.split('@')[0]}` : 'alguien';
                 return sock.sendMessage(jid, { 
-                    text: `「✿」 MATRIMONIO 🌸\n\n❌ Ya estás casado/a con ${pareja}.\nSi quieres casarte con otra persona, primero usa *!divorce*`,
-                    mentions: senderData.marriedTo ? [senderData.marriedTo] : []
+                    text: `「✿」 MATRIMONIO 🌸\n\n❌ Ya estás casado/a con @${senderData.married.split('@')[0]}.\nSi quieres casarte con otra persona, primero usa *!divorce*`,
+                    mentions: [senderData.married]
                 }, { quoted: m });
             }
 
@@ -39,19 +36,16 @@ module.exports = {
                     return sock.sendMessage(jid, { text: '「✿」 MATRIMONIO 🌸\n\n❌ Ocurrió un error con el perfil de esa persona.' }, { quoted: m });
                 }
                 if (targetData.married) {
-                    const pareja2 = targetData.marriedTo ? `@${targetData.marriedTo.split('@')[0]}` : 'alguien más';
                     return sock.sendMessage(jid, { 
-                        text: `「✿」 MATRIMONIO 🌸\n\n❌ @${target.split('@')[0]} ya está casado/a con ${pareja2}.`,
-                        mentions: [target, ...(targetData.marriedTo ? [targetData.marriedTo] : [])]
+                        text: `「✿」 MATRIMONIO 🌸\n\n❌ @${target.split('@')[0]} ya está casado/a con @${targetData.married.split('@')[0]}.`,
+                        mentions: [target, targetData.married]
                     }, { quoted: m });
                 }
 
-                // Si ya hay una propuesta pendiente para ese target, no spamear
                 if (pending.has(target)) {
                     return sock.sendMessage(jid, { text: '「✿」 Ya hay una propuesta pendiente para esa persona, espera a que responda.' }, { quoted: m });
                 }
 
-                // Guardar propuesta 60 segundos
                 const timeout = setTimeout(() => {
                     pending.delete(target);
                     sock.sendMessage(jid, { text: `「✿」 La propuesta de @${sender.split('@')[0]} a @${target.split('@')[0]} expiró, nadie respondió. 💔`, mentions: [sender, target] });
@@ -65,7 +59,5 @@ module.exports = {
             });
         });
     },
-
-    // Para que aceptar/rechazar puedan usar la misma lista
     pending
 };
