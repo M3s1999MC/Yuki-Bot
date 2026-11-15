@@ -2,7 +2,7 @@ const db = require('../../database/db');
 const { getMessageSenderJid } = require('../../utils/messageSender');
 
 module.exports = {
-    name: 'marry',
+    name: 'marry','casarse',
     aliases: ['casar'],
     category: 'profile',
     description: 'Proponerle matrimonio a otro usuario.',
