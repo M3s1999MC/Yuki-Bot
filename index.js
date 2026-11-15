@@ -279,7 +279,7 @@ function resetLoggedOutSession() {
         console.log('✅ Sesión revocada eliminada. Se solicitará un QR nuevo.');
         scheduleReconnect();
     })().catch(error => {
-        console.error('❌ No se pudo limpiar la sesión revocada:', error.message);
+        console.error('❌ No se pudo limpiar la sesión revocada. Configura la URL PostgreSQL completa de Neon.');
         process.exit(1);
     }).finally(() => {
         authResetPromise = null;
@@ -471,12 +471,27 @@ async function startYuki() {
                 });
             }
         }
+        // --- BOTONES DE !play, weon. AQUÍ ESTÁ LA CORRECCIÓN, MAMÓN ---
+        const buttonId = m.message?.buttonsResponseMessage?.selectedButtonId
+            || m.message?.templateButtonReplyMessage?.selectedId
+            || m.message?.viewOnceMessage?.message?.buttonsResponseMessage?.selectedButtonId
+            || m.message?.viewOnceMessage?.message?.templateButtonReplyMessage?.selectedId
+            || m.message?.interactiveResponseMessage?.body?.text
+            || m.message?.viewOnceMessage?.message?.interactiveResponseMessage?.body?.text
+            || '';
+
         const msgContent = getMessageContent(m.message);
         const messageType = Object.keys(msgContent)[0];
-        const body = messageType === 'conversation' ? msgContent.conversation :
+        let body = messageType === 'conversation' ? msgContent.conversation :
                      messageType === 'extendedTextMessage' ? msgContent.extendedTextMessage.text : 
                      messageType === 'imageMessage' ? msgContent.imageMessage.caption :
                      messageType === 'videoMessage' ? msgContent.videoMessage.caption : '';
+
+        // Si le picó a un botón, weon. Lo convertimos en comando, mamón
+        if (buttonId) {
+            body = buttonId; // Queda como '!audio' o '!video', weon
+        }
+
         if (!body || typeof body !== 'string') return;
         if (m.key.remoteJid.endsWith('@g.us') && /(?:chat\.whatsapp\.com\/|whatsapp\.com\/channel\/)/i.test(body)) {
             db.getSafeGroup(m.key.remoteJid, async (settingsErr, settings) => {
