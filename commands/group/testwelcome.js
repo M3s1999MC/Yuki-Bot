@@ -4,11 +4,11 @@ const { getMessageSenderJid } = require('../../utils/messageSender');
 module.exports = {
     name: 'testwelcome',
     category: 'groups',
-    description: 'Prueba el mensaje de bienvenida personalizado configurado con !setwelcome.',
+    description: 'Prueba el mensaje de bienvenida personalizado del grupo.',
 
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
-        if (!m.key.participant && !jid.endsWith('@g.us')) {
+        if (!jid.endsWith('@g.us')) {
             return await sock.sendMessage(jid, { text: '⚠️ Este comando solo se puede usar en grupos.' }, { quoted: m });
         }
 
@@ -28,15 +28,15 @@ module.exports = {
             ppUrl = 'https://i.imgur.com/4M34hi2.png';
         }
 
-        // Consultar el mensaje en SQLite
-        db.get(`SELECT welcome_message FROM group_settings WHERE jid = ?`, [jid], async (err, row) => {
-            if (err || !row || !row.welcome_message) {
+        // Consultar la configuración del grupo usando tu método nativo getSafeGroup
+        db.getSafeGroup(jid, async (err, row) => {
+            if (err || !row || !row.welcome_text) {
                 return await sock.sendMessage(jid, { 
-                    text: '⚠️ No hay ningún mensaje de bienvenida configurado en este grupo. Usa `!setwelcome` primero.' 
+                    text: '⚠️ No hay ningún mensaje de bienvenida configurado. Usa `!setwelcome` primero.' 
                 }, { quoted: m });
             }
 
-            const customMessage = row.welcome_message;
+            const customMessage = row.welcome_text;
 
             // Reemplazar los broches por los datos reales
             const userMentionTag = `@${username}`;
@@ -45,7 +45,7 @@ module.exports = {
                 .replace(/{grupo}/g, groupName)
                 .replace(/{miembros}/g, totalMembers);
 
-            // Enviar imagen con el texto customizado y la mención
+            // Enviar imagen con el texto customizado y mención activa
             await sock.sendMessage(jid, {
                 image: { url: ppUrl },
                 caption: finalCaption,
