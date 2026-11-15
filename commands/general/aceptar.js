@@ -9,7 +9,7 @@ module.exports = {
     description: 'Aceptar propuesta de matrimonio.',
     async execute(sock, m) {
         const jid = m.key.remoteJid;
-        const sender = getMessageSenderJid(m, sock); // el que acepta = el target
+        const sender = getMessageSenderJid(m, sock);
         const propuesta = marry.pending.get(sender);
 
         if (!propuesta) {
@@ -18,27 +18,21 @@ module.exports = {
 
         clearTimeout(propuesta.timeout);
         marry.pending.delete(sender);
-
         const esposo = propuesta.sender;
 
-        // Guardar casados en ambos perfiles
-        db.getSafeUser(esposo, (e1, d1) => {
-            db.getSafeUser(sender, (e2, d2) => {
-                // Aquí depende de como tu db guarda, esto es lo estándar:
-                // Si tu db usa updateUser o save, cambia estas 2 líneas
-                if (db.updateUser) {
-                    db.updateUser(esposo, { married: true, marriedTo: sender });
-                    db.updateUser(sender, { married: true, marriedTo: esposo });
-                } else if (db.setMarried) {
-                    db.setMarried(esposo, sender);
-                    db.setMarried(sender, esposo);
-                }
+        // GUARDADO COMPATIBLE CON TU PROFILE.JS:
+        // married = JID de la pareja, no true/false
+        if (db.updateUser) {
+            db.updateUser(esposo, { married: sender });
+            db.updateUser(sender, { married: esposo });
+        } else {
+            // Si tu db no tiene updateUser, dime cómo se llama y te lo cambio
+            // pero tiene que quedar married = JID
+        }
 
-                sock.sendMessage(jid, {
-                    text: `「✿」 ¡SE CASARON! 💍🌸\n\n💕 @${esposo.split('@')[0]} y @${sender.split('@')[0]} ahora son esposos! ¡Felicidades!`,
-                    mentions: [esposo, sender]
-                }, { quoted: m });
-            });
-        });
+        sock.sendMessage(jid, {
+            text: `「✿」 ¡SE CASARON! 💍🌸\n\n💕 @${esposo.split('@')[0]} y @${sender.split('@')[0]} ahora son esposos! ¡Felicidades!\n\nYa pueden verlo con *!profile*`,
+            mentions: [esposo, sender]
+        }, { quoted: m });
     }
 };
