@@ -1,3 +1,5 @@
+const db = require('../../database/db');
+
 module.exports = {
     name: 'setwelcome',
     category: 'groups',
@@ -13,21 +15,26 @@ module.exports = {
             }, { quoted: m });
         }
 
-        // Asegurar que la base de datos y el chat existan sin machacar propiedades previas
-        if (!global.db.data) global.db.data = { users: {}, chats: {}, stats: {}, msgs: {}, sticker: {}, settings: {} };
-        if (!global.db.data.chats) global.db.data.chats = {};
-        if (!global.db.data.chats[jid]) {
-            global.db.data.chats[jid] = {};
-        }
+        // Crear la tabla si no existe para asegurar que guarde sin errores
+        db.run(`CREATE TABLE IF NOT EXISTS group_settings (jid TEXT PRIMARY KEY, welcome_message TEXT)`, (err) => {
+            if (err) {
+                console.error(err);
+                return sock.sendMessage(jid, { text: '⚠️ Error al conectar con la base de datos.' }, { quoted: m });
+            }
 
-        // Guardar el mensaje exactamente en la propiedad que lee testwelcome
-        global.db.data.chats[jid].welcomeMessage = mensaje;
+            // Insertar o actualizar el mensaje de bienvenida del grupo
+            db.run(`INSERT INTO group_settings (jid, welcome_message) VALUES (?, ?) 
+                    ON CONFLICT(jid) DO UPDATE SET welcome_message = ?`, 
+                    [jid, mensaje, mensaje], async (err2) => {
+                if (err2) {
+                    console.error(err2);
+                    return sock.sendMessage(jid, { text: '⚠️ Error al guardar el mensaje en la base de datos.' }, { quoted: m });
+                }
 
-        // Si tu base de datos requiere escritura manual (como Lowdb), descomenta la siguiente línea:
-        // if (typeof global.db.write === 'function') await global.db.write();
-
-        await sock.sendMessage(jid, {
-            text: ' 「✿」 "BIENVENIDA GUARDADA"🌸 \n\n✅ El mensaje personalizado de bienvenida ha sido actualizado con éxito.'
-        }, { quoted: m });
+                await sock.sendMessage(jid, {
+                    text: ' 「✿」 "BIENVENIDA GUARDADA"🌸 \n\n✅ El mensaje personalizado de bienvenida ha sido actualizado con éxito.'
+                }, { quoted: m });
+            });
+        });
     }
 };
