@@ -29,13 +29,10 @@ let authStatePromise;
 let reconnectTimer;
 let authResetPromise;
 
-// --- COLA DE ENVÍO CON CONTROL DE VELOCIDAD ---
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
 const getRandomDelay = (min = 1500, max = 3500) => {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 };
-
 const MAX_QUEUE_SIZE = 15;
 
 class MessageQueue {
@@ -43,14 +40,12 @@ class MessageQueue {
         this.queue = [];
         this.processing = false;
     }
-
     add(task) {
         if (this.queue.length >= MAX_QUEUE_SIZE) return false;
         this.queue.push(task);
         this.process();
         return true;
     }
-
     async process() {
         if (this.processing) return;
         this.processing = true;
@@ -70,7 +65,6 @@ class MessageQueue {
         }
     }
 }
-
 const messageQueue = new MessageQueue();
 
 function safeReply(sock, jid, content, options = {}) {
@@ -91,15 +85,12 @@ function safeReply(sock, jid, content, options = {}) {
     });
 }
 
-// --- SERVIDOR WEB ---
 app.get('/', (req, res) => {
     res.send('Yuki Bot está activo.');
 });
-
 app.get('/health', (req, res) => {
     res.status(200).type('text/plain').send('ok');
 });
-
 app.get('/qr', async (req, res) => {
     const accessToken = process.env.QR_ACCESS_TOKEN;
     if (!accessToken || accessToken.length < 32) {
@@ -151,12 +142,10 @@ img{width:min(100%,360px);height:auto}
 </body>
 </html>`);
 });
-
 app.listen(port, () => {
     console.log(`Servidor de Yuki escuchando en el puerto ${port}`);
 });
 
-// --- PINGER INTERNO CADA 5 MINUTOS PARA RENDER ---
 const SELF_URL = process.env.RENDER_EXTERNAL_URL || process.env.SELF_URL || process.env.PUBLIC_URL || '';
 async function doSelfPing() {
     if (!SELF_URL) return;
@@ -173,7 +162,6 @@ async function doSelfPing() {
 setInterval(doSelfPing, 5 * 60 * 1000);
 setTimeout(doSelfPing, 10000);
 
-// 🛡️ ESCUDO GLOBAL
 process.on('uncaughtException', (err) => {
     console.error('⚠️ [Protector] Error crítico interceptado (El bot sigue en línea):', err.message);
 });
@@ -184,7 +172,6 @@ process.on('unhandledRejection', (reason) => {
 const handler = new CommandHandler();
 const PREFIX = '!';
 
-// --- COOLDOWN ---
 const cooldowns = new Map();
 const randomCooldown = (min = 4000, max = 8000) =>
     Math.floor(Math.random() * (max - min + 1)) + min;
@@ -201,7 +188,6 @@ setInterval(() => {
     }
 }, 60 * 1000);
 
-// --- AVISO AFK ---
 const afkNotified = new Map();
 const AFK_NOTICE_INTERVAL_MS = 10 * 60 * 1000;
 
@@ -279,7 +265,7 @@ function resetLoggedOutSession() {
         console.log('✅ Sesión revocada eliminada. Se solicitará un QR nuevo.');
         scheduleReconnect();
     })().catch(error => {
-        console.error('❌ No se pudo limpiar la sesión revocada. Configura la URL PostgreSQL completa de Neon.');
+        console.error('❌ No se pudo limpiar la sesión revocada:', error.message);
         process.exit(1);
     }).finally(() => {
         authResetPromise = null;
@@ -421,11 +407,8 @@ async function startYuki() {
         });
     });
 
-    // --- UN SOLO ESCUCHADOR DE MENSAJES (CORREGIDO) ---
     sock.ev.on('messages.upsert', async ({ messages }) => {
-        // 1. Contador de mensajes del grupo
         await recordGroupMessages(db, sock, messages).catch(e => console.error('Error recordGroupMessages:', e.message));
-
         const m = messages[0];
         if (!m.message) return;
         const sender = getMessageSenderJid(m, sock);
@@ -433,7 +416,23 @@ async function startYuki() {
             console.error('❌ No se pudo identificar al remitente; se omite el mensaje para proteger las cuentas.');
             return;
         }
-        const initialText = m.message?.conversation || m.message?.extendedTextMessage?.text || '';
+
+        // Botones de !play: busca el id en cualquier nivel del mensaje
+        function buscarBoton(obj) {
+            if (!obj || typeof obj !== 'object') return '';
+            if (obj.selectedButtonId) return obj.selectedButtonId;
+            if (obj.selectedId) return obj.selectedId;
+            if (obj.interactiveResponseMessage?.body?.text) return obj.interactiveResponseMessage.body.text;
+            if (obj.body?.text && (obj.body.text === '!audio' || obj.body.text === '!video')) return obj.body.text;
+            for (const v of Object.values(obj)) {
+                const r = buscarBoton(v);
+                if (r) return r;
+            }
+            return '';
+        }
+        const buttonId = buscarBoton(m.message);
+
+        const initialText = buttonId || m.message?.conversation || m.message?.extendedTextMessage?.text || '';
         const isAfkCommand = /^!(?:afk|ausente)(?:\s|$)/i.test(initialText);
         const contactName = contactNames.get(sender)
             || contactNames.get(m.key.participantAlt)
@@ -471,27 +470,15 @@ async function startYuki() {
                 });
             }
         }
-        // --- BOTONES DE !play, weon. AQUÍ ESTÁ LA CORRECCIÓN, MAMÓN ---
-        const buttonId = m.message?.buttonsResponseMessage?.selectedButtonId
-            || m.message?.templateButtonReplyMessage?.selectedId
-            || m.message?.viewOnceMessage?.message?.buttonsResponseMessage?.selectedButtonId
-            || m.message?.viewOnceMessage?.message?.templateButtonReplyMessage?.selectedId
-            || m.message?.interactiveResponseMessage?.body?.text
-            || m.message?.viewOnceMessage?.message?.interactiveResponseMessage?.body?.text
-            || '';
-
         const msgContent = getMessageContent(m.message);
         const messageType = Object.keys(msgContent)[0];
         let body = messageType === 'conversation' ? msgContent.conversation :
                      messageType === 'extendedTextMessage' ? msgContent.extendedTextMessage.text : 
                      messageType === 'imageMessage' ? msgContent.imageMessage.caption :
                      messageType === 'videoMessage' ? msgContent.videoMessage.caption : '';
-
-        // Si le picó a un botón, weon. Lo convertimos en comando, mamón
         if (buttonId) {
-            body = buttonId; // Queda como '!audio' o '!video', weon
+            body = buttonId;
         }
-
         if (!body || typeof body !== 'string') return;
         if (m.key.remoteJid.endsWith('@g.us') && /(?:chat\.whatsapp\.com\/|whatsapp\.com\/channel\/)/i.test(body)) {
             db.getSafeGroup(m.key.remoteJid, async (settingsErr, settings) => {
