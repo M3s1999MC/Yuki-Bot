@@ -187,7 +187,9 @@
     "wrappy": "^1.0.2",
     "ws": "^8.22.0",
     "yallist": "^4.0.0",
-    "yt-search": "^2.13.1"
+    "yt-search": "^2.13.1",
+    "@distube/ytdl-core": "^4.16.9"
+  },
   },
   "scripts": {
     "start": "node index.js",
