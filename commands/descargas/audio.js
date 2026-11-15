@@ -1,4 +1,4 @@
-const ytdl = require('@distube/ytdl-core');
+const ytdlp = require('yt-dlp-exec');
 
 if (!global.yukiLastPlay) global.yukiLastPlay = new Map();
 const lastPlay = global.yukiLastPlay;
@@ -7,7 +7,6 @@ module.exports = {
     name: 'audio',
     category: 'downloader',
     description: 'Descarga en audio la última canción buscada con !play.',
-
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
         const data = lastPlay.get(jid);
@@ -20,25 +19,35 @@ module.exports = {
         await sock.sendMessage(jid, { text: `「✿」 Descargando audio de *${video.title}*...` }, { quoted: m });
 
         try {
-            const stream = ytdl(video.url, {
-                filter: 'audioonly',
-                quality: 'highestaudio',
-                highWaterMark: 1 << 25
+            // 1. Pedirle a yt-dlp la URL directa del mejor audio
+            const audioUrl = await ytdlp(video.url, {
+                getUrl: true,
+                format: 'bestaudio[ext=m4a]/bestaudio/best',
+                noPlaylist: true,
+                noWarnings: true,
             });
 
-            const chunks = [];
-            for await (const chunk of stream) chunks.push(chunk);
-            const buffer = Buffer.concat(chunks);
+            const cleanUrl = audioUrl.trim().split('\n')[0];
+            console.log('Audio URL:', cleanUrl.slice(0, 100));
+
+            // 2. Descargar ese audio
+            const res = await fetch(cleanUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+            if (!res.ok) throw new Error('Fetch fallo: ' + res.status);
+            const arrayBuffer = await res.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
+
+            console.log(`Audio descargado: ${(buffer.length / 1024 / 1024).toFixed(2)} MB`);
+
+            if (buffer.length < 1000) throw new Error('Audio muy pequeño');
 
             await sock.sendMessage(jid, {
                 audio: buffer,
-                mimetype: 'audio/mp4',
-                fileName: `${video.title}.mp3`,
-                ptt: false
+                mimetype: 'audio/mpeg',
+                fileName: `${video.title}.mp3`
             }, { quoted: m });
 
         } catch (e) {
-            console.error('Error en !audio:', e);
+            console.error('Error en !audio:', e.message);
             await sock.sendMessage(jid, { text: '「✿」 No pude descargar el audio, intenta de nuevo.' }, { quoted: m });
         }
     }
