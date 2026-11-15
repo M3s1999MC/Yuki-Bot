@@ -9,9 +9,36 @@ module.exports = {
 
     async execute(sock, m) {
         const jid = m.key.remoteJid;
-        const context = m.message?.extendedTextMessage?.contextInfo;
         const sender = getMessageSenderJid(m, sock);
-        const target = context?.mentionedJid?.[0] || sender;
+
+        // --- ARREGLO: buscar al objetivo en TODOS los lugares posibles ---
+        const msg = m.message || {};
+        // Puede venir como extendedTextMessage o como conversation / image con caption
+        const ext = msg.extendedTextMessage || msg.imageMessage || msg.videoMessage || {};
+        const ctx = ext.contextInfo || msg.contextInfo || {};
+
+        // 1. Si etiquetó a alguien: !profile @M
+        let target = ctx.mentionedJid?.[0];
+
+        // 2. Si respondió a un mensaje: !profile respondiendo
+        // Cuando respondes, el dueño del mensaje original está en participant
+        if (!target && ctx.participant) {
+            target = ctx.participant;
+        }
+
+        // 3. Algunos frameworks lo guardan en m.quoted
+        if (!target && m.quoted?.sender) {
+            target = m.quoted.sender;
+        }
+        if (!target && m.quoted?.participant) {
+            target = m.quoted.participant;
+        }
+
+        // 4. Si no etiquetó ni respondió, es su propio perfil
+        if (!target) target = sender;
+
+        // Limpiar JID: a veces viene como 123@lid, lo dejamos tal cual, pero sin espacios
+        target = target.trim();
 
         db.getSafeUser(target, async (err, data) => {
             if (err) {
