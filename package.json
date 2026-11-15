@@ -7,6 +7,7 @@
     "node": ">=20.18.1"
   },
   "dependencies": {
+    "@distube/ytdl-core": "^5.2.1",
     "@whiskeysockets/baileys": "^7.0.0-rc14",
     "abbrev": "^1.1.1",
     "agent-base": "^6.0.2",
@@ -196,5 +197,12 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs"
+  "type": "commonjs",
+  "allowScripts": {
+    "@whiskeysockets/baileys@7.0.0-rc14": true,
+    "protobufjs@7.6.6": true,
+    "sqlite3@5.1.7": true,
+    "sharp@0.35.5": true,
+    "sharp@0.30.7": true
+  }
 }
