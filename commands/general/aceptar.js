@@ -1,10 +1,11 @@
 const M = require('../../utils/marriage');
+const { tryRespondToDuel } = require('../../utils/duelReply');
 
 module.exports = {
     name: 'aceptar',
     aliases: ['accept'],
     category: 'social',
-    description: 'Acepta una propuesta de matrimonio.',
+    description: 'Acepta una propuesta de matrimonio o un duelo.',
 
     async execute(sock, m) {
         const jid = m.key.remoteJid;
@@ -12,7 +13,10 @@ module.exports = {
         const p = M.proposals[me];
         const send = (text, mentions = []) => sock.sendMessage(jid, { text, mentions }, { quoted: m });
 
-        if (!p) return send('「✿」 No tienes propuestas pendientes.');
+        if (!p) {
+            if (await tryRespondToDuel(sock, m, 'aceptar')) return;
+            return send('「✿」 No tienes propuestas pendientes. Si es un duelo, responde al mensaje del reto con !aceptar.');
+        }
         clearTimeout(p.timer);
         delete M.proposals[me];
 
