@@ -1,6 +1,12 @@
 const db = require('../../database/db');
 const { getMessageSenderJid } = require('../../utils/messageSender');
 
+async function guardar(userId, valor) {
+    if (db.updateUser) return db.updateUser(userId, { married: valor });
+    if (db.updateUserData) return db.updateUserData(userId, { married: valor });
+    if (db.setUser) return db.setUser(userId, { married: valor });
+}
+
 module.exports = {
     name: 'divorce',
     aliases: ['divorcio'],
@@ -10,19 +16,19 @@ module.exports = {
         const sender = getMessageSenderJid(m, sock);
 
         db.getSafeUser(sender, async (err, data) => {
-            console.log('DIVORCE DEBUG - data.married:', data.married);
             if (!data.married) {
-                return sock.sendMessage(jid, { text: 'No estás casado/a, tu profile ya está en Nadie.' }, { quoted: m });
+                return sock.sendMessage(jid, { text: `「✿」 Cielito, no estás casado/a con nadie 💔 Ya estás solterito 🌸` }, { quoted: m });
             }
             const ex = data.married;
-            const guardar = async (id, val) => {
-                if (db.updateUser) return db.updateUser(id, { married: val });
-                if (db.setUser) return db.setUser(id, { married: val });
-                if (db.updateUserData) return db.updateUserData(id, { married: val });
-            };
             await guardar(sender, null);
             await guardar(ex, null);
-            await sock.sendMessage(jid, { text: `Te divorciaste de ${ex.split('@')[0]} 💔 Ya puedes casarte de nuevo.` }, { quoted: m });
+
+            const user1 = sender.split('@')[0];
+            const user2 = ex.split('@')[0];
+
+            await sock.sendMessage(jid, {
+                text: `「✿」 Divorcio... 💔\n\nAy, qué triste, ${user1} y ${user2} ya no son pareja...\n\nEspero que hayan sido felices mientras duró, cielitos 🌸 Ya pueden volver a enamorarse con !marry`
+            }, { quoted: m });
         });
     }
 };
