@@ -1,35 +1,23 @@
-const { getMessageSenderJid } = require('../../utils/messageSender');
-const { neon } = require('@neondatabase/serverless');
-const sql = neon(process.env.DATABASE_URL);
+const M = require('../../utils/marriage');
 
 module.exports = {
     name: 'rechazar',
     aliases: ['reject'],
-    category: 'profile',
+    category: 'social',
+    description: 'Rechaza una propuesta de matrimonio.',
+
     async execute(sock, m) {
         const jid = m.key.remoteJid;
-        const sender = getMessageSenderJid(m, sock);
+        const me = M.getSender(m);
+        const p = M.proposals[me];
 
-        await sql`CREATE TABLE IF NOT EXISTS marry_pending (
-            group_jid TEXT PRIMARY KEY,
-            sender TEXT NOT NULL,
-            target TEXT NOT NULL,
-            created_at BIGINT NOT NULL
-        )`;
+        if (!p) return sock.sendMessage(jid, { text: '「✿」 No tienes propuestas pendientes.' }, { quoted: m });
 
-        const rows = await sql`SELECT * FROM marry_pending WHERE group_jid = ${jid}`;
-        const propuesta = rows[0];
-
-        if (!propuesta) {
-            return sock.sendMessage(jid, { text: `「✿」 No tienes nada que rechazar, cielito 🌸` }, { quoted: m });
-        }
-
-        const novio = propuesta.sender;
-        await sql`DELETE FROM marry_pending WHERE group_jid = ${jid}`;
-
-        await sock.sendMessage(jid, {
-            text: `「✿」 Ay nooo... 💔🥺\n\n@${sender.split('@')[0]} rechazó a @${novio.split('@')[0]}... @${novio.split('@')[0]}, ven, te doy un abracito, no llores cielito (⁠｡⁠•́⁠︿⁠•̀⁠｡⁠)\n\nHabrá alguien más que sí te quiera, lo prometo 🌸`,
-            mentions: [sender, novio]
+        clearTimeout(p.timer);
+        delete M.proposals[me];
+        sock.sendMessage(jid, {
+            text: `「✿」 💔 ${M.tag(me)} rechazó a ${M.tag(p.from)}`,
+            mentions: [me, p.from],
         }, { quoted: m });
     }
 };
