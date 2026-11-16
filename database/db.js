@@ -52,7 +52,6 @@ function ensureColumns(table, columns) {
             console.error(`Error al leer el esquema de ${table}:`, err.message);
             return;
         }
-
         const existing = new Set(rows.map(row => row.name));
         for (const [column, definition] of Object.entries(columns)) {
             if (existing.has(column)) continue;
@@ -105,7 +104,6 @@ db.serialize(() => {
         if (err) console.error('Error al crear wa_contacts:', err.message);
     });
 
-    // Tabla integrada para el nuevo Gacha Dinámico con Jikan API
     db.run(`CREATE TABLE IF NOT EXISTS gacha_characters (
         mal_id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
@@ -192,7 +190,6 @@ db.registerUser = function(jid, name = 'Usuario', callback) {
     const displayName = typeof name === 'string' ? name.trim() : '';
     const hasDisplayName = Boolean(displayName) && displayName !== 'Usuario';
     const storedName = hasDisplayName ? displayName : 'Usuario';
-
     this.run(
         `INSERT INTO users (jid, name) VALUES (?, ?)
          ON CONFLICT(jid) DO UPDATE SET name = CASE
@@ -218,7 +215,6 @@ db.recordMessageActivity = function(jid, name = 'Usuario', options = {}, callbac
     const storedName = displayName && displayName !== 'Usuario' ? displayName : 'Usuario';
     const experience = options.incrementExp ? 1 : 0;
     const clearAfk = options.clearAfk ? 1 : 0;
-
     this.run(
         `INSERT INTO users (jid, name, exp, level) VALUES (?, ?, ?, CAST(? / 500 AS INTEGER) + 1)
          ON CONFLICT(jid) DO UPDATE SET
@@ -242,12 +238,10 @@ db.updateContactName = function(contact, callback) {
     const jids = [...new Set([contact?.id, contact?.lid, contact?.phoneNumber]
         .filter(value => typeof value === 'string' && value.trim())
         .map(value => value.includes('@') ? value : `${value}@s.whatsapp.net`))];
-
     if (!name || jids.length === 0) {
         if (callback) callback(null);
         return;
     }
-
     this.serialize(() => {
         for (const jid of jids) {
             this.run(
@@ -259,7 +253,6 @@ db.updateContactName = function(contact, callback) {
                 }
             );
         }
-
         const placeholders = jids.map(() => '?').join(', ');
         this.run(
             `UPDATE users SET name = ? WHERE jid IN (${placeholders})`,
@@ -288,7 +281,6 @@ db.getSafeUser = function(jid, callback) {
         callback(new Error('Se requiere un JID para consultar el usuario'));
         return;
     }
-
     this.run(`INSERT OR IGNORE INTO users (jid, name) VALUES (?, ?)`, [jid, jid.split('@')[0]], (insertErr) => {
         if (insertErr) return callback(insertErr);
         this.get(`SELECT * FROM users WHERE jid = ?`, [jid], callback);
@@ -300,10 +292,28 @@ db.getSafeGroup = function(jid, callback) {
         callback(new Error('Se requiere un JID para consultar el grupo'));
         return;
     }
-
     this.run(`INSERT OR IGNORE INTO group_settings (group_jid) VALUES (?)`, [jid], (insertErr) => {
         if (insertErr) return callback(insertErr);
         this.get(`SELECT * FROM group_settings WHERE group_jid = ?`, [jid], callback);
+    });
+};
+
+// === ESTO ES LO QUE TE FALTABA, POR ESO NUNCA GUARDABA ===
+db.updateUser = function(jid, data, callback) {
+    if (!jid || !data) {
+        if (callback) callback(null);
+        return;
+    }
+    const keys = Object.keys(data);
+    if (keys.length === 0) {
+        if (callback) callback(null);
+        return;
+    }
+    const set = keys.map(k => `${k} = ?`).join(', ');
+    const values = keys.map(k => data[k]);
+    this.run(`UPDATE users SET ${set} WHERE jid = ?`, [...values, jid], (err) => {
+        if (err) console.error('Error updateUser:', err.message);
+        if (callback) callback(err);
     });
 };
 
