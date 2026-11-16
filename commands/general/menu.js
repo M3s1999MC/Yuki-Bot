@@ -481,6 +481,46 @@ module.exports = {
 ✧ !pat | !darpalmada
 > Da una palmada a otro usuario
 
+» ˚୨•(🌸)• ⊹ Reacciones ⊹
+✧ !angry | !enojado | !baka | !tonto | !bite | !morder
+> Reacción de anime con GIF [@usuario]
+✧ !bleh | !lengua | !blush | !sonrojar | !bonk | !golpe
+> Reacción de anime con GIF [@usuario]
+✧ !bored | !aburrido | !celebrate | !celebrar | !clap | !aplaudir
+> Reacción de anime con GIF [@usuario]
+✧ !cookie | !galleta | !cringe | !grima | !cry | !llorar
+> Reacción de anime con GIF [@usuario]
+✧ !dance | !bailar | !dramatic | !drama | !drunk | !borracho
+> Reacción de anime con GIF [@usuario]
+✧ !eat | !comida | !facepalm | !decepcion | !feed | !alimentar
+> Reacción de anime con GIF [@usuario]
+✧ !handhold | !tomar-mano | !happy | !feliz | !heat | !calor
+> Reacción de anime con GIF [@usuario]
+✧ !highfive | !chocar | !jump | !saltar | !patear | !patada
+> Reacción de anime con GIF [@usuario]
+✧ !killall | !matartodos | !laugh | !reir | !lick | !lamer
+> Reacción de anime con GIF [@usuario]
+✧ !love | !amor | !lurk | !acechar | !nod | !asentir
+> Reacción de anime con GIF [@usuario]
+✧ !nom | !comer | !nope | !negar | !peck | !piquito
+> Reacción de anime con GIF [@usuario]
+✧ !pout | !pucheros | !psycho | !psicopata | !psicópata | !punch | !puñetazo
+> Reacción de anime con GIF [@usuario]
+✧ !push | !empujar | !run | !correr | !sad | !triste
+> Reacción de anime con GIF [@usuario]
+✧ !scared | !asustado | !scream | !gritar | !shoot | !disparar
+> Reacción de anime con GIF [@usuario]
+✧ !shrug | !encogerse | !shy | !timido | !tímido | !sigh | !suspirar
+> Reacción de anime con GIF [@usuario]
+✧ !sleep | !dormir | !smile | !sonreir | !smug | !engreido
+> Reacción de anime con GIF [@usuario]
+✧ !stare | !mirar | !step | !pisar | !surprised | !sorprendido
+> Reacción de anime con GIF [@usuario]
+✧ !tea | !te | !té | !think | !pensar | !thumbsup | !aprobar
+> Reacción de anime con GIF [@usuario]
+✧ !tickle | !cosquillas | !wave | !saludar | !yawn | !bostezar
+> Reacción de anime con GIF [@usuario]
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 
         const fullMenuText = menuHeader + menuBody;
