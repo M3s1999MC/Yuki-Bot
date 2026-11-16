@@ -2,6 +2,18 @@ const db = require('../../database/db');
 const { getMessageSenderJid } = require('../../utils/messageSender');
 const marry = require('./marry');
 
+function getNombre(jid, fallback) {
+    return new Promise((resolve) => {
+        db.getSafeUser(jid, (err, data) => {
+            const nombre = data?.name;
+            if (nombre && nombre !== 'Usuario' && !/^\d+$/.test(nombre)) {
+                return resolve(nombre);
+            }
+            return resolve(fallback || jid.split('@')[0]);
+        });
+    });
+}
+
 module.exports = {
     name: 'aceptar',
     aliases: ['accept'],
@@ -12,7 +24,7 @@ module.exports = {
 
         const propuesta = marry.pending.get(sender);
         if (!propuesta) {
-            return sock.sendMessage(jid, { text: `「✿」 Cielito, no tienes ninguna propuesta pendiente 🥺\nQue te hagan !marry @<user> primero 🌸` }, { quoted: m });
+            return sock.sendMessage(jid, { text: `「✿」 Cielito, no tienes ninguna propuesta pendiente 🥺\nQue te hagan !marry etiquetándote primero 🌸` }, { quoted: m });
         }
 
         const novio = propuesta.sender;
@@ -22,11 +34,11 @@ module.exports = {
         db.updateUser(novio, { married: sender }, () => {});
         db.updateUser(sender, { married: novio }, () => {});
 
-        const user1 = novio.split('@')[0];
-        const user2 = sender.split('@')[0];
+        const nombre1 = await getNombre(novio, null);
+        const nombre2 = await getNombre(sender, m.pushName);
 
         await sock.sendMessage(jid, {
-            text: `「✿」 ¡¡SE CASARON!! 💍✨🌸\n\n¡Qué lindos! ${user1} y ${user2} ahora son esposos! (⁠♡⁠ω⁠♡⁠) 💕\n\nYa les puse su anillito en el !profile, vayan a presumirlo, bebés! 💒`
+            text: `「✿」 ¡¡SE CASARON!! 💍✨🌸\n\n¡Qué lindos! ${nombre1} y ${nombre2} ahora son esposos! (⁠♡⁠ω⁠♡⁠) 💕\n\nYa les puse su anillito en el !profile, vayan a presumirlo, bebés! 💒`
         }, { quoted: m });
     }
 };
