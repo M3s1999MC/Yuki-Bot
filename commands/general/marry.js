@@ -26,7 +26,11 @@ module.exports = {
                 from: me,
                 timer: setTimeout(() => delete M.proposals[target], 2 * 60 * 1000),
             };
-            send(`「✿」 💍 ${M.tag(me)} le propuso matrimonio a ${M.tag(target)}\n\nResponde con *!aceptar* o *!rechazar* (2 min)`, [me, target]);
+            send(
+                `「✿」 💍 ${M.tag(me)} le propuso matrimonio a ${M.tag(target)}\n\n` +
+                `Responde con *!aceptar* o *!rechazar* (2 min)`,
+                [me, target]
+            );
         } catch (e) {
             console.error('Error en marry:', e.message);
             send('「✿」 No pude procesar la propuesta.');
