@@ -426,6 +426,23 @@ if (process.env.DATABASE_URL) db.getSafeGroup = function(jid, callback) {
     });
 };
 
+// === ESTO ES LO NUEVO, LO QUE TE FALTABA PARA QUE GUARDARA EN RENDER ===
+if (process.env.DATABASE_URL) db.updateUser = function(jid, data, callback) {
+    if (!jid || !data) {
+        if (typeof callback === 'function') callback(null);
+        return this;
+    }
+    const keys = Object.keys(data);
+    if (keys.length === 0) {
+        if (typeof callback === 'function') callback(null);
+        return this;
+    }
+    const set = keys.map(k => `${k} = ?`).join(', ');
+    const values = keys.map(k => data[k]);
+    this.run(`UPDATE users SET ${set} WHERE jid = ?`, [...values, jid], callback);
+    return this;
+};
+
 db.createNeonDatabase = createNeonDatabase;
 db.translateSql = translateSql;
 
