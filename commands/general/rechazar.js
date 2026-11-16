@@ -1,5 +1,18 @@
+const db = require('../../database/db');
 const { getMessageSenderJid } = require('../../utils/messageSender');
 const marry = require('./marry');
+
+function getNombre(jid, fallback) {
+    return new Promise((resolve) => {
+        db.getSafeUser(jid, (err, data) => {
+            const nombre = data?.name;
+            if (nombre && nombre !== 'Usuario' && !/^\d+$/.test(nombre)) {
+                return resolve(nombre);
+            }
+            return resolve(fallback || jid.split('@')[0]);
+        });
+    });
+}
 
 module.exports = {
     name: 'rechazar',
@@ -18,11 +31,11 @@ module.exports = {
         clearTimeout(propuesta.timeout);
         marry.pending.delete(sender);
 
-        const user1 = novio.split('@')[0];
-        const user2 = sender.split('@')[0];
+        const nombre1 = await getNombre(novio, null);
+        const nombre2 = await getNombre(sender, m.pushName);
 
         await sock.sendMessage(jid, {
-            text: `「✿」 Ay nooo... 💔🥺\n\n${user2} rechazó a ${user1}... ${user1}, ven, te doy un abracito, no llores cielito (⁠｡⁠•́⁠︿⁠•̀⁠｡⁠)\n\nHabrá alguien más que sí te quiera, lo prometo 🌸`
+            text: `「✿」 Ay nooo... 💔🥺\n\n${nombre2} rechazó a ${nombre1}... ${nombre1}, ven, te doy un abracito, no llores cielito (⁠｡⁠•́⁠︿⁠•̀⁠｡⁠)\n\nHabrá alguien más que sí te quiera, lo prometo 🌸`
         }, { quoted: m });
     }
 };
