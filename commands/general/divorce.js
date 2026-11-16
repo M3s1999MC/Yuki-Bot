@@ -1,31 +1,26 @@
-const db = require('../../database/db');
-const { getMessageSenderJid } = require('../../utils/messageSender');
-
-function isMarried(val) {
-    return val && val !== 'Nadie 💔' && val !== 'Nadie' && val !== '' && val !== 'null' && val !== null;
-}
+const M = require('../../utils/marriage');
 
 module.exports = {
-    name: 'divorce',
-    aliases: ['divorcio'],
-    category: 'profile',
+    name: 'divorciar',
+    aliases: ['divorcio', 'divorce'],
+    category: 'social',
+    description: 'Termina tu matrimonio.',
+
     async execute(sock, m) {
         const jid = m.key.remoteJid;
-        const sender = getMessageSenderJid(m, sock);
+        const me = M.getSender(m);
+        const send = (text, mentions = []) => sock.sendMessage(jid, { text, mentions }, { quoted: m });
 
-        db.getSafeUser(sender, async (err, data) => {
-            if (err || !data || !isMarried(data.married)) {
-                return sock.sendMessage(jid, { text: `「✿」 Cielito, no estás casado/a con nadie 💔 Ya estás solterito 🌸` }, { quoted: m });
-            }
+        try {
+            const partner = M.partnerOf(await M.getUser(me));
+            if (!partner) return send('「✿」 No estás casado con nadie.');
 
-            const ex = data.married;
-            db.updateUser(sender, { married: 'Nadie 💔' }, () => {});
-            db.updateUser(ex, { married: 'Nadie 💔' }, () => {});
-
-            await sock.sendMessage(jid, {
-                text: `「✿」 Divorcio... 💔\n\nAy, qué triste, @${sender.split('@')[0]} y @${ex.split('@')[0]} ya no son pareja...\n\nEspero que hayan sido felices mientras duró, cielitos 🌸 Ya pueden volver a enamorarse con !marry`,
-                mentions: [sender, ex]
-            }, { quoted: m });
-        });
+            await M.setMarried(me, M.SINGLE);
+            await M.setMarried(partner, M.SINGLE);
+            send(`「✿」 💔 ${M.tag(me)} se divorció de ${M.tag(partner)}`, [me, partner]);
+        } catch (e) {
+            console.error('Error en divorciar:', e.message);
+            send('「✿」 No pude procesar el divorcio.');
+        }
     }
 };
