@@ -3,6 +3,10 @@ const { getMessageSenderJid } = require('../../utils/messageSender');
 
 const pending = new Map();
 
+function isMarried(val) {
+    return val && val !== 'Nadie 💔' && val !== 'Nadie' && val !== '' && val !== 'null' && val !== null;
+}
+
 module.exports = {
     name: 'marry',
     aliases: ['casar'],
@@ -15,19 +19,26 @@ module.exports = {
         const ctx = msg.extendedTextMessage?.contextInfo || {};
         let target = ctx.mentionedJid?.[0];
 
-        if (!target || target === sender) {
+        if (!target) {
             return sock.sendMessage(jid, { text: `「✿」 ¡Oye, cielito! 🌸\n\nTienes que etiquetar a tu <user>, no escribas el @ a mano.\nEjemplo: !marry @<user>` }, { quoted: m });
+        }
+        if (target === sender) {
+            return sock.sendMessage(jid, { text: `「✿」 Cielito, no te puedes casar contigo mismo/a 🥺🌸` }, { quoted: m });
         }
 
         db.getSafeUser(sender, async (err, myData) => {
-            if (err) return sock.sendMessage(jid, { text: `「✿」 Ay, no pude ver tu perfil, cielito 🥺` }, { quoted: m });
-            if (myData.married) {
+            if (err || !myData) {
+                return sock.sendMessage(jid, { text: `「✿」 Ay, no pude ver tu perfil, cielito 🥺` }, { quoted: m });
+            }
+            if (isMarried(myData.married)) {
                 return sock.sendMessage(jid, { text: `「✿」 ¡Oye! Ya estás casado/a, cielito 💍\nPrimero usa !divorce y luego me pides otro !marry 🌸` }, { quoted: m });
             }
 
             db.getSafeUser(target, async (err2, targetData) => {
-                if (err2) return sock.sendMessage(jid, { text: `「✿」 No pude ver el perfil de ese <user> 🥺` }, { quoted: m });
-                if (targetData.married) {
+                if (err2 || !targetData) {
+                    return sock.sendMessage(jid, { text: `「✿」 No pude ver el perfil de ese <user> 🥺` }, { quoted: m });
+                }
+                if (isMarried(targetData.married)) {
                     return sock.sendMessage(jid, { text: `「✿」 Ese <user> ya está casado/a, cielito 💔 Busca otro amorcito 🌸` }, { quoted: m });
                 }
                 if (pending.has(target)) {
