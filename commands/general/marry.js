@@ -7,18 +7,6 @@ function isMarried(val) {
     return val && val !== 'Nadie 💔' && val !== 'Nadie' && val !== '' && val !== 'null' && val !== null;
 }
 
-function getNombre(jid, fallback) {
-    return new Promise((resolve) => {
-        db.getSafeUser(jid, (err, data) => {
-            const nombre = data?.name;
-            if (nombre && nombre !== 'Usuario' && !/^\d+$/.test(nombre)) {
-                return resolve(nombre);
-            }
-            return resolve(fallback || jid.split('@')[0]);
-        });
-    });
-}
-
 module.exports = {
     name: 'marry',
     aliases: ['casar'],
@@ -29,10 +17,7 @@ module.exports = {
 
         const msg = m.message || {};
         const ctx = msg.extendedTextMessage?.contextInfo || {};
-        const quoted = ctx.quotedMessage || null;
         let target = ctx.mentionedJid?.[0];
-
-        // Si respondió a un mensaje, ese es el target
         if (!target && ctx.participant) {
             target = ctx.participant;
         }
@@ -69,11 +54,10 @@ module.exports = {
                 }, 60000);
                 pending.set(target, { sender, jid, timeout });
 
-                const nombre1 = await getNombre(sender, m.pushName);
-                const nombre2 = await getNombre(target, null);
-
+                // AQUÍ VA CON @ + NÚMERO + mentions, NO CON NOMBRE PLANO
                 await sock.sendMessage(jid, {
-                    text: `「✿」 ¡OMG! 💍🌸\n\n¡${nombre1} le está pidiendo matrimonio a ${nombre2}! (⁠≧⁠▽⁠≦⁠)💕\n\n${nombre2}, cielito, ¿te casas con ${nombre1}? 🥺\nResponde !aceptar si dices que sí o !rechazar si lo vas a dejar llorando... ¡Tienes 60 segundos! ⏳💔`
+                    text: `「✿」 ¡OMG! 💍🌸\n\n¡@${sender.split('@')[0]} le está pidiendo matrimonio a @${target.split('@')[0]}! (⁠≧⁠▽⁠≦⁠)💕\n\n@${target.split('@')[0]}, cielito, ¿te casas con @${sender.split('@')[0]}? 🥺\nResponde !aceptar si dices que sí o !rechazar si lo vas a dejar llorando... ¡Tienes 60 segundos! ⏳💔`,
+                    mentions: [sender, target]
                 }, { quoted: m });
             });
         });
