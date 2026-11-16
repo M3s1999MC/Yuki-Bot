@@ -12,44 +12,39 @@ module.exports = {
         const sender = getMessageSenderJid(m, sock);
 
         const msg = m.message || {};
-        const ext = msg.extendedTextMessage || {};
-        const ctx = ext.contextInfo || {};
+        const ctx = msg.extendedTextMessage?.contextInfo || {};
         let target = ctx.mentionedJid?.[0];
 
         if (!target || target === sender) {
-            return sock.sendMessage(jid, {
-                text: '「✿」 PROPUESTA DE MATRIMONIO 🌸\n\nTienes que ETIQUETAR a la persona.\nEjemplo: !marry @M'
-            }, { quoted: m });
+            return sock.sendMessage(jid, { text: `「✿」 ¡Oye, cielito! 🌸\n\nTienes que etiquetar a tu <user>, no escribas el @ a mano.\nEjemplo: !marry @<user>` }, { quoted: m });
         }
 
-        // FIX: el callback tiene que ser async para poder usar await adentro
-        db.getSafeUser(sender, async (err, senderData) => {
-            if (err) return sock.sendMessage(jid, { text: 'Error con tu perfil.' }, { quoted: m });
-            if (senderData.married) {
-                return sock.sendMessage(jid, { text: 'Ya estás casado/a, usa !divorce primero.' }, { quoted: m });
+        db.getSafeUser(sender, async (err, myData) => {
+            if (err) return sock.sendMessage(jid, { text: `「✿」 Ay, no pude ver tu perfil, cielito 🥺` }, { quoted: m });
+            if (myData.married) {
+                return sock.sendMessage(jid, { text: `「✿」 ¡Oye! Ya estás casado/a, cielito 💍\nPrimero usa !divorce y luego me pides otro !marry 🌸` }, { quoted: m });
             }
 
-            // FIX: este callback también async
             db.getSafeUser(target, async (err2, targetData) => {
-                if (err2) return sock.sendMessage(jid, { text: 'Error con el perfil de esa persona.' }, { quoted: m });
+                if (err2) return sock.sendMessage(jid, { text: `「✿」 No pude ver el perfil de ese <user> 🥺` }, { quoted: m });
                 if (targetData.married) {
-                    return sock.sendMessage(jid, { text: 'Esa persona ya está casada.' }, { quoted: m });
+                    return sock.sendMessage(jid, { text: `「✿」 Ese <user> ya está casado/a, cielito 💔 Busca otro amorcito 🌸` }, { quoted: m });
                 }
                 if (pending.has(target)) {
-                    return sock.sendMessage(jid, { text: 'Ya hay una propuesta pendiente para esa persona.' }, { quoted: m });
+                    return sock.sendMessage(jid, { text: `「✿」 Ya hay una propuesta pendiente para ese <user>, espera que responda 🥺` }, { quoted: m });
                 }
 
                 const timeout = setTimeout(() => {
                     pending.delete(target);
-                    sock.sendMessage(jid, { text: 'La propuesta expiró, nadie respondió. 💔' });
+                    sock.sendMessage(jid, { text: `「✿」 La propuesta expiró... Nadie respondió 💔🌸` });
                 }, 60000);
                 pending.set(target, { sender, jid, timeout });
 
-                const numSender = sender.split('@')[0];
-                const numTarget = target.split('@')[0];
+                const user1 = sender.split('@')[0];
+                const user2 = target.split('@')[0];
 
                 await sock.sendMessage(jid, {
-                    text: `「✿」 ¡PROPUESTA ENVIADA! 🌸\n\n💍 ${numSender} le ha propuesto matrimonio a ${numTarget}! 💕\n\n${numTarget}, responde !aceptar para aceptar o !rechazar para rechazar. Tienes 60 segundos.`
+                    text: `「✿」 ¡OMG! 💍🌸\n\n¡${user1} le está pidiendo matrimonio a ${user2}! (⁠≧⁠▽⁠≦⁠)💕\n\n${user2}, cielito, ¿te casas con ${user1}? 🥺\nResponde !aceptar si dices que sí o !rechazar si lo vas a dejar llorando... ¡Tienes 60 segundos! ⏳💔`
                 }, { quoted: m });
             });
         });
