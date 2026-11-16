@@ -1,6 +1,7 @@
 const db = require('../../database/db');
 const { getMessageSenderJid } = require('../../utils/messageSender');
-const marry = require('./marry');
+const { neon } = require('@neondatabase/serverless');
+const sql = neon(process.env.DATABASE_URL);
 
 module.exports = {
     name: 'aceptar',
@@ -10,48 +11,28 @@ module.exports = {
         const jid = m.key.remoteJid;
         const sender = getMessageSenderJid(m, sock);
 
-        // 1. Busca por grupo (esto arregla el bug del @lid vs @s.whatsapp.net)
-        let propuesta = marry.pending.get(jid);
+        await sql`CREATE TABLE IF NOT EXISTS marry_pending (
+            group_jid TEXT PRIMARY KEY,
+            sender TEXT NOT NULL,
+            target TEXT NOT NULL,
+            created_at BIGINT NOT NULL
+        )`;
 
-        // 2. Si no hay por grupo, busca por target (por si acaso)
-        if (!propuesta && marry.pendingByTarget) {
-            propuesta = marry.pendingByTarget.get(sender);
-        }
-
-        // 3. Si todavía no, busca en TODAS las propuestas si el sender es el que debe aceptar
-        // Esto cubre el caso donde el JID cambió de @lid a @s.whatsapp.net
-        if (!propuesta && marry.pendingByTarget) {
-            for (const p of marry.pendingByTarget.values()) {
-                if (p.jid === jid) {
-                    propuesta = p;
-                    break;
-                }
-            }
-        }
+        const rows = await sql`SELECT * FROM marry_pending WHERE group_jid = ${jid}`;
+        const propuesta = rows[0];
+        console.log(`[ACEPTAR-NEON] M=${sender} en ${jid} | Hay propuesta? ${!!propuesta} | ${JSON.stringify(propuesta)}`);
 
         if (!propuesta) {
             return sock.sendMessage(jid, { text: `「✿」 Cielito, no tienes ninguna propuesta pendiente 🥺\nQue te hagan !marry etiquetándote primero 🌸` }, { quoted: m });
         }
-
-        // No dejes que el que propuso se auto-acepte
-        // Si el que pone !aceptar es el mismo que propuso y hay forma de saberlo, lo dejamos pasar solo si es el target
-        // Como el JID puede cambiar, solo bloqueamos si el JID es EXACTAMENTE igual al del proponente
         if (propuesta.sender === sender) {
             return sock.sendMessage(jid, { text: `「✿」 Cielito, tú eres el que propuso, no te puedes auto-aceptar 🥺\nQue la otra personita ponga !aceptar 🌸` }, { quoted: m });
         }
 
-        const novio = propuesta.sender;
-        // El que acepta es el sender actual, no el target guardado, así guardamos el JID correcto
-        const acepta = sender;
+        const novio = propuesta.sender; // Noah
+        const acepta = sender; // M
 
-        clearTimeout(propuesta.timeout);
-        marry.pending.delete(jid);
-        if (marry.pendingByTarget) {
-            marry.pendingByTarget.delete(propuesta.target);
-            marry.pendingByTarget.delete(propuesta.sender);
-            marry.pendingByTarget.delete(sender);
-        }
-        if (marry.clearPending) marry.clearPending(jid, propuesta.target);
+        await sql`DELETE FROM marry_pending WHERE group_jid = ${jid}`;
 
         db.updateUser(novio, { married: acepta }, () => {});
         db.updateUser(acepta, { married: novio }, () => {});
