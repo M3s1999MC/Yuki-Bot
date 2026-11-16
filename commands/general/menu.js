@@ -250,6 +250,24 @@ module.exports = {
 > Contenido en YouTube, buena ganancia (cada 2 horas)
 ✧ !bombardear | !bomb [país]
 > Lanza una lluvia de confeti sobre un país (hay 193): puedes ganar dinero o perder y pagar los daños (cada 30 minutos)
+✧ !coinflip | !flip | !cf <cantidad|all> <cara|cruz>
+> Apuesta monedas a cara o cruz
+✧ !ppt <piedra|papel|tijera>
+> Piedra, papel o tijera contra el bot: ganas o pierdes 200 monedas
+✧ !math | !mates [facil|medio|dificil|imposible]
+> Juego de matemáticas: responde con !math <resultado> y gana monedas
+✧ !aventura | !adventure
+> Ve de aventura para ganar monedas; gasta vida (cada 45 minutos)
+✧ !curar | !heal
+> Cura tu salud para salir de aventuras (10 monedas por punto)
+✧ !cazar | !hunt
+> Caza animales para ganar monedas, con riesgo de que escapen (cada 1 hora)
+✧ !pescar | !fish
+> Gana monedas pescando (cada 40 minutos)
+✧ !economyboard | !eboard | !baltop [página]
+> Ranking de usuarios con más monedas
+✧ !economyinfo | !einfo [@usuario]
+> Tu información de economía: saldo, puesto, nivel y vida
 
 » ˚୨•(🌸)• ⊹ Gacha ⊹
 ✧ !roll | !rw | !rollwaifu | !waifu

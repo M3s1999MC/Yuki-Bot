@@ -76,6 +76,20 @@ const JOBS = [
         cooldownMs: 3 * HOUR, min: 2000, max: 4500, failChance: 0.05, lossMin: 200, lossMax: 600,
         wins: ['Terminaste una obra enorme y el contratista pagó el bono.', 'Levantaste muros todo el día y cobraste la mejor paga.', 'Tu obra quedó tan derecha que te recomendaron a otros clientes.'],
         fails: ['Se rompió una herramienta y tuviste que reponerla.']
+    },
+    {
+        key: 'cazar', name: 'cazar', aliases: ['hunt'], emoji: '🏹', label: 'Cacería',
+        desc: 'Cazar animales para ganar monedas, con riesgo de que la presa escape (cada 1 hora)',
+        cooldownMs: HOUR, min: 600, max: 1800, failChance: 0.25, lossMin: 200, lossMax: 600,
+        wins: ['Cazaste un venado y vendiste la carne y la piel.', 'Atrapaste un conejo y varios patos; el mercado pagó bien.', 'Tus trampas funcionaron y volviste con la mochila llena.'],
+        fails: ['La presa se escapó y perdiste tus trampas.', 'Se te dañó el equipo y tuviste que reponerlo.']
+    },
+    {
+        key: 'pescar', name: 'pescar', aliases: ['fish'], emoji: '🎣', label: 'Pesca',
+        desc: 'Ganar monedas pescando (cada 40 minutos)',
+        cooldownMs: 40 * MIN, min: 250, max: 900, failChance: 0.15, lossMin: 100, lossMax: 300,
+        wins: ['Sacaste una trucha enorme y la vendiste en el muelle.', 'La pesca fue buena: la red volvió llena de pescado fresco.', 'Un pez raro mordió el anzuelo y un coleccionista lo compró.'],
+        fails: ['El hilo se enredó y perdiste tu mejor carnada.', 'La caña se rompió y tuviste que comprar otra.']
     }
 ];
 

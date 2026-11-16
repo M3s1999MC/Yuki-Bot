@@ -40,6 +40,11 @@ const DDL = [
         game TEXT,
         music TEXT
     )`,
+    `CREATE TABLE IF NOT EXISTS eco_health (
+        user_jid TEXT PRIMARY KEY,
+        hp INTEGER NOT NULL,
+        updated_at BIGINT NOT NULL
+    )`,
     `CREATE TABLE IF NOT EXISTS eco_missions (
         user_jid TEXT NOT NULL,
         mission_key TEXT NOT NULL,
