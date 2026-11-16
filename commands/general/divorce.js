@@ -1,10 +1,8 @@
 const db = require('../../database/db');
 const { getMessageSenderJid } = require('../../utils/messageSender');
 
-async function guardar(userId, valor) {
-    if (db.updateUser) return db.updateUser(userId, { married: valor });
-    if (db.updateUserData) return db.updateUserData(userId, { married: valor });
-    if (db.setUser) return db.setUser(userId, { married: valor });
+function isMarried(val) {
+    return val && val !== 'Nadie 💔' && val !== 'Nadie' && val !== '' && val !== 'null' && val !== null;
 }
 
 module.exports = {
@@ -16,12 +14,13 @@ module.exports = {
         const sender = getMessageSenderJid(m, sock);
 
         db.getSafeUser(sender, async (err, data) => {
-            if (!data.married) {
+            if (err || !data || !isMarried(data.married)) {
                 return sock.sendMessage(jid, { text: `「✿」 Cielito, no estás casado/a con nadie 💔 Ya estás solterito 🌸` }, { quoted: m });
             }
+
             const ex = data.married;
-            await guardar(sender, null);
-            await guardar(ex, null);
+            db.updateUser(sender, { married: 'Nadie 💔' }, () => {});
+            db.updateUser(ex, { married: 'Nadie 💔' }, () => {});
 
             const user1 = sender.split('@')[0];
             const user2 = ex.split('@')[0];
