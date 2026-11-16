@@ -21,4 +21,15 @@ const getMentioned = (m) => {
 
 const tag = (jid) => '@' + jid.split('@')[0];
 
-module.exports = { SINGLE, proposals, getUser, setMarried, partnerOf, getSender, getMentioned, tag };
+const marriedDisplay = (user) => {
+    const partner = partnerOf(user);
+    return {
+        text: partner ? `@${partner.split('@')[0]} 💍` : SINGLE,
+        mentions: partner ? [partner] : [],
+    };
+};
+
+module.exports = {
+    SINGLE, proposals, getUser, setMarried, partnerOf,
+    getSender, getMentioned, tag, marriedDisplay,
+};
