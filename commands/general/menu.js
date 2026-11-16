@@ -24,10 +24,14 @@ module.exports = {
 > Muestra tu nivel y experiencia actual
 ✧ !lboard | !lb | !xptop
 > Top de usuarios con más experiencia
-✧ !marry | !casarse
-> Cásate con alguien mencionándolo o respondiendo a su mensaje
-✧ !divorce | !divorciarse
+✧ !marry | !casar @usuario
+> Proponle matrimonio a alguien (debe aceptar con !aceptar)
+✧ !divorciar | !divorce | !divorcio
 > Divorciarte de tu pareja
+✧ !aceptar | !accept
+> Acepta una propuesta de matrimonio o un duelo
+✧ !rechazar | !reject
+> Rechaza una propuesta de matrimonio o un duelo
 ✧ !setbirth
 > Establece tu fecha de cumpleaños
 ✧ !delbirth
