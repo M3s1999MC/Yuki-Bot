@@ -4,35 +4,37 @@ const marry = require('./marry');
 
 module.exports = {
     name: 'aceptar',
-    aliases: ['yes', 'si', 'accept'],
+    aliases: ['accept'],
     category: 'profile',
-    description: 'Aceptar propuesta de matrimonio.',
     async execute(sock, m) {
         const jid = m.key.remoteJid;
-        const sender = getMessageSenderJid(m, sock);
+        const sender = getMessageSenderJid(m, sock); // el que acepta = M
+
         const propuesta = marry.pending.get(sender);
+        console.log('ACEPTAR DEBUG - soy:', sender, 'propuesta:', propuesta);
 
         if (!propuesta) {
-            return sock.sendMessage(jid, { text: '「✿」 No tienes ninguna propuesta de matrimonio pendiente.' }, { quoted: m });
+            return sock.sendMessage(jid, { text: 'No tienes ninguna propuesta pendiente. Que te hagan !marry @M primero.' }, { quoted: m });
         }
 
+        const novio = propuesta.sender; // el que propuso
         clearTimeout(propuesta.timeout);
         marry.pending.delete(sender);
-        const esposo = propuesta.sender;
 
-        // GUARDADO COMPATIBLE CON TU PROFILE.JS:
-        // married = JID de la pareja, no true/false
-        if (db.updateUser) {
-            db.updateUser(esposo, { married: sender });
-            db.updateUser(sender, { married: esposo });
-        } else {
-            // Si tu db no tiene updateUser, dime cómo se llama y te lo cambio
-            // pero tiene que quedar married = JID
-        }
+        // --- AQUÍ ES DONDE SE GUARDA EN PROFILE ---
+        // Guarda en los 2 lados
+        const guardar = async (userId, pareja) => {
+            if (db.updateUser) return db.updateUser(userId, { married: pareja });
+            if (db.setUser) return db.setUser(userId, { married: pareja });
+            if (db.updateUserData) return db.updateUserData(userId, { married: pareja });
+            console.log('ACEPTAR: no encontré función para guardar en db.js');
+        };
 
-        sock.sendMessage(jid, {
-            text: `「✿」 ¡SE CASARON! 💍🌸\n\n💕 @${esposo.split('@')[0]} y @${sender.split('@')[0]} ahora son esposos! ¡Felicidades!\n\nYa pueden verlo con *!profile*`,
-            mentions: [esposo, sender]
+        await guardar(novio, sender);
+        await guardar(sender, novio);
+
+        await sock.sendMessage(jid, {
+            text: `「✿」 ¡SE CASARON! 💍🌸\n\n${novio.split('@')[0]} y ${sender.split('@')[0]} ahora son pareja! 💕\nYa les sale en !profile`
         }, { quoted: m });
     }
 };
