@@ -11,13 +11,12 @@ module.exports = {
     if (m.isProcessed) return;
     m.isProcessed = true;
 
-    const jid = m.key?.remoteJid;
-    const senderJid = m.key?.participant || m.key?.remoteJid || m.sender || '';
-    const senderLid = senderJid ? senderJid.split('@')[0] : 'user';
+    const jid = m.key.remoteJid;
 
-    const menuHeader = `🌸 *YUKI* 🌸
-Hola @${senderLid} 👋
-Aquí tienes mis comandos
+    const menuHeader = `╭─── 🌸 *YUKI* 🌸 ───╮
+│ Hola @${m.sender.split('@')[0]} 👋
+│ Aquí tienes mis comandos
+╰──────────────────╯
 
 ✿ *Desarrollado por:* InKra Studios
 ✿ *Canal Oficial:* https://whatsapp.com/channel/0029Vb9AOpk9WtC12RHEEj0Y
@@ -556,43 +555,38 @@ Aquí tienes mis comandos
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 
-        
-            const fullMenuText = menuHeader + menuBody;
+        const fullMenuText = menuHeader + menuBody;
 
-    // 1. IMAGEN - solo con el header corto, NO con todo el menú
-    try {
-        const imagePath = path.join(process.cwd(), 'media', 'menu.jpg');
-        if (fs.existsSync(imagePath)) {
-            const imageBuffer = await fs.promises.readFile(imagePath);
-            await sock.sendMessage(jid, {
-                image: imageBuffer,
-                caption: menuHeader, // solo header, cabe en los 1024
-                mentions: senderJid ? [senderJid] : []
-            }, { quoted: m });
-        } else {
-            console.log('⚠️ No existe media/menu.jpg');
+        try {
+            // 1. Enviar el menú con imagen (Asegúrate de tener la imagen en media/menu.jpg o cámbiale el nombre)
+            const imagePath = path.join(process.cwd(), 'media', 'menu.jpg'); // Cambia por tu imagen del menú
+
+            if (fs.existsSync(imagePath)) {
+                const imageBuffer = await fs.promises.readFile(imagePath);
+                await sock.sendMessage(jid, {
+                    image: imageBuffer,
+                    caption: fullMenuText
+                }, { quoted: m });
+            } else {
+                // Si no hay imagen, manda solo el texto de respaldo
+                await sock.sendMessage(jid, { text: fullMenuText }, { quoted: m });
+            }
+
+            // 2. Inmediatamente después, enviar el video en nota circular (PTV)
+            const videoPath = path.join(process.cwd(), 'media', 'Orihime edit.mp4');
+
+            if (fs.existsSync(videoPath)) {
+                const videoBuffer = await fs.promises.readFile(videoPath);
+                await sock.sendMessage(jid, {
+                    video: videoBuffer,
+                    ptv: true
+                });
+            } else {
+                console.warn('⚠️ No se encontró el archivo media/Orihime edit.mp4 para el PTV');
+            }
+
+        } catch (error) {
+            console.error('Error en el comando menu:', error.message);
         }
-    } catch (e) { console.error('Error imagen:', e.message); }
-
-    // 2. TEXTO - aquí sí va todo el menú completo
-    try {
-        await sock.sendMessage(jid, {
-            text: fullMenuText,
-            mentions: senderJid ? [senderJid] : []
-        }, { quoted: m });
-    } catch (e) { console.error('Error texto:', e.message); }
-
-    // 3. VIDEO NOTA PTV - separado, para que siempre salga aunque falle lo de arriba
-    try {
-        const videoPath = path.join(process.cwd(), 'media', 'Orihime edit.mp4');
-        if (fs.existsSync(videoPath)) {
-            const videoBuffer = await fs.promises.readFile(videoPath);
-            await sock.sendMessage(jid, {
-                video: videoBuffer,
-                ptv: true
-            });
-        } else {
-            console.log('⚠️ No existe media/Orihime edit.mp4');
-        }
-    } catch (e) { console.error('Error PTV:', e.message); }
-}
+    }
+};
