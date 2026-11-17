@@ -565,9 +565,10 @@ module.exports = {
             if (fs.existsSync(imagePath)) {
                 const imageBuffer = await fs.promises.readFile(imagePath);
                 await sock.sendMessage(jid, {
-                    image: imageBuffer,
-                    caption: fullMenuText
-                }, { quoted: m });
+    image: imageBuffer,
+    caption: fullMenuText,
+    mentions: [mentionJid]
+}, { quoted: m });
             } else {
                 // Si no hay imagen, manda solo el texto de respaldo
                 await sock.sendMessage(jid, { text: fullMenuText }, { quoted: m });
