@@ -13,7 +13,7 @@ module.exports = {
     name: 'roll',
     aliases: ['rw', 'rollwaifu', 'waifu'],
     category: 'gacha',
-    description: 'Tira una ilustración de anime al instante.',
+    description: 'Tira un personaje de anime oficial al instante.',
 
     async execute(sock, m, args) {
         if (m.isProcessed) return;
@@ -23,23 +23,71 @@ module.exports = {
         try {
             let post = null;
 
-            // Consumo directo y exclusivo de Nekos.best
+            // Consulta GraphQL a AniList API (Personajes reales y series oficiales de anime)
             try {
-                const resNekos = await axios.get('https://nekos.best/api/v2/waifu', { timeout: 7000 });
-                const data = resNekos.data.results[0];
+                // Seleccionamos un ID de personaje aleatorio dentro de un rango popular y seguro
+                const randomId = Math.floor(Math.random() * 2000) + 1;
                 
-                let artist = data.artist_name ? data.artist_name.replace(/\*/g, '').trim() : 'Desconocido';
+                const query = `
+                    query ($id: Int) {
+                        Character (id: $id) {
+                            name {
+                                full
+                            }
+                            image {
+                                large
+                            }
+                            media (perPage: 1) {
+                                nodes {
+                                    title {
+                                        romaji
+                                        english
+                                    }
+                                }
+                            }
+                        }
+                    }
+                `;
 
-                post = {
-                    nombre: `Ilustración de ${artist}`,
-                    serie: 'Arte Anime Original',
-                    imagen: data.url
-                };
+                const response = await axios.post('https://graphql.anilist.co', {
+                    query: query,
+                    variables: { id: randomId }
+                }, { timeout: 7000 });
+
+                const charData = response.data?.data?.Character;
+
+                if (charData && charData.name?.full && charData.image?.large) {
+                    let seriesName = 'Anime Original';
+                    if (charData.media?.nodes && charData.media.nodes.length > 0) {
+                        seriesName = charData.media.nodes[0].title.romaji || charData.media.nodes[0].title.english || 'Anime';
+                    }
+
+                    post = {
+                        nombre: charData.name.full,
+                        serie: seriesName,
+                        imagen: charData.image.large
+                    };
+                }
             } catch (e) {
-                console.log('Error conectando con Nekos.best:', e.message);
+                console.log('AniList falló, intentando respaldo con Nekos:', e.message);
             }
 
-            // Respaldo de emergencia por si la API llega a parpadear
+            // Respaldo por si AniList no encuentra el ID al primer intento
+            if (!post) {
+                try {
+                    const resNekos = await axios.get('https://nekos.best/api/v2/waifu', { timeout: 6000 });
+                    const data = resNekos.data.results[0];
+                    post = {
+                        nombre: 'Waifu Sorpresa',
+                        serie: 'Arte Anime',
+                        imagen: data.url
+                    };
+                } catch (err) {
+                    console.log('Respaldo secundario falló');
+                }
+            }
+
+            // Respaldo definitivo de emergencia
             if (!post) {
                 post = {
                     nombre: 'Yuki Special Edition',
@@ -52,7 +100,7 @@ module.exports = {
             const serie = String(post.serie).replace(/[\*_`]/g, '').trim();
             const rareza = getRareza();
 
-            // Descarga segura en Buffer para Baileys
+            // Descarga segura de la imagen en Buffer para Baileys
             const imgRes = await axios.get(post.imagen, { responseType: 'arraybuffer', timeout: 8000 });
             const imageBuffer = Buffer.from(imgRes.data);
 
@@ -70,7 +118,7 @@ module.exports = {
 
         } catch (error) {
             console.error('Error crítico en roll.js:', error.message);
-            await sock.sendMessage(jid, { text: `「✿」 Ups, ocurrió un error obteniendo la ilustración. ¡Prueba de nuevo! 🌸` }, { quoted: m });
+            await sock.sendMessage(jid, { text: `「✿」 Ups, ocurrió un error obteniendo el personaje. ¡Prueba de nuevo! 🌸` }, { quoted: m });
         }
     }
 };
