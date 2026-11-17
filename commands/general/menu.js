@@ -212,10 +212,6 @@ module.exports = {
 ✧ !vetar | !banpermanente
 > Expulsa a un usuario y lo saca de nuevo si intenta volver a entrar
 
-» ˚୨•(🌸)• ⊹ Owners ⊹
-✧ !resetharem
-> Borra todos los personajes de todos los harems.
-
 » ˚୨•(🌸)• ⊹ Economía ⊹
 ✧ !afk
 > Activar o desactivar el modo AFK
