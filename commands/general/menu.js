@@ -77,6 +77,14 @@ module.exports = {
 > Establece un título personalizado arriba de tu nombre
 ✧ !deltitulo | !deltitle
 > Elimina tu título personalizado de perfil
+✧ !setbio | !setbiografia
+> Establecer tu biografía en el perfil
+✧ !setgame | !setjuego
+> Establecer tu juego favorito en el perfil
+✧ !setmusica | !setcancion | !setmusic
+> Establecer tu música o canción favorita en el perfil
+✧ !setpfp
+> Cambiar tu foto de perfil personalizada
 
 » ˚୨•(🌸)• ⊹ Random ⊹
 ✧ !8ball | !pregunta | !duda
@@ -111,13 +119,15 @@ module.exports = {
 > Mide qué tan compatible eres hoy con Yuki
 ✧ !cantar | !letra
 > Lanza una frase o verso aleatorio de una canción
+✧ !ship
+> Calcula la compatibilidad entre dos personas
 
 » ˚୨•(🌸)• ⊹ Grupo ⊹
 ✧ !promote | !promover | !admin
 > Asciende a un usuario como administrador del grupo (mencionalo o responde su mensaje)
 ✧ !demote | !degradar
 > Desciende a un usuario de administrador del grupo (mencionalo o responde su mensaje)
-✧ !bot | !botgc | !onbot
+✧ !yuki on | !yuki off
 > Activa o desactiva al bot en este grupo.
 ✧ !clear
 > Limpia las claims (waifus) de usuarios inactivos en el grupo.
@@ -177,6 +187,32 @@ module.exports = {
 > Silencia a un usuario para que no pueda usar comandos de Yuki
 ✧ !unmute | !desilenciar
 > Le devuelve los permisos de uso de comandos a un usuario
+✧ !add | !agregar
+> Añadir a un usuario al grupo
+✧ !banbot | !bloquearbot
+> Impide que un usuario use el bot en este grupo
+✧ !baneados | !silenciados
+> Ver los usuarios silenciados y los que no pueden usar el bot
+✧ !del | !eliminar
+> Elimina el mensaje al que respondes
+✧ !fotogp | !photogp
+> Cambiar la foto del grupo
+✧ !gprefix | !setgprefix | !addgprefix | !delgprefix | !resetgprefix
+> Administra los prefijos propios del grupo (uno solo o varios)
+✧ !groupcontrol
+> Abre o cierra el grupo para mensajes
+✧ !namegp | !nombregp
+> Cambiar el nombre del grupo
+✧ !setbye
+> Edita el mensaje de despedida del grupo con broches ({usuario}, {grupo}, {miembros})
+✧ !testbye
+> Prueba el mensaje de despedida personalizado del grupo
+✧ !unbanbot | !desbloquearbot
+> Devuelve el acceso al bot a un usuario en este grupo
+✧ !unvetar | !perdonar
+> Quita el veto: el usuario ya puede volver a entrar al grupo
+✧ !vetar | !banpermanente
+> Expulsa a un usuario y lo saca de nuevo si intenta volver a entrar
 
 » ˚୨•(🌸)• ⊹ Economía ⊹
 ✧ !afk
@@ -289,6 +325,8 @@ module.exports = {
 > Ranking de usuarios con más monedas
 ✧ !economyinfo | !einfo [@usuario]
 > Tu información de economía: saldo, puesto, nivel y vida
+✧ !economy
+> Sistema completo de economía y transacciones monetarias seguras
 
 » ˚୨•(🌸)• ⊹ Gacha ⊹
 ✧ !roll | !rw | !rollwaifu | !waifu
@@ -365,6 +403,120 @@ module.exports = {
 > Descarga el audio de un video de TikTok en formato mp3
 ✧ !twitter | !x | !xdl | !dlx | !twdl | !tw | !twt
 > Descarga un video o imagen de Twitter/X
+✧ !ascender | !ascension | !estrella
+> Asciende un personaje en nivel máximo para extender su nivel
+✧ !banner | !destacados | !semanal_gacha
+> Muestra los personajes destacados de la semana y tu garantía
+✧ !buscarpj | !buscarpersonaje | !pj
+> Busca un personaje por nombre en cualquier categoría del gacha
+✧ !callofduty | !cod
+> Genera un ítem de COD al azar para reclamar con .equipar
+✧ !equipo | !team | !miequipo
+> Arma o muestra tu equipo de batalla por categoría
+✧ !gacha
+> Sistema de gacha para invocar, reclamar y gestionar personajes y waifus
+✧ !gachadiag | !diagnosticogacha
+> Prueba la conexión que usa el gacha para descargar imágenes (solo owners)
+✧ !logros | !achievements
+> Tu panel de logros y misiones especiales
+✧ !misiones | !misionesgacha | !quests
+> Muestra tus misiones diarias del gacha y cobra recompensas
+✧ !pase | !pases | !reclamarpase
+> Reclama un pase de gacha con su código secreto
+✧ !perfilgacha | !gachaperfil | !micolecciongacha
+> Muestra el perfil de coleccionista de un usuario
+✧ !poderes | !powers | !habilidades
+> Muestra los poderes y estadísticas de un personaje
+✧ !regalartodo | !regalarharem | !regalarcoleccion
+> Regala toda tu colección de una categoría a otro usuario
+✧ !rwinfo | !gachacd | !cooldownsgacha
+> Muestra el tiempo de espera de las tiradas de todos los gachas
+✧ !mispokemon
+> Muestra tu Pokédex con tus Pokémon y su nivel
+✧ !pokecomida
+> Muestra la tienda de comida Pokémon con sus precios y niveles
+✧ !pokedar | !pokealimentar
+> Da de comer a un Pokémon para subirlo de nivel
+✧ !pokefood | !pokecomprar
+> Compra comida Pokémon por su número
+✧ !pokemon
+> Genera un Pokémon al azar para reclamar con .atrapar (cada 20 minutos)
+✧ !pokemonpvp
+> Desafía a otro usuario con tu Pokémon en combate por rondas
+✧ !poketop | !pokemontop
+> Muestra a las personas con más Pokémon en todo el bot
+✧ !ticketpoke | !ticketpokemon
+> Usa un ticket para obtener un Pokémon eligiendo su ID
+✧ !brawlstars | !brawl
+> Genera un Brawler al azar para reclamar con .drop
+✧ !brawlstarspvp | !brawlpvp
+> Desafía a otro usuario con tu Brawler en combate por rondas
+✧ !comprarcubitos | !cubitoscomprar
+> Compra cubitos de fuerza para Brawlers
+✧ !cubitos | !cubitosdefuerza
+> Muestra la tienda de cubitos de fuerza para Brawlers
+✧ !drop
+> Reclama el brawler generado con .brawlstars
+✧ !misbrawlers
+> Muestra tus Brawlers con su nivel
+✧ !subirbrawler
+> Gasta cubitos de fuerza para subir de nivel a un Brawler
+✧ !ticketbs | !ticketbrawl
+> Usa un ticket para obtener un Brawler por su ID
+✧ !adoptar
+> Adopta el gusanito generado con .snake
+✧ !darorbe | !usarorbe
+> Usa un orbe en uno de tus Snakes para subirlo de nivel
+✧ !missnakes | !misgusanitos
+> Muestra tus Snakes con su nivel
+✧ !orbe | !comprarorbe
+> Compra orbes por su número
+✧ !orbes | !snakeorbes
+> Muestra la tienda de orbes para alimentar Snakes
+✧ !snake | !gusanito
+> Genera un gusanito (skin de Snake) al azar para adoptar con .adoptar
+✧ !ticketsnake
+> Usa un ticket para obtener un Snake por su ID
+✧ !clashcomprar
+> Compra artículos de la tienda de Clash Royale
+✧ !clashmejorar
+> Usa un artículo en una carta para subirla de nivel
+✧ !clashroyale | !cr
+> Genera una carta al azar para reclamar con .desbloquear
+✧ !clashtienda
+> Muestra la tienda de artículos para Clash Royale
+✧ !desbloquear
+> Reclama el personaje que apareció en la última tirada de Clash Royale
+✧ !miscartas
+> Muestra tus cartas de Clash Royale con su nivel
+✧ !ticketcr
+> Usa un ticket para obtener una carta por su ID
+✧ !codcomprar
+> Compra artículos de la tienda de Call of Duty
+✧ !codmejorar
+> Usa un artículo en tu ítem de COD para subirlo de nivel
+✧ !codtienda
+> Muestra la tienda de artículos para Call of Duty
+✧ !equipar
+> Reclama el ítem de COD que apareció en la última tirada
+✧ !miscod
+> Muestra tus ítems de Call of Duty con su nivel
+✧ !ticketcod
+> Usa un ticket para obtener un ítem de COD por su ID
+✧ !criar
+> Reclama el dragón que apareció en la última tirada
+✧ !dragon | !dragonmania
+> Genera un dragón al azar para reclamar con .criar
+✧ !dragoncomprar
+> Compra comida para dragones
+✧ !dragondar
+> Alimenta a un dragón para subirlo de nivel
+✧ !dragonfood
+> Muestra la tienda de comida para dragones
+✧ !misdragones
+> Muestra tus dragones con su nivel
+✧ !ticketdragon
+> Usa un ticket para obtener un dragón por su ID
 
 » ˚୨•(🌸)• ⊹ Stickers ⊹
 ✧ !setmeta | !setstickermeta
