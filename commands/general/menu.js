@@ -8,26 +8,24 @@ module.exports = {
     description: 'Muestra el menú principal con imagen y luego envía la nota de video PTV.',
 
     async execute(sock, m, args) {
-        if (m.isProcessed) return;
-        m.isProcessed = true;
+    if (m.isProcessed) return;
+    m.isProcessed = true;
 
-        const jid = m.key.remoteJid;
+    const jid = m.key.remoteJid;
+    const sender = m.key.participant || m.key.remoteJid;
+    const senderNum = sender.split('@')[0];
 
-        const menuHeader = `⋆ . .̷ ׅ⏜ׅ ⌢
-「✿」 Hola! Soy Yuki:
+    const menuHeader = `╭─── 🌸 *YUKI* 🌸 ───╮
+│ Hola @${senderNum} 👋
+│ Aquí tienes mis comandos
+╰──────────────────╯
 
-∘ 𓆩 \`̷💎@user\`̷.̷ ¿
- ˚ ⋆*
+✿ *Desarrollado por:* InKra Studios
+✿ *Canal Oficial:* https://whatsapp.com/channel/0029Vb9AOpk9WtC12RHEEj0Y
+✿ *Patrocinado por:* Duvalin 🌸
+✿ *Canal Patrocinado:* https://whatsapp.com/channel/0029Vb92LdaCnA7rdqUbdw38
 
-✿ Aquí tienes la lista de comandos:
-
-︶⏝ ̣ Developed by 𝆺𝅥 ̣ ⏝: *InKra Studios 🌸*
-︶⏝ ̣ Canal Oficial 𝆺𝅥 ̣ ⏝: *https://whatsapp.com/channel/0029Vb9AOpk9WtC12RHEEj0Y*
-︶⏝ ̣ Canal Patrocinado 𝆺𝅥 ̣ ⏝: *https://whatsapp.com/channel/0029Vb92LdaCnA7rdqUbdw38*
-︶⏝ ̣ Developed by 𝆺𝅥 ̣ ⏝: *Duvalin 🌸*
-
-♡ Yuki「✿
-\n`;
+──────────────────\n`;
 
         const menuBody = `» ˚୨•(🌸)• ⊹ Perfil ⊹
 ✧ !yukimenu | !yukihelp
