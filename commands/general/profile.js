@@ -51,16 +51,14 @@ module.exports = {
             const mentions = [target, ...(spouseIsJid ? [data.married] : [])];
             const displayName = data.custom_name ? `${data.custom_name} (@${target.split('@')[0]})` : `@${target.split('@')[0]}`;
 
-            const text = `⋆
-             . . ︵ ⌢ 
+            const text = `⋆ . . ︵ ⌢ 
             「✿」 Perfil de:
-            
-             ∘ 𓆩 💎 ${displayName} ¿
-             ˚ ⋆*
+            ∘ 𓆩 💎 ${displayName} ¿
+            ˚ ⋆*
             
             ⭐ Nivel: *${data.level || '?'}* · ✨ EXP: *${data.exp || 0}*
             
-              casado💍 ︶: *${spouse}*
+            casado💍 ︶: *${spouse}*
             
             🎂 Birthday : *${data.birthday || '??'}*
             
