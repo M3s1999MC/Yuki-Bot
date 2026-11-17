@@ -12,7 +12,7 @@ module.exports = {
     if (m.isProcessed) return;
     m.isProcessed = true;
 
-    const jid = m.key.remoteJid;
+    const mentionJid = m.key.participant || m.key.remoteJid;
 
     const menuHeader = `╭─── 🌸 *YUKI* 🌸 ───╮
 │ Hola @${mentionJid.split('@')[0]} 👋
