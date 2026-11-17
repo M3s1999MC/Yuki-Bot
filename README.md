@@ -41,12 +41,12 @@ Inicia el bot:
 
    Modo desarrollo (con autoreinicio):
 
-         ```bash
-          ¿npm run dev
+      ```bash
+      npm run dev
    Modo producción / ejecución normal:
 
-           ```bash
-           npm start
+      ```bash
+      npm start
 
 ⚙️ Tecnologías y Librerías Principales
 Baileys (@whiskeysockets/baileys) - Conexión con la API de WhatsApp Web.
