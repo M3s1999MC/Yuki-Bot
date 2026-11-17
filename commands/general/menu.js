@@ -555,24 +555,26 @@ module.exports = {
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 
+        
         const fullMenuText = menuHeader + menuBody;
 
         try {
-            // 1. Enviar el menú con imagen (Asegúrate de tener la imagen en media/menu.jpg o cámbiale el nombre)
-            const imagePath = path.join(process.cwd(), 'media', 'menu.jpg'); // Cambia por tu imagen del menú
+            const imagePath = path.join(process.cwd(), 'media', 'menu.jpg');
 
             if (fs.existsSync(imagePath)) {
                 const imageBuffer = await fs.promises.readFile(imagePath);
                 await sock.sendMessage(jid, {
                     image: imageBuffer,
-                    caption: fullMenuText
+                    caption: fullMenuText,
+                    mentions: [senderJid] // <-- ESTO es lo que lo hace azul, antes no lo tenías
                 }, { quoted: m });
             } else {
-                // Si no hay imagen, manda solo el texto de respaldo
-                await sock.sendMessage(jid, { text: fullMenuText }, { quoted: m });
+                await sock.sendMessage(jid, {
+                    text: fullMenuText,
+                    mentions: [senderJid] // <-- también aquí
+                }, { quoted: m });
             }
 
-            // 2. Inmediatamente después, enviar el video en nota circular (PTV)
             const videoPath = path.join(process.cwd(), 'media', 'Orihime edit.mp4');
 
             if (fs.existsSync(videoPath)) {
