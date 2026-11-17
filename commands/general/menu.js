@@ -45,6 +45,10 @@ module.exports = {
 > Acepta una propuesta de matrimonio o un duelo
 ✧ !rechazar | !reject
 > Rechaza una propuesta de matrimonio o un duelo
+✧ !aceptar | !accept
+> Acepta una propuesta de matrimonio o un duelo
+✧ !rechazar | !reject
+> Rechaza una propuesta de matrimonio o un duelo
 ✧ !setbirth
 > Establece tu fecha de cumpleaños
 ✧ !delbirth
@@ -223,9 +227,9 @@ module.exports = {
 > Comprar un negocio de la tienda
 ✧ !minegocios | !misnegocios | !yukingmis | !miempresa
 > Ver el estado de tus negocios
-✧ !yukireclamar | !yukicobrar | !yukiclaim | !reclamarnegocios | !cobrarnegocios
+✧ !yukicobrar | !yukiclaim | !reclamarnegocios | !cobrarnegocios | !ygc
 > Cobrar el dinero acumulado de tus negocios (hasta 24 h)
-✧ !yukipagar | !pagarnegocios | !ngmantenimiento [número|todos]
+✧ !yukipagar | !pagarnegocios | !pagarmantenimiento | !ygp [número|todos]
 > Pagar el mantenimiento semanal de tus negocios
 ✧ !emisiones | !misioneseconomia | !tareas [cobrar]
 > Misiones diarias de economía con recompensas

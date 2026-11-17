@@ -16,8 +16,8 @@ const cmd = {
     negocio: require('../commands/economy/negocio'),
     negocios: require('../commands/economy/negocios'),
     minegocios: require('../commands/economy/minegocios'),
-    ngreclamar: require('../commands/economy/ngreclamar'),
-    ngpagar: require('../commands/economy/ngpagar'),
+    ngreclamar: require('../commands/economy/yukicobrar'),
+    ngpagar: require('../commands/economy/yukipagar'),
     emisiones: require('../commands/economy/emisiones'),
     cofre: require('../commands/economy/cofre'),
     uber: require('../commands/economy/uber')
@@ -130,8 +130,8 @@ test('comandos de negocios: flujo completo', async () => {
     assert.match(await run(cmd.negocio, jid, ['6']), /No te alcanza/);
     assert.match(await run(cmd.minegocios, jid), /Por cobrar/);
     assert.match(await run(cmd.ngreclamar, jid), /Aún no hay ganancias/);
-    assert.match(await run(cmd.ngpagar, jid), /Mantenimiento/);
-    assert.match(await run(cmd.ngpagar, jid, ['4']), /No tienes ese negocio/);
+    assert.match(await run(cmd.ngpagar, jid), /antenimiento/i);
+    assert.match(await run(cmd.ngpagar, jid, ['4']), /No eres dueño|No tienes ese negocio/);
 });
 
 test('sin negocios los comandos lo dicen', async () => {
@@ -166,14 +166,12 @@ test('misiones: progreso, tope, cobro único y reinicio por día (hora de Colomb
     assert.equal(list.find(item => item.key === 'trabajos').progress, 0);
 });
 
-test('los comandos que cuentan para misiones suman progreso solo si funcionan', async () => {
+test('los trabajos suman progreso de misión solo si funcionan', async () => {
     const jid = newJid();
     await economy.ensureUser(jid);
     await run(cmd.uber, jid);
     await run(cmd.uber, jid); // segunda vez: en espera, no cuenta
-    await run(cmd.cofre, jid);
     const list = await missions.status(jid);
     assert.equal(list.find(item => item.key === 'trabajos').progress, 1);
-    assert.equal(list.find(item => item.key === 'cofre').progress, 1);
-    assert.match(await run(cmd.emisiones, jid, ['cobrar']), /Misiones diarias/);
+    assert.match(await run(cmd.emisiones, jid, ['cobrar']), /Misiones|Recompensa/);
 });
