@@ -1,4 +1,5 @@
 const { reply, usedCommand, targetJid, mentionTag, senderJid } = require('../../utils/commandHelpers');
+const { sendWithGif } = require('../../utils/reactions');
 
 const drinks = {
     cafe: { label: 'un café', emoji: '☕' },
@@ -25,7 +26,7 @@ module.exports = {
         }
         const author = senderJid(m, sock);
         const text = `「✿」 ${drink.emoji} ${mentionTag(author)} le invita ${drink.label} a ${mentionTag(target)}.\n_Que lo disfrute con calma._ 🌸`;
-        return reply(sock, m, text, [author, target].filter(Boolean));
+        return sendWithGif(sock, m, { text, mentions: [author, target].filter(Boolean), sources: ['n:sip', 'n:nom'] });
     },
     drinks
 };

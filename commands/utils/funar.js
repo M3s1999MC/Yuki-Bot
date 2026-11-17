@@ -1,3 +1,5 @@
+const { sendWithGif } = require('../../utils/reactions');
+
 module.exports = {
     name: 'funar',
     aliases: ['funa'],
@@ -11,9 +13,10 @@ module.exports = {
             'por no compartir las arepas con queso.'
         ];
         const raz = razones[Math.floor(Math.random() * razones.length)];
-        await sock.sendMessage(m.key.remoteJid, { 
+        await sendWithGif(sock, m, {
             text: `📢 *¡FUNA PÚBLICA!* @${user.split('@')[0]} queda totalmente funado/a ${raz}`,
-            mentions: [user]
-        }, { quoted: m });
+            mentions: [user],
+            sources: ['n:baka', 'w:bully']
+        });
     }
 };

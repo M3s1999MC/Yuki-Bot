@@ -1,4 +1,5 @@
-const { reply, pickOne, mentionTag, senderJid } = require('../../utils/commandHelpers');
+const { pickOne, mentionTag, senderJid } = require('../../utils/commandHelpers');
+const { sendWithGif } = require('../../utils/reactions');
 
 // Castigos ficticios e inofensivos.
 const punishments = [
@@ -25,7 +26,7 @@ module.exports = {
         const text = bang
             ? `「✿」 🔫 ${tag} gira el tambor...\n\n💥 *¡BANG!* Todo es de mentira, pero te toca un castigo:\n${pickOne(punishments)}`
             : `「✿」 🔫 ${tag} gira el tambor...\n\n💨 *Click.* Te salvaste esta vez. 😮‍💨`;
-        return reply(sock, m, text, jid ? [jid] : []);
+        return sendWithGif(sock, m, { text, mentions: jid ? [jid] : [], sources: ['n:shoot', 'n:smug'] });
     },
     punishments
 };

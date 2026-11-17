@@ -111,3 +111,36 @@ test('si el envío del video falla, se manda el texto', async () => {
     await R.makeReaction('laugh', { fetchImpl, convert: async b => b }).execute(sock, msg(A), []);
     assert.match(sent[0].text, /se ríe/);
 });
+
+test('sendWithGif: prueba las fuentes en orden y cae a texto si ninguna sirve', async () => {
+    const urls = [];
+    const fetchImpl = async url => {
+        urls.push(url);
+        if (url.includes('nekos.best/api/v2/malo')) return { ok: false, status: 404 };
+        if (url.includes('api.waifu.pics')) return { ok: true, json: async () => ({ url: 'https://cdn.example/bueno.gif' }) };
+        return { ok: true, arrayBuffer: async () => new Uint8Array([7]).buffer };
+    };
+    const convert = async buffer => Buffer.concat([Buffer.from('MP4'), buffer]);
+
+    const withGif = fakeSock();
+    await R.sendWithGif(withGif, msg(A), { text: 'hola', mentions: [A], sources: ['n:malo', 'w:hug'], options: { fetchImpl, convert } });
+    assert.equal(withGif.sent[0].gifPlayback, true);
+    assert.equal(withGif.sent[0].caption, 'hola');
+    assert.ok(urls[0].includes('nekos.best/api/v2/malo') && urls[1].includes('api.waifu.pics/sfw/hug'));
+
+    const none = fakeSock();
+    await R.sendWithGif(none, msg(A), { text: 'solo texto', sources: ['n:malo'], options: { fetchImpl, convert } });
+    assert.deepEqual(none.sent[0], { text: 'solo texto' });
+
+    const noSource = fakeSock();
+    await R.sendWithGif(noSource, msg(A), { text: 'sin fuente', mentions: [A], options: { fetchImpl } });
+    assert.deepEqual(noSource.sent[0], { text: 'sin fuente', mentions: [A] });
+});
+
+test('dentro de las pruebas no se usa la red salvo que se inyecte fetch', async () => {
+    const sock = fakeSock();
+    const started = Date.now();
+    await R.sendWithGif(sock, msg(A), { text: 'rápido', sources: ['n:hug'] });
+    assert.ok(Date.now() - started < 500);
+    assert.deepEqual(sock.sent[0], { text: 'rápido' });
+});

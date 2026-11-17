@@ -1,3 +1,5 @@
+const { sendWithGif } = require('../../utils/reactions');
+
 module.exports = {
     name: 'maldicion',
     aliases: ['hex'],
@@ -10,9 +12,10 @@ module.exports = {
             'que el Wi-Fi se te corte justo cuando vas a ganar la partida.'
         ];
         const mal = maldiciones[Math.floor(Math.random() * maldiciones.length)];
-        await sock.sendMessage(m.key.remoteJid, { 
+        await sendWithGif(sock, m, {
             text: `🧙‍♀️ *MALDICIÓN LANZADA:* Maldigo a @${user.split('@')[0]} a ${mal}`,
-            mentions: [user]
-        }, { quoted: m });
+            mentions: [user],
+            sources: ['n:smug', 'w:smug']
+        });
     }
 };

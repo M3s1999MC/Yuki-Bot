@@ -1,3 +1,5 @@
+const { sendWithGif } = require('../../utils/reactions');
+
 module.exports = {
     name: 'cantar',
     aliases: ['letra'],
@@ -9,6 +11,6 @@ module.exports = {
             '🎵 "Bienvenido al circo digital..." 🎶'
         ];
         const v = versos[Math.floor(Math.random() * versos.length)];
-        await sock.sendMessage(m.key.remoteJid, { text: v }, { quoted: m });
+        await sendWithGif(sock, m, { text: v, sources: ['n:dance', 'w:dance'] });
     }
 };

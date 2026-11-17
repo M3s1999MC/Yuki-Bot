@@ -1,4 +1,5 @@
-const { reply, mentionTag, senderJid } = require('../../utils/commandHelpers');
+const { mentionTag, senderJid } = require('../../utils/commandHelpers');
+const { sendWithGif } = require('../../utils/reactions');
 
 module.exports = {
     name: 'f',
@@ -12,6 +13,6 @@ module.exports = {
         const text = reason
             ? `「✿」 🫡 ${mentionTag(jid)} presenta sus respetos por *${reason}*.\n\n*F*`
             : `「✿」 🫡 ${mentionTag(jid)} presenta sus respetos.\n\n*F*`;
-        return reply(sock, m, text, jid ? [jid] : []);
+        return sendWithGif(sock, m, { text, mentions: jid ? [jid] : [], sources: ['n:nod', 'n:thumbsup'] });
     }
 };

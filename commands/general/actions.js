@@ -1,4 +1,17 @@
 const { getMessageSenderJid } = require('../../utils/messageSender');
+const { sendWithGif } = require('../../utils/reactions');
+
+// Fuente de GIF por acción (nekos.best 'n:' / waifu.pics 'w:'); si fallan, se manda solo el texto.
+const GIF_SOURCES = {
+    kiss: ['n:kiss', 'w:kiss'], besar: ['n:kiss', 'w:kiss'],
+    hug: ['n:hug', 'w:hug'], abrazar: ['n:hug', 'w:hug'],
+    slap: ['n:slap', 'w:slap'], bofetada: ['n:slap', 'w:slap'], golpear: ['n:slap', 'w:slap'],
+    pat: ['n:pat', 'w:pat'], darpalmada: ['n:pat', 'w:pat'], caricia: ['n:pat', 'w:pat'], acariciar: ['n:pat', 'w:pat'],
+    cuddle: ['n:cuddle', 'w:cuddle'], acurrucar: ['n:cuddle', 'w:cuddle'],
+    kill: ['w:kill', 'n:shoot'], matar: ['w:kill', 'n:shoot'], asesinar: ['w:kill', 'n:shoot'],
+    poke: ['n:poke', 'w:poke'], picar: ['n:poke', 'w:poke'],
+    wink: ['n:wink', 'w:wink'], 'guiñar': ['n:wink', 'w:wink']
+};
 
 module.exports = {
     name: 'actions',
@@ -80,9 +93,6 @@ module.exports = {
                 break;
         }
 
-        await sock.sendMessage(jid, { 
-            text: actionText, 
-            mentions 
-        }, { quoted: m });
+        await sendWithGif(sock, m, { text: actionText, mentions, sources: GIF_SOURCES[commandUsed] });
     }
 };

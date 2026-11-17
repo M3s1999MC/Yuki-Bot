@@ -9,7 +9,7 @@ const { reply, senderJid, targetJid, mentionTag } = require('./commandHelpers');
 
 // [clave, alias, fuente del GIF, emoji, texto sin objetivo, texto con objetivo]. {a} = quien la hace, {b} = objetivo.
 const REACTIONS = [
-    ['angry', ['enojado'], 'n:angry', '😠', '{a} está enojado/a 😠', '{a} está enojado/a con {b} 😠'],
+    ['angry', ['enojado'], ['n:angry', 'n:pout', 'w:bully'], '😠', '{a} está enojado/a 😠', '{a} está enojado/a con {b} 😠'],
     ['baka', ['tonto'], 'n:baka', '💢', '{a} grita «¡baka!» 💢', '{a} le dice baka a {b} 💢'],
     ['bite', ['morder'], 'n:bite', '😬', '{a} muerde el aire 😬', '{a} muerde a {b} 😬'],
     ['bleh', ['lengua'], 'n:smug', '😛', '{a} saca la lengua 😛', '{a} le saca la lengua a {b} 😛'],
@@ -41,7 +41,7 @@ const REACTIONS = [
     ['nod', ['asentir'], 'n:nod', '👍', '{a} asiente 👍', '{a} asiente mirando a {b} 👍'],
     ['nom', ['comer'], 'n:nom', '😋', '{a} hace ñam 😋', '{a} le hace ñam a {b} 😋'],
     ['nope', ['negar'], 'n:nope', '🙅', '{a} dice que no 🙅', '{a} le dice que no a {b} 🙅'],
-    ['peck', ['piquito'], 'n:peck', '😚', '{a} manda un piquito 😚', '{a} le dio un piquito a {b} 😚'],
+    ['peck', ['piquito'], ['n:peck', 'n:kiss'], '😚', '{a} manda un piquito 😚', '{a} le dio un piquito a {b} 😚'],
     ['pout', ['pucheros'], 'n:pout', '🥺', '{a} hace pucheros 🥺', '{a} le hace pucheros a {b} 🥺'],
     ['psycho', ['psicopata', 'psicópata'], null, '🔪', '{a} se hace el/la psicópata 🔪', '{a} se hace el/la psicópata con {b} 🔪'],
     ['punch', ['puñetazo'], 'n:punch', '👊', '{a} lanza un puñetazo 👊', '{a} le dio un puñetazo a {b} 👊'],
@@ -50,7 +50,7 @@ const REACTIONS = [
     ['sad', ['triste'], 'n:cry', '😢', '{a} está triste 😢', '{a} está triste por {b} 😢'],
     ['scared', ['asustado'], null, '😱', '{a} está asustado/a 😱', '{a} se asustó por {b} 😱'],
     ['scream', ['gritar'], null, '😱', '{a} grita 😱', '{a} le grita a {b} 😱'],
-    ['shoot', ['disparar'], 'n:shoot', '🔫', '{a} dispara con el dedo 🔫', '{a} le disparó con el dedo a {b} 🔫'],
+    ['shoot', ['disparar'], ['n:shoot', 'n:smug'], '🔫', '{a} dispara con el dedo 🔫', '{a} le disparó con el dedo a {b} 🔫'],
     ['shrug', ['encogerse'], 'n:shrug', '🤷', '{a} se encoge de hombros 🤷', '{a} se encoge de hombros ante {b} 🤷'],
     ['shy', ['timido', 'tímido'], 'n:blush', '😳', '{a} siente timidez 😳', '{a} siente timidez frente a {b} 😳'],
     ['sigh', ['suspirar'], null, '😮‍💨', '{a} suspira 😮‍💨', '{a} suspira por {b} 😮‍💨'],
@@ -60,7 +60,7 @@ const REACTIONS = [
     ['stare', ['mirar'], 'n:stare', '👁️', '{a} se queda mirando 👁️', '{a} mira fijamente a {b} 👁️'],
     ['step', ['pisar'], null, '👣', '{a} pisa fuerte 👣', '{a} pisó a {b} 👣'],
     ['surprised', ['sorprendido'], null, '😲', '{a} está sorprendido/a 😲', '{a} se sorprendió con {b} 😲'],
-    ['tea', ['te', 'té'], 'n:sip', '🍵', '{a} toma té 🍵', '{a} toma té con {b} 🍵'],
+    ['tea', ['te', 'té'], ['n:sip', 'n:smile'], '🍵', '{a} toma té 🍵', '{a} toma té con {b} 🍵'],
     ['think', ['pensar'], 'n:think', '🤔', '{a} se pone a pensar 🤔', '{a} piensa en {b} 🤔'],
     ['thumbsup', ['aprobar'], 'n:thumbsup', '👍', '{a} levanta el pulgar 👍', '{a} aprueba a {b} 👍'],
     ['tickle', ['cosquillas'], 'n:tickle', '🤭', '{a} se ríe de las cosquillas 🤭', '{a} le hace cosquillas a {b} 🤭'],
@@ -78,7 +78,7 @@ function renderText(reaction, actor, target) {
 const MAX_GIF_BYTES = 8 * 1024 * 1024;
 
 async function fetchJson(url, fetchImpl) {
-    const response = await fetchImpl(url, { signal: AbortSignal.timeout(6000) });
+    const response = await fetchImpl(url, { signal: AbortSignal.timeout(4000) });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.json();
 }
@@ -124,21 +124,54 @@ async function gifToMp4(buffer) {
     }
 }
 
-/** Descarga el GIF de la reacción y lo deja listo para enviar como video; null si algo falla. */
-async function loadReactionMedia(reaction, { fetchImpl = fetch, convert = gifToMp4 } = {}) {
-    if (!reaction.source) return null;
-    try {
-        const url = await gifUrl(reaction.source, fetchImpl);
-        if (!url) return null;
-        const response = await fetchImpl(url, { signal: AbortSignal.timeout(10000) });
-        if (!response.ok) return null;
-        const buffer = Buffer.from(await response.arrayBuffer());
-        if (!buffer.length || buffer.length > MAX_GIF_BYTES) return null;
-        return await convert(buffer);
-    } catch (error) {
-        console.error(`Reacción ${reaction.key}: sin GIF (${error.message})`);
-        return null;
+const asList = source => (source ? [].concat(source) : []);
+
+/** Prueba cada fuente en orden y devuelve el primer GIF convertido a video; null si ninguna funciona. */
+async function loadMediaFrom(sources, { fetchImpl = fetch, convert = gifToMp4, label = 'reacción' } = {}) {
+    for (const source of asList(sources)) {
+        try {
+            const url = await gifUrl(source, fetchImpl);
+            if (!url) continue;
+            const response = await fetchImpl(url, { signal: AbortSignal.timeout(8000) });
+            if (!response.ok) continue;
+            const buffer = Buffer.from(await response.arrayBuffer());
+            if (!buffer.length || buffer.length > MAX_GIF_BYTES) continue;
+            const media = await convert(buffer);
+            if (media) return media;
+        } catch (error) {
+            console.error(`${label}: sin GIF de ${source} (${error.message})`);
+        }
     }
+    return null;
+}
+
+/** Descarga el GIF de la reacción y lo deja listo para enviar como video; null si algo falla. */
+function loadReactionMedia(reaction, options = {}) {
+    return loadMediaFrom(reaction.source, { ...options, label: `Reacción ${reaction.key}` });
+}
+
+// Con YUKI_REACTION_GIFS=off (o dentro de las pruebas, salvo que se inyecte fetch) no se usa la red.
+function gifsEnabled(options) {
+    if (options.fetchImpl) return true;
+    if (process.env.YUKI_REACTION_GIFS === 'off') return false;
+    return !process.env.NODE_TEST_CONTEXT;
+}
+
+/**
+ * Envía el texto con un GIF animado si se consigue; si no, solo el texto (la respuesta nunca se pierde).
+ * `sources`: fuentes 'n:categoria' (nekos.best) o 'w:categoria' (waifu.pics), probadas en orden.
+ */
+async function sendWithGif(sock, m, { text, mentions = [], sources, options = {} }) {
+    const chat = m.key.remoteJid;
+    const media = gifsEnabled(options) ? await loadMediaFrom(sources, options) : null;
+    if (media) {
+        try {
+            return await sock.sendMessage(chat, { video: media, gifPlayback: true, caption: text, mentions }, { quoted: m });
+        } catch (error) {
+            console.error(`No se pudo enviar el GIF (${error.message}); se manda solo el texto`);
+        }
+    }
+    return sock.sendMessage(chat, mentions.length ? { text, mentions } : { text }, { quoted: m });
 }
 
 function makeReaction(key, options = {}) {
@@ -154,19 +187,15 @@ function makeReaction(key, options = {}) {
             const actor = senderJid(m, sock);
             if (!actor) return reply(sock, m, '「✿」 No pude identificarte. Inténtalo de nuevo.');
             const target = targetJid(m);
-            const text = renderText(reaction, actor, target && target !== actor ? target : null);
-            const mentions = [actor, ...(target && target !== actor ? [target] : [])];
-            const media = await loadReactionMedia(reaction, options);
-            if (media) {
-                try {
-                    return await sock.sendMessage(m.key.remoteJid, { video: media, gifPlayback: true, caption: text, mentions }, { quoted: m });
-                } catch (error) {
-                    console.error(`Reacción ${reaction.key}: no se pudo enviar el video (${error.message})`);
-                }
-            }
-            return reply(sock, m, `「✿」 ${text}`, mentions);
+            const other = target && target !== actor ? target : null;
+            return sendWithGif(sock, m, {
+                text: `「✿」 ${renderText(reaction, actor, other)}`,
+                mentions: other ? [actor, other] : [actor],
+                sources: reaction.source,
+                options
+            });
         }
     };
 }
 
-module.exports = { REACTIONS, BY_KEY, renderText, gifUrl, loadReactionMedia, makeReaction };
+module.exports = { REACTIONS, BY_KEY, renderText, gifUrl, loadMediaFrom, loadReactionMedia, sendWithGif, makeReaction };

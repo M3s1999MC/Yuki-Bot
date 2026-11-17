@@ -94,21 +94,21 @@ module.exports = {
 ✧ !frase | !consejo
 > Muestra un pensamiento aleatorio o un consejo
 ✧ !ruletarusa | !shot
-> Prueba tu suerte con un castigo ficticio e inofensivo
+> Prueba tu suerte con un castigo ficticio e inofensivo (con GIF)
 ✧ !hack | !hackear
 > Simula de forma cómica y falsa el hackeo de un usuario mencionado
 ✧ !dado
 > Lanza un dado; puedes indicar entre 2 y 100 caras
 ✧ !f
-> Envía un respetuoso mensaje rindiendo homenaje
+> Envía un respetuoso mensaje rindiendo homenaje (con GIF)
 ✧ !taza | !café | !mate
-> Invita una bebida caliente a otro usuario
+> Invita una bebida caliente a otro usuario (con GIF)
 ✧ !confesion | !confesar
 > Genera una confesión absurda o vergonzosa al azar
 ✧ !funar | !funa
-> Inventa una razón cómica para funar a un usuario
+> Inventa una razón cómica para funar a un usuario (con GIF)
 ✧ !maldicion | !hex
-> Lanza una maldición inofensiva y chistosa a alguien del grupo
+> Lanza una maldición inofensiva y chistosa a alguien del grupo (con GIF)
 ✧ !sueldo | !salario
 > Revela tu sueldo imaginario basado en tu comportamiento en el chat
 ✧ !iq | !cerebro
@@ -118,7 +118,7 @@ module.exports = {
 ✧ !compatibilidad | !shipbot
 > Mide qué tan compatible eres hoy con Yuki
 ✧ !cantar | !letra
-> Lanza una frase o verso aleatorio de una canción
+> Lanza una frase o verso aleatorio de una canción (con GIF)
 ✧ !ship
 > Calcula la compatibilidad entre dos personas
 
@@ -664,53 +664,150 @@ module.exports = {
 ✧ !delpic | !delavatar
 > Borra la imagen o gif de tu perfil
 
-» ˚୨•(🌸)• ⊹ Acciones ⊹
-✧ !hug | !abrazar
-> Abraza a otro usuario
-✧ !kiss | !besar
-> Besa a otro usuario
-✧ !pat | !darpalmada
-> Da una palmada a otro usuario
-
 » ˚୨•(🌸)• ⊹ Reacciones ⊹
-✧ !angry | !enojado | !baka | !tonto | !bite | !morder
-> Reacción de anime con GIF [@usuario]
-✧ !bleh | !lengua | !blush | !sonrojar | !bonk | !golpe
-> Reacción de anime con GIF [@usuario]
-✧ !bored | !aburrido | !celebrate | !celebrar | !clap | !aplaudir
-> Reacción de anime con GIF [@usuario]
-✧ !cookie | !galleta | !cringe | !grima | !cry | !llorar
-> Reacción de anime con GIF [@usuario]
-✧ !dance | !bailar | !dramatic | !drama | !drunk | !borracho
-> Reacción de anime con GIF [@usuario]
-✧ !eat | !comida | !facepalm | !decepcion | !feed | !alimentar
-> Reacción de anime con GIF [@usuario]
-✧ !handhold | !tomar-mano | !happy | !feliz | !heat | !calor
-> Reacción de anime con GIF [@usuario]
-✧ !highfive | !chocar | !jump | !saltar | !patear | !patada
-> Reacción de anime con GIF [@usuario]
-✧ !killall | !matartodos | !laugh | !reir | !lick | !lamer
-> Reacción de anime con GIF [@usuario]
-✧ !love | !amor | !lurk | !acechar | !nod | !asentir
-> Reacción de anime con GIF [@usuario]
-✧ !nom | !comer | !nope | !negar | !peck | !piquito
-> Reacción de anime con GIF [@usuario]
-✧ !pout | !pucheros | !psycho | !psicopata | !psicópata | !punch | !puñetazo
-> Reacción de anime con GIF [@usuario]
-✧ !push | !empujar | !run | !correr | !sad | !triste
-> Reacción de anime con GIF [@usuario]
-✧ !scared | !asustado | !scream | !gritar | !shoot | !disparar
-> Reacción de anime con GIF [@usuario]
-✧ !shrug | !encogerse | !shy | !timido | !tímido | !sigh | !suspirar
-> Reacción de anime con GIF [@usuario]
-✧ !sleep | !dormir | !smile | !sonreir | !smug | !engreido
-> Reacción de anime con GIF [@usuario]
-✧ !stare | !mirar | !step | !pisar | !surprised | !sorprendido
-> Reacción de anime con GIF [@usuario]
-✧ !tea | !te | !té | !think | !pensar | !thumbsup | !aprobar
-> Reacción de anime con GIF [@usuario]
-✧ !tickle | !cosquillas | !wave | !saludar | !yawn | !bostezar
-> Reacción de anime con GIF [@usuario]
+> Menciona o responde a alguien (ej: !hug @usuario). Casi todas envían un GIF animado.
+
+*💞 Cariño y afecto*
+✧ !cookie | !galleta
+> Comparte una galleta
+✧ !cuddle | !acurrucar
+> Acurrúcate junto a alguien
+✧ !feed | !alimentar
+> Dale de comer a alguien
+✧ !handhold | !tomar-mano
+> Toma de la mano a alguien
+✧ !highfive | !chocar
+> Choca los cinco con alguien
+✧ !hug | !abrazar
+> Abraza a alguien
+✧ !kiss | !besar
+> Besa a alguien
+✧ !love | !amor
+> Muestra que estás enamorado/a
+✧ !pat | !darpalmada | !caricia | !acariciar
+> Acaricia la cabeza de alguien
+✧ !peck | !piquito
+> Dale un piquito a alguien
+✧ !tea | !te | !té
+> Toma té con alguien
+
+*😄 Alegría y saludos*
+✧ !celebrate | !celebrar
+> Celebra con todos
+✧ !clap | !aplaudir
+> Aplaude
+✧ !dance | !bailar
+> Ponte a bailar
+✧ !happy | !feliz
+> Muestra lo feliz que estás
+✧ !jump | !saltar
+> Salta de la emoción
+✧ !laugh | !reir
+> Ríete de algo o de alguien
+✧ !nod | !asentir
+> Asiente con la cabeza
+✧ !smile | !sonreir
+> Sonríe
+✧ !thumbsup | !aprobar
+> Aprueba con el pulgar arriba
+✧ !wave | !saludar
+> Saluda con la mano
+✧ !wink | !guiñar
+> Guiña un ojo a alguien
+
+*😢 Tristeza, enojo y miedo*
+✧ !angry | !enojado
+> Muestra que estás enojado/a
+✧ !cringe | !grima
+> Siente cringe
+✧ !cry | !llorar
+> Llora
+✧ !dramatic | !drama
+> Haz un drama
+✧ !facepalm | !decepcion
+> Llévate la mano a la cara por decepción
+✧ !pout | !pucheros
+> Haz pucheros
+✧ !sad | !triste
+> Muestra que estás triste
+✧ !scared | !asustado
+> Muestra que estás asustado/a
+✧ !scream | !gritar
+> Grita
+✧ !sigh | !suspirar
+> Suspira
+
+*😳 Timidez y miradas*
+✧ !bleh | !lengua
+> Saca la lengua
+✧ !blush | !sonrojar
+> Sonrójate
+✧ !lurk | !acechar
+> Acecha en silencio desde las sombras
+✧ !shy | !timido | !tímido
+> Muestra tu timidez
+✧ !smug | !engreido
+> Pon cara de superioridad
+✧ !stare | !mirar
+> Mira fijamente a alguien
+✧ !surprised | !sorprendido
+> Muestra sorpresa
+
+*👊 Golpes y bromas*
+✧ !baka | !tonto
+> Dile «baka» (tonto) a alguien
+✧ !bite | !morder
+> Muerde a alguien
+✧ !bonk | !golpe
+> Dale un bonk a alguien
+✧ !kill | !matar | !asesinar
+> Elimina a alguien de forma dramática (en broma)
+✧ !killall | !matartodos
+> Ejecuta un killall contra alguien (en broma)
+✧ !lick | !lamer
+> Lame a alguien
+✧ !patear | !patada
+> Dale una patada a alguien
+✧ !poke | !picar
+> Pica a alguien con el dedo
+✧ !psycho | !psicopata | !psicópata
+> Hazte el/la psicópata
+✧ !punch | !puñetazo
+> Dale un puñetazo a alguien
+✧ !push | !empujar
+> Empuja a alguien
+✧ !shoot | !disparar
+> Dispara con el dedo a alguien
+✧ !slap | !bofetada | !golpear
+> Dale una bofetada a alguien
+✧ !step | !pisar
+> Pisa a alguien
+✧ !tickle | !cosquillas
+> Hazle cosquillas a alguien
+
+*🌸 Del día a día*
+✧ !bored | !aburrido
+> Muestra que estás aburrido/a
+✧ !drunk | !borracho
+> Anda pasado/a de copas
+✧ !eat | !comida
+> Come algo delicioso
+✧ !heat | !calor
+> Muestra que tienes mucho calor
+✧ !nom | !comer
+> Haz «ñam» mordiendo algo
+✧ !nope | !negar
+> Di que no
+✧ !run | !correr
+> Sal corriendo
+✧ !shrug | !encogerse
+> Encógete de hombros
+✧ !sleep | !dormir
+> Quédate dormido/a
+✧ !think | !pensar
+> Ponte a pensar
+✧ !yawn | !bostezar
+> Bosteza
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 
