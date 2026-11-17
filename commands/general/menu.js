@@ -560,39 +560,42 @@ Aquí tienes mis comandos
 ━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 
         
-        const fullMenuText = menuHeader + menuBody;
+            const fullMenuText = menuHeader + menuBody;
 
-        try {
-            const imagePath = path.join(process.cwd(), 'media', 'menu.jpg');
-
-            if (fs.existsSync(imagePath)) {
-                const imageBuffer = await fs.promises.readFile(imagePath);
-                await sock.sendMessage(jid, {
-                    image: imageBuffer,
-                    caption: fullMenuText,
-                    mentions: [senderJid] // <-- ESTO es lo que lo hace azul, antes no lo tenías
-                }, { quoted: m });
-            } else {
-                await sock.sendMessage(jid, {
-                    text: fullMenuText,
-                    mentions: [senderJid] // <-- también aquí
-                }, { quoted: m });
-            }
-
-            const videoPath = path.join(process.cwd(), 'media', 'Orihime edit.mp4');
-
-            if (fs.existsSync(videoPath)) {
-                const videoBuffer = await fs.promises.readFile(videoPath);
-                await sock.sendMessage(jid, {
-                    video: videoBuffer,
-                    ptv: true
-                });
-            } else {
-                console.warn('⚠️ No se encontró el archivo media/Orihime edit.mp4 para el PTV');
-            }
-
-        } catch (error) {
-            console.error('Error en el comando menu:', error.message);
+    // 1. IMAGEN - solo con el header corto, NO con todo el menú
+    try {
+        const imagePath = path.join(process.cwd(), 'media', 'menu.jpg');
+        if (fs.existsSync(imagePath)) {
+            const imageBuffer = await fs.promises.readFile(imagePath);
+            await sock.sendMessage(jid, {
+                image: imageBuffer,
+                caption: menuHeader, // solo header, cabe en los 1024
+                mentions: senderJid ? [senderJid] : []
+            }, { quoted: m });
+        } else {
+            console.log('⚠️ No existe media/menu.jpg');
         }
-    }
-};
+    } catch (e) { console.error('Error imagen:', e.message); }
+
+    // 2. TEXTO - aquí sí va todo el menú completo
+    try {
+        await sock.sendMessage(jid, {
+            text: fullMenuText,
+            mentions: senderJid ? [senderJid] : []
+        }, { quoted: m });
+    } catch (e) { console.error('Error texto:', e.message); }
+
+    // 3. VIDEO NOTA PTV - separado, para que siempre salga aunque falle lo de arriba
+    try {
+        const videoPath = path.join(process.cwd(), 'media', 'Orihime edit.mp4');
+        if (fs.existsSync(videoPath)) {
+            const videoBuffer = await fs.promises.readFile(videoPath);
+            await sock.sendMessage(jid, {
+                video: videoBuffer,
+                ptv: true
+            });
+        } else {
+            console.log('⚠️ No existe media/Orihime edit.mp4');
+        }
+    } catch (e) { console.error('Error PTV:', e.message); }
+}
