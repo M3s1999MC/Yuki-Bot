@@ -12,11 +12,9 @@ module.exports = {
     m.isProcessed = true;
 
     const jid = m.key.remoteJid;
-    const sender = m.key.participant || m.key.remoteJid;
-    const senderNum = sender.split('@')[0];
 
     const menuHeader = `╭─── 🌸 *YUKI* 🌸 ───╮
-│ Hola @${senderNum} 👋
+│ Hola @${m.sender.split('@')[0]} 👋
 │ Aquí tienes mis comandos
 ╰──────────────────╯
 
