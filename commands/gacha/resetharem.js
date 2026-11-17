@@ -1,4 +1,4 @@
-const db = require('../../database/db'); // Ajusta la ruta a tu archivo db.js si es necesario
+const db = require('../../database/db');
 
 module.exports = {
     name: 'resetharem',
@@ -9,14 +9,14 @@ module.exports = {
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
         
-        // Obtenemos el JID del remitente del mensaje
+        // Extraemos el número limpio de quien ejecuta el mensaje
         const sender = m.key.participant || m.key.remoteJid;
+        const senderNumber = sender.split('@')[0];
 
-        // 🛡️ RESTRICCIÓN DE SEGURIDAD: Reemplaza tu número de WhatsApp aquí abajo 
-        // para que solo tú puedas usar este comando (ejemplo: '573147895286@s.whatsapp.net')
-        const ownerJid = '573147895286@s.whatsapp.net'; // <--- Cambia o añade tu JID exacto si es necesario
+        // Lista de números administradores / creadores permitidos
+        const owners = ['573147895286']; // Añade aquí tu número exacto sin '@s.whatsapp.net' si usas otro
 
-        if (!sender.includes('573147895286')) { // Validación rápida de tu número
+        if (!owners.includes(senderNumber)) {
             return sock.sendMessage(jid, { text: '「✿」 Este comando es exclusivo para el creador del bot.' }, { quoted: m });
         }
 
