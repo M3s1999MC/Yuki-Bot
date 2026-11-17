@@ -32,3 +32,31 @@ Sigue estos pasos para clonar e iniciar el bot localmente:
    ```bash
    git clone [https://github.com/TU_USUARIO/yuki-bot-md.git](https://github.com/TU_USUARIO/yuki-bot-md.git)
    cd yuki-bot-md
+
+Instala las dependencias necesarias:
+
+Bash
+npm install
+Inicia el bot:
+
+Modo desarrollo (con autoreinicio):
+
+Bash
+npm run dev
+Modo producción / ejecución normal:
+
+Bash
+npm start
+⚙️ Tecnologías y Librerías Principales
+Baileys (@whiskeysockets/baileys) - Conexión con la API de WhatsApp Web.
+
+Node.js - Entorno de ejecución de JavaScript.
+
+SQLite - Gestión ligera de base de datos para usuarios, niveles y perfiles.
+
+Axios & Cheerio - Peticiones HTTP y web scraping para comandos interactivos.
+
+FFmpeg & Yt-dlp - Procesamiento de audio, video y creación de stickers.
+
+📜 Licencia
+Este proyecto está bajo la licencia abierta. ¡Siéntete libre de usarlo, adaptarlo y mejorarlo! 🌸
