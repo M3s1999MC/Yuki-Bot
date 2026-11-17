@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const mentionJid = m.key.participant || m.key.remoteJid;
 
 module.exports = {
     name: 'yukimenu',
@@ -14,7 +15,7 @@ module.exports = {
     const jid = m.key.remoteJid;
 
     const menuHeader = `╭─── 🌸 *YUKI* 🌸 ───╮
-│ Hola @${m.sender.split('@')[0]} 👋
+│ Hola @${mentionJid.split('@')[0]} 👋
 │ Aquí tienes mis comandos
 ╰──────────────────╯
 
