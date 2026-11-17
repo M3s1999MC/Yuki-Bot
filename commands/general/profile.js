@@ -51,15 +51,29 @@ module.exports = {
             const mentions = [target, ...(spouseIsJid ? [data.married] : [])];
             const displayName = data.custom_name ? `${data.custom_name} (@${target.split('@')[0]})` : `@${target.split('@')[0]}`;
 
-            const text = `「✿」 Perfil de ${displayName} 🌸\n\n` +
-                `⭐ Nivel: *${data.level || 1}* · ✨ EXP: *${data.exp || 0}*\n` +
-                `💍 Pareja: *${spouse}*\n` +
-                `🎂 Cumpleaños: *${data.birthday || 'No registrado'}*\n` +
-                `🎮 Juego favorito: *${data.game || 'Sin asignar'}*\n` +
-                `🎵 Música favorita: *${data.music || 'Sin asignar'}*\n` +
-                `🎨 Pasatiempo: *${data.hobby || 'Sin asignar'}*\n` +
-                `⚥ Género: *${data.gender || 'Sin asignar'}*\n` +
-                `♡ Bio: _${data.bio || 'Sin asignar'}_`;
+            const text = `⋆
+             . .̷ ׅ⏜ׅ ⌢ 
+            「✿」 Perfil de:
+            
+             ∘ 𓆩 \`̷💎${displayName}\`̷.̷ ¿
+             ˚ ⋆*
+             
+            
+            ⭐ Nivel: *${data.level || '?'}* · ✨ EXP: *${data.exp || 0}*
+            
+              ̣casado💍 𝆺𝅥⏝: *${spouse}*
+            
+            🎂 Birthday : *${data.birthday || '??'}*
+            
+            ︶⏝ ̣ Game fav.🎮 𝆺𝅥 ̣ ⏝: *${data.game || 'Sin asignar'}*
+            
+            🎵 Músic🤘: *${data.music || 'Sin asignar'}*
+            
+            🎨 Pasatiempo: *${data.hobby || 'Sin asignar'}*
+            
+            ⏝ ̣⚥  género 𝆺𝅥⚥ ̣ : *${data.gender || 'sin asignar'}*
+            
+            ♡ Biografía「✿: _${data.bio || 'Sin asignar'}_`;
 
             try {
                 const photoUrl = await sock.profilePictureUrl(target, 'image');
