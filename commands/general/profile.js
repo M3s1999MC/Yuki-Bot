@@ -52,26 +52,25 @@ module.exports = {
             const displayName = data.custom_name ? `${data.custom_name} (@${target.split('@')[0]})` : `@${target.split('@')[0]}`;
 
             const text = `⋆
-             . .̷ ׅ⏜ׅ ⌢ 
+             . . ︵ ⌢ 
             「✿」 Perfil de:
             
-             ∘ 𓆩 \`̷💎${displayName}\`̷.̷ ¿
+             ∘ 𓆩 💎 ${displayName} ¿
              ˚ ⋆*
-             
             
             ⭐ Nivel: *${data.level || '?'}* · ✨ EXP: *${data.exp || 0}*
             
-              ̣casado💍 𝆺𝅥⏝: *${spouse}*
+              casado💍 ︶: *${spouse}*
             
             🎂 Birthday : *${data.birthday || '??'}*
             
-            ︶⏝ ̣ Game fav.🎮 𝆺𝅥 ̣ ⏝: *${data.game || 'Sin asignar'}*
+            ︶⏝ Game fav.🎮 ︶: *${data.game || 'Sin asignar'}*
             
             🎵 Músic🤘: *${data.music || 'Sin asignar'}*
             
             🎨 Pasatiempo: *${data.hobby || 'Sin asignar'}*
             
-            ⏝ ̣⚥  género 𝆺𝅥⚥ ̣ : *${data.gender || 'sin asignar'}*
+            ⏝ ⚥ género ⚥ : *${data.gender || 'sin asignar'}*
             
             ♡ Biografía「✿: _${data.bio || 'Sin asignar'}_`;
 
