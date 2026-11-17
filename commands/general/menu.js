@@ -8,15 +8,19 @@ module.exports = {
     description: 'Muestra el menú principal con imagen y luego envía la nota de video PTV.',
 
     async execute(sock, m, args) {
-    if (m.isProcessed) return;
-    m.isProcessed = true;
+        if (m.isProcessed) return;
+        m.isProcessed = true;
 
-    const jid = m.key.remoteJid;
+        const jid = m.key.remoteJid;
 
-    const menuHeader = `╭─── 🌸 *YUKI* 🌸 ───╮
-│ Hola @${m.sender.split('@')[0]} 👋
-│ Aquí tienes mis comandos
-╰──────────────────╯
+        // --- CORREGIDO: mención real, no texto plano ---
+        // participantPn = número real, participant = LID (lo que WhatsApp usa ahora en grupos)
+        const senderJid = m.key.participantPn || m.key.participant || m.key.remoteJid;
+        const senderNum = senderJid.split('@')[0];
+
+        const menuHeader = `🌸 *YUKI* 🌸
+Hola @${senderNum} 👋
+Aquí tienes mis comandos
 
 ✿ *Desarrollado por:* InKra Studios
 ✿ *Canal Oficial:* https://whatsapp.com/channel/0029Vb9AOpk9WtC12RHEEj0Y
