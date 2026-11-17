@@ -13,7 +13,21 @@ module.exports = {
 
         const jid = m.key.remoteJid;
 
-        const menuHeader = `꧁༺ 𝐇𝐨λ𝐚! 𝐒𝐨𝐲 𝓨𝓾𝓴𝓲 ༻꧂\nᴀǫᴜɪ ᴛɪᴇɴᴇs ʟᴀ ʟɪsᴛᴀ ᴅᴇ cₒᴍᴀɴᴅₒs\n╭┈ ↷\n│ ✐ 𝓓𝓮𝔀𝓮𝓵𝓸𝓹𝓮𝓭 𝓫𝔂 𝓘𝓷ᴋʀᴀ 𝓢𝓽𝓾𝓭𝓲𝓸𝓼 🌸\n│ ✐ ꒷ꕤ💎 𝓒𝓪𝓷𝓪𝓵 𝐎𝐟𝐢𝐜𝐢𝐚𝓵 ෴\n│ https://whatsapp.com/channel/0029Vb9AOpk9WtC12RHEEj0Y\n│ ✐ 𝓓𝓮𝔀𝓮𝓵𝓸𝓹𝓮𝓭 𝓫𝔂 𝙳𝓾𝚟𝓪𝓵𝓲𝓷 🌸\n│ ✐ ꒷ꕤ💎 𝓒𝓪𝓷𝓪𝓵 𝓟𝓪𝓽𝓻𝓸𝓬𝓲𝓷𝓪𝓭𝓸 ෴\n│ https://whatsapp.com/channel/0029Vb92LdaCnA7rdqUbdw38\n╰─────────────────\n\n`;
+        const menuHeader = `⋆ . .̷ ׅ⏜ׅ ⌢
+「✿」 Hola! Soy Yuki:
+
+∘ 𓆩 \`̷💎@user\`̷.̷ ¿
+ ˚ ⋆*
+
+✿ Aquí tienes la lista de comandos:
+
+︶⏝ ̣ Developed by 𝆺𝅥 ̣ ⏝: *InKra Studios 🌸*
+︶⏝ ̣ Canal Oficial 𝆺𝅥 ̣ ⏝: *https://whatsapp.com/channel/0029Vb9AOpk9WtC12RHEEj0Y*
+︶⏝ ̣ Canal Patrocinado 𝆺𝅥 ̣ ⏝: *https://whatsapp.com/channel/0029Vb92LdaCnA7rdqUbdw38*
+︶⏝ ̣ Developed by 𝆺𝅥 ̣ ⏝: *Duvalin 🌸*
+
+♡ Yuki「✿
+\n`;
 
         const menuBody = `» ˚୨•(🌸)• ⊹ Perfil ⊹
 ✧ !yukimenu | !yukihelp
