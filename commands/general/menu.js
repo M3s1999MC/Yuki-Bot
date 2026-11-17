@@ -29,8 +29,6 @@ module.exports = {
 ──────────────────\n`;
 
         const menuBody = `» ˚୨•(🌸)• ⊹ Perfil ⊹
-✧ !yukimenu | !yukihelp
-> Muestra la lista de comandos de Yuki
 ✧ !profile | !perfil
 > Muestra tu perfil o el de un usuario
 ✧ !level | !lvl
@@ -609,8 +607,8 @@ module.exports = {
 > Activa el modo ausente (AFK)
 ✧ !ping | !p
 > Muestra la latencia del bot
-✧ !menu | !help | !ayuda
-> Muestra el listado de comandos disponibles
+✧ !yukimenu | !yukihelp
+> Muestra la lista de comandos de Yuki
 ✧ !baileys
 > Muestra la librería Baileys que usa Yuki
 ✧ !info | !about
