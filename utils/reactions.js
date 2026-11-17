@@ -174,6 +174,8 @@ async function sendWithGif(sock, m, { text, mentions = [], sources, options = {}
     return sock.sendMessage(chat, mentions.length ? { text, mentions } : { text }, { quoted: m });
 }
 
+// [ ... Todo tu código anterior se queda exactamente igual hasta makeReaction ... ]
+
 function makeReaction(key, options = {}) {
     const reaction = BY_KEY.get(key);
     if (!reaction) throw new Error(`Reacción desconocida: ${key}`);
@@ -184,10 +186,25 @@ function makeReaction(key, options = {}) {
         description: `Reacción de anime: ${reaction.key} [@usuario]`,
 
         async execute(sock, m) {
+            const chat = m.key.remoteJid;
+
+            // 1. Reaccionar de inmediato con un relojito al mensaje del usuario
+            try {
+                await sock.sendMessage(chat, {
+                    react: {
+                        text: '⏰',
+                        key: m.key
+                    }
+                });
+            } catch (err) {
+                console.error(`No se pudo poner la reacción de espera: ${err.message}`);
+            }
+
             const actor = senderJid(m, sock);
             if (!actor) return reply(sock, m, '「✿」 No pude identificarte. Inténtalo de nuevo.');
             const target = targetJid(m);
             const other = target && target !== actor ? target : null;
+            
             return sendWithGif(sock, m, {
                 text: `「✿」 ${renderText(reaction, actor, other)}`,
                 mentions: other ? [actor, other] : [actor],
