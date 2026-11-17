@@ -52,6 +52,7 @@ const REACTIONS = [
     ['scream', ['gritar'], null, '😱', '{a} grita (⁰д⁰)', '{a} le grita a {b} (⁰д⁰)'],
     ['shoot', ['disparar'], ['n:shoot', 'n:smug'], '🔫', '{a} dispara con el dedo (¬‿¬)☞', '{a} le disparó con el dedo a {b} (¬‿¬)☞'],
     ['shrug', ['encogerse'], 'n:shrug', '🤷', '{a} se encoge de hombros ¯\\_(ツ)_/¯', '{a} se encoge de hombros ante {b} ¯\\_(ツ)_/¯'],
+    ['kiss', ['besar'], 'n:kiss', '😘', '{a} le dio un beso ～(^з^)-☆', '{a} beso a {b} ～(^з^)-☆'],
     ['shy', ['timido', 'tímido'], 'n:blush', '😳', '{a} siente timidez (*/ω＼*)', '{a} siente timidez frente a {b} (*/ω＼*)'],
     ['sigh', ['suspirar'], null, '😮‍💨', '{a} suspira (ーー;)', '{a} suspira por {b} (ーー;)'],
     ['sleep', ['dormir'], 'n:sleep', '😴', '{a} se queda dormido/a (u.u)zzz', '{a} se duerme junto a {b} (u.u)zzz'],
