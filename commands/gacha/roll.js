@@ -13,7 +13,7 @@ module.exports = {
     name: 'roll',
     aliases: ['rw', 'rollwaifu', 'waifu'],
     category: 'gacha',
-    description: 'Tira un personaje directo al instante.',
+    description: 'Tira una ilustración de anime al instante.',
 
     async execute(sock, m, args) {
         if (m.isProcessed) return;
@@ -23,75 +23,54 @@ module.exports = {
         try {
             let post = null;
 
-            // 1. Intento principal: Danbooru por proxy
+            // Consumo directo y exclusivo de Nekos.best
             try {
-                const proxyUrl = 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent('https://danbooru.donmai.us/posts.json?tags=rating:safe+order:random&limit=15');
-                const res = await axios.get(proxyUrl, { timeout: 6000 });
-                const lista = res.data;
-                const validos = lista.filter(p => p.tag_string_character && p.tag_string_character.trim() !== '' && (p.large_file_url || p.file_url));
+                const resNekos = await axios.get('https://nekos.best/api/v2/waifu', { timeout: 7000 });
+                const data = resNekos.data.results[0];
                 
-                if (validos.length > 0) {
-                    const elegido = validos[Math.floor(Math.random() * validos.length)];
-                    let rawName = elegido.tag_string_character.split(' ')[0];
-                    let rawSeries = elegido.tag_string_copyright ? elegido.tag_string_copyright.split(' ')[0] : 'Original';
+                let artist = data.artist_name ? data.artist_name.replace(/\*/g, '').trim() : 'Desconocido';
 
-                    post = {
-                        nombre: rawName.replace(/_/g, ' ').replace(/\(.+\)/g, '').trim(),
-                        serie: rawSeries.replace(/_/g, ' ').replace(/\(.+\)/g, '').trim(),
-                        imagen: elegido.large_file_url || elegido.file_url
-                    };
-                }
-            } catch (e) { 
-                console.log('Danbooru falló, intentando respaldo 1...'); 
+                post = {
+                    nombre: `Ilustración de ${artist}`,
+                    serie: 'Arte Anime Original',
+                    imagen: data.url
+                };
+            } catch (e) {
+                console.log('Error conectando con Nekos.best:', e.message);
             }
 
-            // 2. Respaldo 1: Nekos.best (Súper estable y rápida)
-            if (!post) {
-                try {
-                    const resNekos = await axios.get('https://nekos.best/api/v2/waifu', { timeout: 6000 });
-                    const data = resNekos.data.results[0];
-                    post = {
-                        nombre: data.artist_name ? `Art by ${data.artist_name}` : 'Waifu Especial',
-                        serie: 'Nekos.best / Anime',
-                        imagen: data.url
-                    };
-                } catch (e) {
-                    console.log('Nekos.best falló, intentando respaldo final...');
-                }
-            }
-
-            // 3. Respaldo de emergencia total (Imagen fija o URL alternativa por si todo lo demás cae)
+            // Respaldo de emergencia por si la API llega a parpadear
             if (!post) {
                 post = {
-                    nombre: 'Yuki Special',
+                    nombre: 'Yuki Special Edition',
                     serie: 'INKRA STUDIOS',
                     imagen: 'https://i.pinimg.com/736x/dd/6c/8c/dd6c8cf3d2574a79a9f1261c541866e9.jpg'
                 };
             }
 
-            const nombre = post.nombre.replace(/\b\w/g, l => l.toUpperCase());
-            const serie = post.serie.replace(/\b\w/g, l => l.toUpperCase());
+            const nombre = String(post.nombre).replace(/[\*_`]/g, '').trim();
+            const serie = String(post.serie).replace(/[\*_`]/g, '').trim();
             const rareza = getRareza();
 
-            // Descarga segura en Buffer
+            // Descarga segura en Buffer para Baileys
             const imgRes = await axios.get(post.imagen, { responseType: 'arraybuffer', timeout: 8000 });
             const imageBuffer = Buffer.from(imgRes.data);
 
             await sock.sendMessage(jid, {
                 image: imageBuffer,
-                caption: `╭━━━ $\\mathfrak{YUKI'S\\ GACHA}$ ━━━╮\n` +
-                         `┃ 🌸 **¡NUEVO PERSONAJE OBTENIDO!**\n` +
+                caption: `╭━━━ 𝖄𝖚𝖐𝖎'𝖘 𝕲𝖆𝖈𝖍𝖆 ━━━╮\n` +
+                         `┃ 🌸 *¡NUEVO PERSONAJE OBTENIDO!*\n` +
                          `┣━━━━━━━━━━━━━━━━━━\n` +
-                         `┃ • **Nombre:** \`${nombre}\`\n` +
-                         `┃ • **Serie:** \`${serie}\`\n` +
-                         `┃ • **Rareza:** ${rareza.emoji} **${rareza.nombre}**\n` +
+                         `┃ • *Nombre:* ${nombre}\n` +
+                         `┃ • *Serie:* ${serie}\n` +
+                         `┃ • *Rareza:* ${rareza.emoji} *${rareza.nombre}*\n` +
                          `╰━━━━━━━━━━━━━━━━━━╯\n\n` +
                          `> 💡 Usa tu comando de claim para reclamarlo a tu harem.`
             }, { quoted: m });
 
         } catch (error) {
             console.error('Error crítico en roll.js:', error.message);
-            await sock.sendMessage(jid, { text: `「✿」 Ups, ocurrió un error procesando el gacha. ¡Prueba de nuevo! 🌸` }, { quoted: m });
+            await sock.sendMessage(jid, { text: `「✿」 Ups, ocurrió un error obteniendo la ilustración. ¡Prueba de nuevo! 🌸` }, { quoted: m });
         }
     }
 };
