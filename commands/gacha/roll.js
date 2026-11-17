@@ -76,13 +76,16 @@ module.exports = {
             const imageBuffer = Buffer.from(imgRes.data);
 
             await sock.sendMessage(jid, {
-                image: imageBuffer,
-                caption: `「✿」 **¡HAS OBTENIDO UN PERSONAJE!** 🌸\n\n` +
-                         `• **Nombre:** ${nombre}\n` +
-                         `• **Serie / Anime:** ${serie}\n` +
-                         `• **Rareza:** ${rareza.emoji} ${rareza.nombre}\n\n` +
-                         `💡 Usa tu comando de claim para reclamarlo a tu harem.`
-            }, { quoted: m });
+                            image: imageBuffer,
+                            caption: `╭━━━ $\\mathfrak{YUKI'S\\ GACHA}$ ━━━╮\n` +
+                                     `┃ 🌸 **¡NUEVO PERSONAJE OBTENIDO!**\n` +
+                                     `┣━━━━━━━━━━━━━━━━━━\n` +
+                                     `┃ • **Nombre:** \`${nombre}\`\n` +
+                                     `┃ • **Serie:** \`${serie}\`\n` +
+                                     `┃ • **Rareza:** ${rareza.emoji} **${rareza.nombre}**\n` +
+                                     `╰━━━━━━━━━━━━━━━━━━╯\n\n` +
+                                     `> 💡 Responde o usa tu comando de claim para añadirlo a tu harem.`
+                        }, { quoted: m });
 
         } catch (error) {
             console.error('Error en el comando roll:', error.message);
