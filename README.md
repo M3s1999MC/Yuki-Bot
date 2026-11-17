@@ -10,7 +10,7 @@
 
 ## 📋 Descripción del Proyecto
 
-**Yuki-Bot MD** es un bot de WhatsApp versátil impulsado por `@whiskeysockets/baileys` y SQLite. Diseñado para ofrecer una experiencia interactiva y fluida en grupos y chats privados, cuenta con más de 140 comandos que incluyen sistemas de economía, entretenimiento, minijuegos, herramientas de utilidad, gestión de perfiles personalizados y multimedia.
+**Yuki-Bot MD** es un bot de WhatsApp versátil impulsado por `@whiskeysockets/baileys` y SQLite. Diseñado para ofrecer una experiencia interactiva y fluida en grupos y chats privados, cuenta con más de 339 comandos que incluyen sistemas de economía, entretenimiento, minijuegos, herramientas de utilidad, gestión de perfiles personalizados y multimedia.
 
 ---
 
