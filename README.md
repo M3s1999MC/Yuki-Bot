@@ -35,18 +35,19 @@ Sigue estos pasos para clonar e iniciar el bot localmente:
 
 Instala las dependencias necesarias:
 
-Bash
-npm install
+    ```bash
+    npm install
 Inicia el bot:
 
-Modo desarrollo (con autoreinicio):
+   Modo desarrollo (con autoreinicio):
 
-Bash
-npm run dev
-Modo producción / ejecución normal:
+         ```bash
+          ¿npm run dev
+   Modo producción / ejecución normal:
 
-Bash
-npm start
+           ```bash
+           npm start
+
 ⚙️ Tecnologías y Librerías Principales
 Baileys (@whiskeysockets/baileys) - Conexión con la API de WhatsApp Web.
 
@@ -58,5 +59,5 @@ Axios & Cheerio - Peticiones HTTP y web scraping para comandos interactivos.
 
 FFmpeg & Yt-dlp - Procesamiento de audio, video y creación de stickers.
 
-📜 Licencia
-Este proyecto está bajo la licencia abierta. ¡Siéntete libre de usarlo, adaptarlo y mejorarlo! 🌸
+🔒 Copyright y Privacidad
+Este repositorio es de código cerrado (Closed Source). Todos los derechos reservados sobre el código fuente, la estructura y los diseños de los comandos de Yuki-Bot MD. 🌸
