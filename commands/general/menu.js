@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const mentionJid = m.key.participant || m.key.remoteJid;
 
 module.exports = {
     name: 'yukimenu',
@@ -9,10 +8,6 @@ module.exports = {
     description: 'Muestra el menú principal con imagen y luego envía la nota de video PTV.',
 
     async execute(sock, m, args) {
-    if (m.isProcessed) return;
-    m.isProcessed = true;
-
-async execute(sock, m, args) {
     if (m.isProcessed) return;
     m.isProcessed = true;
 
