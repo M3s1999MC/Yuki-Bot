@@ -1,8 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const https = require('https');
-const http = require('http');
 const { generateWAMessageFromContent, proto } = require('@whiskeysockets/baileys');
 
 if (!global.yukiLastPlay) global.yukiLastPlay = new Map();
@@ -12,30 +10,21 @@ if (!fs.existsSync(tempDir)) {
     fs.mkdirSync(tempDir, { recursive: true });
 }
 
-function downloadFile(url, dest) {
-    return new Promise((resolve, reject) => {
-        const file = fs.createWriteStream(dest);
-        const protocol = url.startsWith('https') ? https : http;
-        
-        protocol.get(url, (res) => {
-            if ([301, 302, 307, 308].includes(res.statusCode) && res.headers.location) {
-                file.close();
-                fs.unlink(dest, () => {});
-                return resolve(downloadFile(res.headers.location, dest));
-            }
-            if (res.statusCode !== 200) {
-                file.close();
-                fs.unlink(dest, () => {});
-                return reject(new Error(`HTTP error status: ${res.statusCode}`));
-            }
-            res.pipe(file);
-            file.on('finish', () => file.close(resolve));
-        }).on('error', (err) => {
-            file.close();
-            fs.unlink(dest, () => {});
-            reject(err);
-        });
+// Función de descarga usando fetch moderno con headers de navegador
+async function downloadFile(url, dest) {
+    const res = await fetch(url, {
+        headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': '*/*'
+        }
     });
+
+    if (!res.ok) {
+        throw new Error(`HTTP error status: ${res.status}`);
+    }
+
+    const buffer = Buffer.from(await res.arrayBuffer());
+    fs.writeFileSync(dest, buffer);
 }
 
 async function downloadWithYtDlp(videoUrl, options = {}) {
@@ -45,23 +34,20 @@ async function downloadWithYtDlp(videoUrl, options = {}) {
     const id = `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const filePath = path.join(tempDir, `${id}.${ext}`);
 
-    // Usamos una API pública y estable para obtener el enlace de descarga directo
-    const apiUrl = `https://apis.davidcyriltech.my.id/download/ytmp4?url=${encodeURIComponent(videoUrl)}`;
+    const apiUrl = `https://api.siputzx.my.id/api/d/ytmp4?url=${encodeURIComponent(videoUrl)}`;
     
-    // Si es audio, puedes cambiar el endpoint si la API lo soporta, o bajar el mp4 y extraer con ffmpeg
     const response = await fetch(apiUrl);
-    const data = await response.json();
+    const json = await response.json();
 
-    if (!data || !data.success && !data.result?.download_url && !data.download_url) {
-        throw new Error('No se pudo obtener el enlace de descarga de la API externa.');
+    if (!json || !json.status || !json.data?.dl) {
+        throw new Error('La API no pudo procesar el enlace de descarga.');
     }
 
-    const downloadLink = data.result?.download_url || data.download_url || data.result?.dl;
-    
+    const downloadLink = json.data.dl;
     await downloadFile(downloadLink, filePath);
 
     if (!fs.existsSync(filePath)) {
-        throw new Error('El archivo descargado no se guardó correctamente.');
+        throw new Error('El archivo multimedia no se pudo guardar en el disco temporal.');
     }
 
     return {
@@ -118,7 +104,7 @@ async function sendMediaChoiceButtons(sock, jid, m, itemData, bodyText = '¿Cóm
 
 module.exports = {
     downloadWithYtDlp,
-    runCommand: async () => {}, // Dummy por compatibilidad
+    runCommand: async () => {},
     tempDir,
     sendMediaChoiceButtons
 };
