@@ -3,11 +3,11 @@ const activeSpawns = require('../../utils/gachaSpawns');
 
 function getRareza() {
     const num = Math.floor(Math.random() * 1000) + 1;
-    if (num <= 600) return { nombre: 'Común', emoji: '⚪' };
-    if (num <= 850) return { nombre: 'Rara', emoji: '🔵' };
-    if (num <= 970) return { nombre: 'Épica', emoji: '🟣' };
-    if (num <= 995) return { nombre: 'Legendaria', emoji: '🟡' };
-    return { nombre: 'Mítica', emoji: '🔴' };
+    if (num <= 600) return { nombre: 'Común', simbolo: '[-] ' };
+    if (num <= 850) return { nombre: 'Rara', simbolo: '[◆] ' };
+    if (num <= 970) return { nombre: 'Épica', simbolo: '[◈] ' };
+    if (num <= 995) return { nombre: 'Legendaria', simbolo: '[✦] ' };
+    return { nombre: 'Mítica', simbolo: '[★] ' };
 }
 
 module.exports = {
@@ -24,7 +24,6 @@ module.exports = {
         try {
             let post = null;
 
-            // Consulta GraphQL a AniList API (Personajes y series oficiales de anime)
             try {
                 const randomId = Math.floor(Math.random() * 2000) + 1;
                 
@@ -69,10 +68,9 @@ module.exports = {
                     };
                 }
             } catch (e) {
-                console.log('AniList falló, usando respaldo con Nekos:', e.message);
+                console.log('AniList falló, usando respaldo:', e.message);
             }
 
-            // Respaldo por si AniList falla
             if (!post) {
                 try {
                     const resNekos = await axios.get('https://nekos.best/api/v2/waifu', { timeout: 6000 });
@@ -87,7 +85,6 @@ module.exports = {
                 }
             }
 
-            // Respaldo de emergencia definitivo
             if (!post) {
                 post = {
                     nombre: 'Yuki Special Edition',
@@ -100,21 +97,18 @@ module.exports = {
             const serie = String(post.serie).replace(/[\*_`]/g, '').trim();
             const rareza = getRareza();
 
-            // Descarga segura de la imagen en Buffer para Baileys
             const imgRes = await axios.get(post.imagen, { responseType: 'arraybuffer', timeout: 8000 });
             const imageBuffer = Buffer.from(imgRes.data);
 
-            // Enviamos el mensaje del gacha limpio y adaptado
             await sock.sendMessage(jid, {
                 image: imageBuffer,
-                caption: `🌸 *¡NUEVO PERSONAJE OBTENIDO!* 🌸\n\n` +
-                         `• *Nombre:* ${nombre}\n` +
-                         `• *Serie:* ${serie}\n` +
-                         `• *Rareza:* ${rareza.emoji} *${rareza.nombre}*\n\n` +
-                         `> 💡 ¡Responde a este mensaje con !claim para reclamarlo!`
+                caption: `『 YUKI // GACHA SYSTEM 』\n\n` +
+                         `▸ PERSONAJE: ${nombre}\n` +
+                         `▸ SERIE: ${serie}\n` +
+                         `▸ RAREZA: ${rareza.simbolo}${rareza.nombre}\n\n` +
+                         `> Responde a este mensaje con !claim para registrar en tu harem.`
             }, { quoted: m });
 
-            // Guardamos el spawn en memoria para que cualquiera en el chat pueda reclamarlo
             activeSpawns.set(jid, {
                 name: nombre,
                 serie: serie,
@@ -124,7 +118,7 @@ module.exports = {
 
         } catch (error) {
             console.error('Error crítico en roll.js:', error.message);
-            await sock.sendMessage(jid, { text: `「✿」 Ups, ocurrió un error obteniendo el personaje. ¡Prueba de nuevo! 🌸` }, { quoted: m });
+            await sock.sendMessage(jid, { text: `[SYSTEM] Error al procesar la invocación. Inténtalo de nuevo.` }, { quoted: m });
         }
     }
 };
