@@ -379,34 +379,6 @@ module.exports = {
 > Usa un ticket para intentar atrapar un personaje libre por su ID
 ✧ !serie | !series | !catalogo | !idlist | !personajes
 > Lista las series o los personajes (con ID) de una serie
-
- ˚୨•(🌸)• ⊹ NSWF ⊹
-✧ !neko | !nsfwneko
-> Envía contenido de la categoría neko 
-✧ !waifu | !nsfwwaifu
-> Envía contenido de la categoría waifu 
-✧ !kitsune | !nsfwkitsune
-> Envía contenido de la categoría kitsune
-
- ˚୨•(🌸)• ⊹ Descargas ⊹
-✧ !pinterest | !pin | !pinsearch
-> Busca y envía una imagen de Pinterest con la búsqueda pública
-✧ !tiktoksearch | !ttsearch | !ttbuscar
-> Busca un video de TikTok por texto (requiere TIKTOK_SEARCH_API_URL)
-✧ !ytsearch | !ytbuscar | !yts
-> Busca videos en YouTube por texto
-✧ !facebook | !fb | !facebookdl | !fbdl
-> Descarga un video de Facebook
-✧ !instagram | !ig | !igdl | !instadl
-> Descarga fotos o videos de Instagram
-✧ !play | !yta | !ytmp3 | !playdoc | !play2 | !ytv | !ytmp4 | !play2doc | !playaudio | !mp4
-> Busca y descarga audio o video de YouTube
-✧ !tiktok | !tt | !tiktokdl | !ttdl
-> Descarga un video de TikTok desde un enlace
-✧ !tiktokmp3 | !ttmp3 | !tiktokaudio
-> Descarga el audio de un video de TikTok en formato mp3
-✧ !twitter | !x | !xdl | !dlx | !twdl | !tw | !twt
-> Descarga un video o imagen de Twitter/X
 ✧ !ascender | !ascension | !estrella
 > Asciende un personaje en nivel máximo para extender su nivel
 ✧ !banner | !destacados | !semanal_gacha
@@ -521,6 +493,34 @@ module.exports = {
 > Muestra tus dragones con su nivel
 ✧ !ticketdragon
 > Usa un ticket para obtener un dragón por su ID
+
+ ˚୨•(🌸)• ⊹ NSWF ⊹
+✧ !neko | !nsfwneko
+> Envía contenido de la categoría neko 
+✧ !waifu | !nsfwwaifu
+> Envía contenido de la categoría waifu 
+✧ !kitsune | !nsfwkitsune
+> Envía contenido de la categoría kitsune
+
+ ˚୨•(🌸)• ⊹ Descargas ⊹
+✧ !pinterest | !pin | !pinsearch
+> Busca y envía una imagen de Pinterest con la búsqueda pública
+✧ !tiktoksearch | !ttsearch | !ttbuscar
+> Busca un video de TikTok por texto (requiere TIKTOK_SEARCH_API_URL)
+✧ !ytsearch | !ytbuscar | !yts
+> Busca videos en YouTube por texto
+✧ !facebook | !fb | !facebookdl | !fbdl
+> Descarga un video de Facebook
+✧ !instagram | !ig | !igdl | !instadl
+> Descarga fotos o videos de Instagram
+✧ !play | !yta | !ytmp3 | !playdoc | !play2 | !ytv | !ytmp4 | !play2doc | !playaudio | !mp4
+> Busca y descarga audio o video de YouTube
+✧ !tiktok | !tt | !tiktokdl | !ttdl
+> Descarga un video de TikTok desde un enlace
+✧ !tiktokmp3 | !ttmp3 | !tiktokaudio
+> Descarga el audio de un video de TikTok en formato mp3
+✧ !twitter | !x | !xdl | !dlx | !twdl | !tw | !twt
+> Descarga un video o imagen de Twitter/X
 
 » ˚୨•(🌸)• ⊹ Stickers ⊹
 ✧ !setmeta | !setstickermeta
