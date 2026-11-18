@@ -14,13 +14,15 @@ module.exports = {
 
         if (!p) {
             if (await tryRespondToDuel(sock, m, 'rechazar')) return;
-            return sock.sendMessage(jid, { text: '「✿」 No tienes propuestas pendientes. Si es un duelo, responde al mensaje del reto con !rechazar.' }, { quoted: m });
+            return sock.sendMessage(jid, { 
+                text: '₊˚ˑ༄ [✿] No tienes ninguna propuesta o reto pendiente en este momento. 🪞' 
+            }, { quoted: m });
         }
 
         clearTimeout(p.timer);
         delete M.proposals[me];
         sock.sendMessage(jid, {
-            text: `「✿」 💔 ${M.tag(me)} rechazó a ${M.tag(p.from)}`,
+            text: `₊˚ˑ༄ 𝖄𝖚𝖐𝖎 ꔛ Vínculo rechazado: *${M.tag(me)}* ha declinado la propuesta de *${M.tag(p.from)}*. 🥀`,
             mentions: [me, p.from],
         }, { quoted: m });
     }
