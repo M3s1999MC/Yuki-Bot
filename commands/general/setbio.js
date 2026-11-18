@@ -10,17 +10,25 @@ module.exports = {
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
         const sender = getMessageSenderJid(m, sock);
-        const bio = args.join(' ');
+        const bio = args.join(' ').trim();
 
         if (!bio) {
             return await sock.sendMessage(jid, { 
-                text: '「✿」 CAMBIAR BIOGRAFÍA 🌸\n\n⚠️ Escribe el texto para tu biografía.\n*Uso:* `!setbio <tu texto>`' 
+                text: `₊˚ˑ༄ [✿] Debes escribir el texto para tu biografía.\n❀ Uso: \`!setbio <tu texto>\` 🥀` 
             }, { quoted: m });
         }
 
-        // db.updateUser(sender, { bio });
-        await sock.sendMessage(jid, { 
-            text: '「✿」 BIOGRAFÍA ACTUALIZADA 🌸\n\n📝 Tu biografía personal ha sido guardada con éxito.' 
-        }, { quoted: m });
+        db.run(`UPDATE users SET bio = ? WHERE jid = ?`, [bio, sender], async (err) => {
+            if (err) {
+                console.error('Error al actualizar biografía:', err.message);
+                return await sock.sendMessage(jid, { 
+                    text: `₊˚ˑ༄ [!] Error crítico al guardar tu biografía en la base de datos.` 
+                }, { quoted: m });
+            }
+
+            await sock.sendMessage(jid, { 
+                text: `₊˚ˑ༄ 𝖄𝖚𝖐𝖎 ꔛ ¡Biografía actualizada con éxito!\n❀ ❟ *Nuevo estado:* _${bio}_ ✿` 
+            }, { quoted: m });
+        });
     }
 };
