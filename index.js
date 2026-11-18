@@ -513,7 +513,10 @@ async function startYuki() {
         const usedPrefix = PREFIX;
         const args = body.slice(usedPrefix.length).trim().split(/ +/);
         const command = args.shift().toLowerCase();
+        
+        // CORRECCIÓN: Permitir que tus propios comandos (fromMe) no sufran bloqueos de cooldown
         if (!m.key.fromMe && onCooldown(sender)) return;
+
         console.log(`📥 [Comando recibido]: ${command} de @${sender.split('@')[0]}`);
         try {
             const ctx = {
