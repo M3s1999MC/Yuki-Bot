@@ -28,19 +28,19 @@ module.exports = {
                 if (err) {
                     console.error('Error al consultar contactos activos:', err.message);
                     return await sock.sendMessage(jid, {
-                        text: '❌ No se pudo consultar la actividad de los usuarios.'
+                        text: '₊˚ˑ༄ [!] No se pudo consultar la actividad de los usuarios en la base de datos 🥀'
                     }, { quoted: m });
                 }
                 if (!rows || rows.length === 0) {
                     return await sock.sendMessage(jid, {
-                        text: '🏆 Aún no hay usuarios activos en el ranking.'
+                        text: '₊˚ˑ༄ [✿] Aún no hay usuarios activos registrados en el ranking. 🪞'
                     }, { quoted: m });
                 }
 
                 db.getContactNames(async (contactErr, contactNames) => {
                     if (contactErr) {
                         return await sock.sendMessage(jid, {
-                            text: '❌ No se pudieron consultar los nombres de tus contactos.'
+                            text: '₊˚ˑ༄ [!] No se pudieron consultar los nombres de los contactos.'
                         }, { quoted: m });
                     }
 
@@ -65,22 +65,24 @@ module.exports = {
                         } else if (availableNames.length > 0) {
                             namedRows.push({
                                 ...row,
-                                displayName: `${availableNames.pop()} (nombre al azar)`
+                                displayName: `${availableNames.pop()}`
                             });
                         }
                     }
 
                     if (namedRows.length === 0) {
                         return await sock.sendMessage(jid, {
-                            text: '🏆 No hay contactos con nombre disponible para mostrar en el ranking.'
+                            text: '₊˚ˑ༄ [✿] No hay contactos con nombres disponibles para mostrar en el top.'
                         }, { quoted: m });
                     }
 
-                    let text = `「✿」 Contactos más activos ◢ Yuki ◤\n\n`;
+                    let text = `₊˚ˑ༄ 𝖄𝖚𝖐𝖎 // LEADERBOARD 𓍢ִ໋☕\n\n`;
                     namedRows.forEach((row, index) => {
                         const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
-                        text += `${medals[index]} *${row.displayName}* — ${row.exp} XP\n`;
+                        text += `❀ ${medals[index]} *${row.displayName}* ── _${row.exp} EXP_ (Nv. ${row.level || 1})\n`;
                     });
+
+                    text += `\n° 𐐪𐑂 Ranking actualizado en tiempo real. ✿`;
 
                     await sock.sendMessage(jid, { text }, { quoted: m });
                 });
