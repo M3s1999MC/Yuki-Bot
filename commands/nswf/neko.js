@@ -4,7 +4,7 @@ module.exports = {
     name: 'neko',
     aliases: ['nsfwneko'],
     category: 'nsfw',
-    description: 'Envía contenido NSFW de la categoría neko',
+    description: 'Envía contenido neko desde el ciberespacio',
     
     async execute(sock, m, args, usedPrefix = '!') {
         const jid = m.key.remoteJid;
@@ -14,11 +14,11 @@ module.exports = {
                 text: '「✿」 Buscando en el ciberespacio... ⏳' 
             }, { quoted: m });
 
-            // Petición a la API pública de nekos.dev para contenido NSFW
-            const response = await axios.get('https://nekos.dev/api/v3/images?rating=nsfw&category=neko');
+            // Petición a la API pública y estable de nekos.best
+            const response = await axios.get('https://nekos.best/api/v2/neko');
             
-            // Verificamos que la estructura devuelva la imagen correctamente
-            const imageUrl = response.data?.data?.[0]?.url;
+            // Extraemos la URL de la imagen del JSON que devuelve la API
+            const imageUrl = response.data?.results?.[0]?.url;
             
             if (!imageUrl) {
                 return sock.sendMessage(jid, { 
