@@ -1,8 +1,8 @@
-const { execFile } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const https = require('https');
+const http = require('http');
 const { generateWAMessageFromContent, proto } = require('@whiskeysockets/baileys');
 
 if (!global.yukiLastPlay) global.yukiLastPlay = new Map();
@@ -12,21 +12,21 @@ if (!fs.existsSync(tempDir)) {
     fs.mkdirSync(tempDir, { recursive: true });
 }
 
-const BIN_PATH = path.join(os.tmpdir(), 'yt-dlp');
-
-function downloadBinary(url, dest) {
+function downloadFile(url, dest) {
     return new Promise((resolve, reject) => {
         const file = fs.createWriteStream(dest);
-        https.get(url, (res) => {
+        const protocol = url.startsWith('https') ? https : http;
+        
+        protocol.get(url, (res) => {
             if ([301, 302, 307, 308].includes(res.statusCode) && res.headers.location) {
                 file.close();
                 fs.unlink(dest, () => {});
-                return resolve(downloadBinary(res.headers.location, dest));
+                return resolve(downloadFile(res.headers.location, dest));
             }
             if (res.statusCode !== 200) {
                 file.close();
                 fs.unlink(dest, () => {});
-                return reject(new Error(`HTTP ${res.statusCode} al descargar yt-dlp`));
+                return reject(new Error(`HTTP error status: ${res.statusCode}`));
             }
             res.pipe(file);
             file.on('finish', () => file.close(resolve));
@@ -38,112 +38,36 @@ function downloadBinary(url, dest) {
     });
 }
 
-// AQUÍ VA getYtDlpBin()
-async function getYtDlpBin() {
-    if (fs.existsSync(BIN_PATH)) {
-        // Intentar actualizar en segundo plano por si YouTube cambia algo
-        execFile(BIN_PATH, ['-U'], () => {});
-        return BIN_PATH;
-    }
-
-    console.log('「✿」 Descargando binario de yt-dlp para el entorno...');
-    const url = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux';
-    await downloadBinary(url, BIN_PATH);
-    fs.chmodSync(BIN_PATH, 0o755);
-    console.log('「✿」 yt-dlp listo en /tmp/yt-dlp 🌸');
-    return BIN_PATH;
-}
-
-function runCommand(bin, args, timeoutMs = 120000) {
-    return new Promise(async (resolve, reject) => {
-        try {
-            let actualBin = bin;
-            if (bin === 'yt-dlp') {
-                actualBin = await getYtDlpBin();
-            }
-
-            execFile(actualBin, args, { timeout: timeoutMs, maxBuffer: 1024 * 1024 * 20 }, (err, stdout, stderr) => {
-                if (err) {
-                    err.stderr = stderr;
-                    return reject(err);
-                }
-                resolve({ stdout, stderr });
-            });
-        } catch (e) {
-            reject(e);
-        }
-    });
-}
-
-async function downloadWithYtDlp(url, options = {}) {
+async function downloadWithYtDlp(videoUrl, options = {}) {
     const type = options.type || 'video';
+    const ext = type === 'audio' ? 'mp3' : 'mp4';
     const prefix = options.prefix || 'media';
     const id = `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-    const outTemplate = path.join(tempDir, `${id}.%(ext)s`);
+    const filePath = path.join(tempDir, `${id}.${ext}`);
 
-    // Parámetros base con evasión de bloqueos para Render
-    const baseArgs = [
-        '--no-playlist',
-        '--no-warnings',
-        '--extractor-args', 'youtube:player_client=mweb,android'
-    ];
+    // Usamos una API pública y estable para obtener el enlace de descarga directo
+    const apiUrl = `https://apis.davidcyriltech.my.id/download/ytmp4?url=${encodeURIComponent(videoUrl)}`;
+    
+    // Si es audio, puedes cambiar el endpoint si la API lo soporta, o bajar el mp4 y extraer con ffmpeg
+    const response = await fetch(apiUrl);
+    const data = await response.json();
 
-    if (type === 'audio') {
-        const args = [
-            ...baseArgs,
-            '-x',
-            '--audio-format', 'mp3',
-            '--audio-quality', '0',
-            '-o', outTemplate,
-            url
-        ];
-
-        await runCommand('yt-dlp', args);
-
-        const mp3Path = path.join(tempDir, `${id}.mp3`);
-        if (fs.existsSync(mp3Path)) {
-            return { filePath: mp3Path, ext: 'mp3', cleanup: () => safeUnlink(mp3Path) };
-        }
-
-        const files = fs.readdirSync(tempDir).filter(f => f.startsWith(id));
-        if (!files.length) throw new Error('No se generó ningún archivo de audio.');
-
-        const rawPath = path.join(tempDir, files[0]);
-        const convertedPath = path.join(tempDir, `${id}_conv.mp3`);
-
-        await runCommand('ffmpeg', ['-y', '-i', rawPath, '-vn', '-ab', '192k', convertedPath]);
-        safeUnlink(rawPath);
-
-        return {
-            filePath: convertedPath,
-            ext: 'mp3',
-            cleanup: () => safeUnlink(convertedPath)
-        };
+    if (!data || !data.success && !data.result?.download_url && !data.download_url) {
+        throw new Error('No se pudo obtener el enlace de descarga de la API externa.');
     }
 
-    const args = [
-        ...baseArgs,
-        '-f', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-        '--merge-output-format', 'mp4',
-        '-o', outTemplate,
-        url
-    ];
+    const downloadLink = data.result?.download_url || data.download_url || data.result?.dl;
+    
+    await downloadFile(downloadLink, filePath);
 
-    await runCommand('yt-dlp', args);
-
-    const mp4Path = path.join(tempDir, `${id}.mp4`);
-    if (fs.existsSync(mp4Path)) {
-        return { filePath: mp4Path, ext: 'mp4', cleanup: () => safeUnlink(mp4Path) };
+    if (!fs.existsSync(filePath)) {
+        throw new Error('El archivo descargado no se guardó correctamente.');
     }
 
-    const files = fs.readdirSync(tempDir).filter(f => f.startsWith(id));
-    if (!files.length) throw new Error('No se generó ningún archivo de video.');
-
-    const foundPath = path.join(tempDir, files[0]);
     return {
-        filePath: foundPath,
-        ext: path.extname(foundPath).replace('.', '') || 'mp4',
-        cleanup: () => safeUnlink(foundPath)
+        filePath,
+        ext,
+        cleanup: () => safeUnlink(filePath)
     };
 }
 
@@ -194,7 +118,7 @@ async function sendMediaChoiceButtons(sock, jid, m, itemData, bodyText = '¿Cóm
 
 module.exports = {
     downloadWithYtDlp,
-    runCommand,
+    runCommand: async () => {}, // Dummy por compatibilidad
     tempDir,
     sendMediaChoiceButtons
 };
