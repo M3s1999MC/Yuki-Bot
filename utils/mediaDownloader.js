@@ -39,7 +39,6 @@ async function downloadWithYtDlp(queryOrUrl, options = {}) {
 
     let targetUrl = queryOrUrl;
 
-    // Si le pasan texto de búsqueda en lugar de un enlace, usamos una búsqueda rápida previa
     if (!queryOrUrl.includes('youtube.com') && !queryOrUrl.includes('youtu.be')) {
         const searchApi = `https://api.siputzx.my.id/api/s/youtube?query=${encodeURIComponent(queryOrUrl)}`;
         const searchRes = await fetch(searchApi);
@@ -51,11 +50,10 @@ async function downloadWithYtDlp(queryOrUrl, options = {}) {
         targetUrl = searchJson.data[0].url;
     }
 
-    // ID del Actor de Apify que estás usando (streamers/youtube-video-downloader)
     const actorId = 'streamers~youtube-video-downloader';
     const runUrl = `https://api.apify.com/v2/acts/${actorId}/runs?token=${apiToken}`;
 
-    // Ejecutamos el actor en Apify pasando la URL del video
+    console.log(`[Apify] Iniciando descarga para: ${targetUrl}`);
     const runRes = await fetch(runUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -73,20 +71,23 @@ async function downloadWithYtDlp(queryOrUrl, options = {}) {
     const runId = runData.data.id;
     const datasetId = runData.data.defaultDatasetId;
 
-    // Esperar a que el actor termine (Polling cada 3 segundos, máximo 60 segundos)
+    // Aumentamos a 40 intentos x 4 segundos = hasta 160 segundos de paciencia
     let isFinished = false;
     let attempts = 0;
-    while (!isFinished && attempts < 20) {
-        await new Promise(r => setTimeout(r, 3000));
+    while (!isFinished && attempts < 40) {
+        await new Promise(r => setTimeout(r, 4000));
         attempts++;
 
         const statusRes = await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${apiToken}`);
         const statusData = await statusRes.json();
         
-        if (statusData.data?.status === 'SUCCEEDED') {
+        const status = statusData.data?.status;
+        console.log(`[Apify] Intento ${attempts}/40 - Estado actual: ${status}`);
+
+        if (status === 'SUCCEEDED') {
             isFinished = true;
-        } else if (['FAILED', 'ABORTED', 'TIMED-OUT'].includes(statusData.data?.status)) {
-            throw new Error(`El proceso en Apify falló con estado: ${statusData.data.status}`);
+        } else if (['FAILED', 'ABORTED', 'TIMED-OUT'].includes(status)) {
+            throw new Error(`El proceso en Apify falló con estado: ${status}`);
         }
     }
 
@@ -94,7 +95,6 @@ async function downloadWithYtDlp(queryOrUrl, options = {}) {
         throw new Error('El tiempo de espera para procesar el video en Apify expiró.');
     }
 
-    // Obtener los resultados del Dataset generado
     const itemsRes = await fetch(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${apiToken}`);
     const items = await itemsRes.json();
 
