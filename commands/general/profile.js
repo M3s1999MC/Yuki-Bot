@@ -57,6 +57,8 @@ module.exports = {
             ˚ ⋆*
             
             ⭐ Nivel: *${data.level || '?'}* · ✨ EXP: *${data.exp || 0}*
+
+            ❀ Título: *${data.title || 'Sin título'}*
             
             casado💍 ︶: *${spouse}*
             
