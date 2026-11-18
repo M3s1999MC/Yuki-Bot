@@ -15,7 +15,7 @@ module.exports = {
             if (err) {
                 console.error('Error al registrar usuario para depositar:', err.message);
                 return sock.sendMessage(jid, { 
-                    text: '(「✿」 "ERROR DE RED" 🥀)\n\nNo pude consultar el estado de tu billetera en el sistema.' 
+                    text: '「✿」 ERROR DE RED // No pude consultar el estado de tu billetera en el sistema. 🥀' 
                 }, { quoted: m });
             }
 
@@ -25,7 +25,7 @@ module.exports = {
 
             if (!Number.isSafeInteger(amount) || amount <= 0) {
                 return sock.sendMessage(jid, { 
-                    text: ` 「✿」 "DEPÓSITO BANCARIO" 🏦 \n\n` +
+                    text: `「✿」 DEPÓSITO BANCARIO 🏦\n\n` +
                           `₊˚ˑ༄ Indica una cantidad entera válida o deposita todo tu efectivo.\n` +
                           `❀ *Uso:* \`!deposit <cantidad|all>\`\n` +
                           `❀ *Ejemplo:* \`!deposit 1000\` 🌸` 
@@ -34,7 +34,7 @@ module.exports = {
 
             if (amount > wallet) {
                 return sock.sendMessage(jid, { 
-                    text: ` 「✿」 "FONDOS INSUFICIENTES" 🥀 \n\n` +
+                    text: `「✿」 FONDOS INSUFICIENTES 🥀\n\n` +
                           `₊˚ˑ༄ No tienes tantos Bolívares disponibles en tu billetera.\n` +
                           `❀ 👛 *Billetera actual:* \`$${wallet.toLocaleString('es-CO')} Bolívares\` 📉` 
                 }, { quoted: m });
@@ -45,14 +45,14 @@ module.exports = {
                     if (updateErr || !this.changes) {
                         if (updateErr) console.error('Error al depositar:', updateErr.message);
                         return sock.sendMessage(jid, { 
-                            text: ' 「✿」 "TRANSACCIÓN FALLIDA" 🥀 \n\nNo se pudo completar la transferencia al banco; inténtalo de nuevo.' 
+                            text: '「✿」 TRANSACCIÓN FALLIDA // No se pudo completar la transferencia al banco; inténtalo de nuevo. 🥀' 
                         }, { quoted: m });
                     }
 
                     const nuevoBanco = (Number(user.bank) || 0) + amount;
 
                     sock.sendMessage(jid, { 
-                        text: ` 「✿」 "DEPÓSITO EXITOSO" 🏦✨ \n\n` +
+                        text: `「✿」 DEPÓSITO EXITOSO 🏦✨\n\n` +
                               `₊˚ˑ༄ Transferencia asegurada en la bóveda central de Yuki.\n` +
                               `❀ 💵 *Depositado:* \`$${amount.toLocaleString('es-CO')} Bolívares\`\n` +
                               `❀ 💳 *Total en Banco:* \`$${nuevoBanco.toLocaleString('es-CO')} Bolívares\`\n` +
