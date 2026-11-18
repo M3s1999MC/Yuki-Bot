@@ -1,10 +1,11 @@
 const yts = require('yt-search');
+const { sendMediaChoiceButtons } = require('../../utils/mediaDownloader');
 
 module.exports = {
     name: 'ytsearch',
     aliases: ['ytbuscar', 'yts'],
     category: 'downloads',
-    description: 'Busca videos en YouTube por texto',
+    description: 'Busca un video en YouTube y muestra su portada, detalles y botones de descarga.',
 
     async execute(sock, m, args, usedPrefix = '!') {
         const jid = m.key.remoteJid;
@@ -13,15 +14,13 @@ module.exports = {
         if (!query) {
             return sock.sendMessage(jid, {
                 text: `「✿」 YOUTUBE SEARCH 🔎\n\n` +
-                      `₊˚ˑ༄ Escribe el nombre del video o canción a buscar.\n` +
-                      `❀ *Ejemplo:* \`${usedPrefix}ytsearch el cuarteto de nos\``
+                      `₊˚ˑ༄ Escribe qué video deseas buscar.\n` +
+                      `❀ *Ejemplo:* \`${usedPrefix}ytsearch el gobierno gobierna\``
             }, { quoted: m });
         }
 
         await sock.sendMessage(jid, {
-            text: `「✿」 BUSCANDO EN YOUTUBE 🌸\n\n` +
-                  `₊˚ˑ༄ Consulta: *${query}*\n` +
-                  `❀ _Consultando resultados..._`
+            text: `「✿」 Buscando en YouTube...`
         }, { quoted: m });
 
         try {
@@ -30,30 +29,46 @@ module.exports = {
                 new Promise((_, rej) => setTimeout(() => rej(new Error('timeout yts')), 15000))
             ]);
 
-            const videos = (res?.videos || []).slice(0, 5);
+            const videos = res?.videos || [];
             if (!videos.length) {
                 return sock.sendMessage(jid, {
                     text: `「✿」 SIN RESULTADOS 🥀\n\n` +
-                          `₊˚ˑ༄ No encontré videos para *${query}*.`
+                          `₊˚ˑ༄ No encontré nada para *${query}*.`
                 }, { quoted: m });
             }
 
-            const lista = videos.map((v, i) =>
-                `❀ *${i + 1}.* ${v.title}\n` +
-                `   ⏱️ ${v.timestamp || 'N/A'} | 👤 ${v.author?.name || 'Desconocido'}\n` +
-                `   🔗 ${v.url}`
-            ).join('\n\n');
+            const video = videos[0];
 
-            await sock.sendMessage(jid, {
-                text: `「✿」 RESULTADOS DE YOUTUBE 🌸\n\n` +
-                      `₊˚ˑ༄ Búsqueda: *${query}*\n\n` +
-                      `${lista}`
-            }, { quoted: m });
+            // Formato limpio con portada, título, descripción y autor
+            const caption = 
+                `「✿」 RESULTADO DE YOUTUBE 🌸\n\n` +
+                `🎵 *Título:* ${video.title}\n` +
+                `👤 *Canal:* ${video.author?.name || 'Desconocido'}\n` +
+                `⏱️ *Duración:* ${video.timestamp || 'N/A'} | 👀 *Vistas:* ${video.views?.toLocaleString() || 'N/A'}\n` +
+                `📝 *Descripción:* ${video.description ? video.description.slice(0, 150) + '...' : 'Sin descripción'}\n` +
+                `🔗 *Enlace:* ${video.url}`;
+
+            try {
+                await sock.sendMessage(jid, {
+                    image: { url: video.thumbnail },
+                    caption: caption
+                }, { quoted: m });
+            } catch (e) {
+                console.error('Error enviando miniatura en ytsearch:', e.message);
+                await sock.sendMessage(jid, { text: caption }, { quoted: m });
+            }
+
+            // Enviar botones interactivos de Audio y Video (igual que !play)
+            await sendMediaChoiceButtons(sock, jid, m, {
+                url: video.url,
+                title: video.title
+            }, '¿Qué deseas hacer con este video?');
+
         } catch (err) {
             console.error('Error en ytsearch.js:', err.message);
             await sock.sendMessage(jid, {
                 text: `「✿」 ERROR DE BÚSQUEDA 🥀\n\n` +
-                      `₊˚ˑ༄ No pude completar la búsqueda en YouTube.`
+                      `₊˚ˑ༄ Ocurrió un error al buscar en YouTube.`
             }, { quoted: m });
         }
     }
