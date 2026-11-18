@@ -35,6 +35,9 @@ const userColumns = {
     hobby: "TEXT DEFAULT 'Sin asignar'",
     gender: "TEXT DEFAULT 'Sin asignar'",
     bio: "TEXT DEFAULT 'Sin asignar'",
+    title: "TEXT DEFAULT 'Sin título'",       // <--- NUEVA COLUMNA TÍTULO
+    game_fav: "TEXT DEFAULT 'Sin asignar'",  // <--- NUEVA COLUMNA JUEGO FAV
+    music_fav: "TEXT DEFAULT 'Sin asignar'", // <--- NUEVA COLUMNA MÚSICA FAV
     main_waifu: 'TEXT',
     claim_message: 'TEXT',
     afk_reason: 'TEXT',
@@ -83,6 +86,9 @@ db.serialize(() => {
         hobby TEXT DEFAULT 'Sin asignar',
         gender TEXT DEFAULT 'Sin asignar',
         bio TEXT DEFAULT 'Sin asignar',
+        title TEXT DEFAULT 'Sin título',
+        game_fav TEXT DEFAULT 'Sin asignar',
+        music_fav TEXT DEFAULT 'Sin asignar',
         main_waifu TEXT,
         claim_message TEXT,
         afk_reason TEXT,
@@ -298,7 +304,6 @@ db.getSafeGroup = function(jid, callback) {
     });
 };
 
-// === ESTO ES LO QUE TE FALTABA, POR ESO NUNCA GUARDABA ===
 db.updateUser = function(jid, data, callback) {
     if (!jid || !data) {
         if (callback) callback(null);
