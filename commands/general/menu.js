@@ -63,8 +63,6 @@ module.exports = {
 > Establece tu género
 ✧ !delgenre
 > Elimina tu género del perfil
-
-» ˚୨•(🌸)• ⊹ Perfil (Nuevos) ⊹
 ✧ !boda | !bodas
 > Muestra los detalles y tiempo de tu matrimonio actual
 ✧ !intereses | !gustos
@@ -381,6 +379,14 @@ module.exports = {
 > Usa un ticket para intentar atrapar un personaje libre por su ID
 ✧ !serie | !series | !catalogo | !idlist | !personajes
 > Lista las series o los personajes (con ID) de una serie
+
+ ˚୨•(🌸)• ⊹ NSWF ⊹
+✧ !neko | !nsfwneko
+> Envía contenido de la categoría neko 
+✧ !waifu | !nsfwwaifu
+> Envía contenido de la categoría waifu 
+✧ !kitsune | !nsfwkitsune
+> Envía contenido de la categoría kitsune
 
  ˚୨•(🌸)• ⊹ Descargas ⊹
 ✧ !pinterest | !pin | !pinsearch
