@@ -13,37 +13,89 @@ module.exports = {
         const chat = m.key.remoteJid;
         const jid = senderJid(m, sock);
         const first = String((args || [])[0] || '').trim();
+
         try {
             if (/^-?\d+$/.test(first)) {
                 const current = game.getSession(chat, jid);
-                if (!current) return reply(sock, m, `「✿」 No tienes un problema activo. Empieza con *${usedPrefix}math*.`);
+                if (!current) {
+                    return reply(sock, m, `「✿」 SIN RETO ACTIVO 🥀\n\n₊˚ˑ༄ No tienes un problema matemático pendiente. Empieza con *${usedPrefix}math* 🌸`);
+                }
+
                 game.endSession(chat, jid);
-                if (current.expired) return reply(sock, m, `「✿」 ⌛ Se acabó el tiempo. Era *${current.session.answer}*.`);
+
+                if (current.expired) {
+                    return reply(sock, m, `「✿」 TIEMPO AGOTADO ⏳\n\n₊˚ˑ༄ Se acabó el tiempo. La respuesta correcta era *${current.session.answer}*.`);
+                }
+
                 const { session } = current;
-                if (Number(first) !== session.answer) return reply(sock, m, `「✿」 ❌ Incorrecto. La respuesta era *${session.answer}*.`);
+
+                if (Number(first) !== session.answer) {
+                    return reply(sock, m, `「✿」 RESPUESTA INCORRECTA ❌\n\n₊˚ˑ༄ Te equivoqué de cálculo. La respuesta era *${session.answer}*.`);
+                }
+
                 const reward = game.DIFFICULTIES[session.difficulty].reward;
                 await economy.credit(jid, reward);
                 await economy.addExp(jid, 10);
-                return reply(sock, m, `「✿」 ✅ ¡Correcto! *+${economy.money(reward)}* y +10 XP 🌸`);
+
+                const rewardF = reward.toLocaleString('es-CO');
+
+                return reply(sock, m, 
+                    `「✿」 ¡CÁLCULO CORRECTO! ✅✨\n\n` +
+                    `₊˚ˑ༄ ¡Has resuelto el problema con éxito!\n` +
+                    `❀ 💰 *Recompensa:* \`+$${rewardF} Bolívares\`\n` +
+                    `❀ ✨ *Experiencia:* \`+10 XP\`\n` +
+                    `───────────────────\n` +
+                    `❀ _¡Una mente brillante en la red de Yuki!_ 🌸`,
+                    [jid]
+                );
             }
 
             const difficulty = game.normalizeDifficulty(first);
-            if (!difficulty) return reply(sock, m, `「✿」 Dificultades: facil, medio, dificil, imposible. Ejemplo: ${usedPrefix}math dificil`);
+            if (!difficulty) {
+                return reply(sock, m, 
+                    `「✿」 MINIJUEGO DE MATEMÁTICAS 🧮✨\n\n` +
+                    `₊˚ˑ༄ Elige una dificultad para poner a prueba tu intelecto:\n` +
+                    `❀ *Niveles:* \`facil\`, \`medio\`, \`dificil\`, \`imposible\`\n` +
+                    `❀ *Uso:* \`${usedPrefix}math <dificultad>\`\n` +
+                    `❀ *Ejemplo:* \`${usedPrefix}math medio\` 🌸`
+                );
+            }
 
             const current = game.getSession(chat, jid);
             if (current && !current.expired) {
-                return reply(sock, m, `「✿」 Ya tienes un problema: *${current.session.text} = ?*\nResponde con *${usedPrefix}math <resultado>*`);
+                return reply(sock, m, 
+                    `「✿」 RETO EN CURSO ⏳\n\n` +
+                    `₊˚ˑ༄ Ya tienes un problema activo:\n` +
+                    `❀ *Operación:* \`${current.session.text} = ?\`\n` +
+                    `❀ Responde con *${usedPrefix}math <resultado>* 🌸`
+                );
             }
+
             await economy.ensureUser(jid);
             const cooldown = await claim(jid, 'math', 20000);
-            if (!cooldown.ok) return reply(sock, m, `「✿」 ⏳ Espera *${formatDuration(cooldown.remainingMs)}* para otro problema.`);
+
+            if (!cooldown.ok) {
+                const remainingFormatted = formatDuration(cooldown.remainingMs);
+                return reply(sock, m, `「✿」 COOLDOWN ACTIVO ⏳\n\n₊˚ˑ༄ Espera *${remainingFormatted}* para resolver otro problema matemático.`);
+            }
 
             const session = game.startSession(chat, jid, difficulty);
             const info = game.DIFFICULTIES[difficulty];
-            return reply(sock, m, `「✿」 🧮 *Matemáticas (${info.label})*\n\n*${session.text} = ?*\n\nResponde con *${usedPrefix}math <resultado>* en 30 segundos. Premio: ${economy.money(info.reward)}.`);
+            const rewardF = info.reward.toLocaleString('es-CO');
+
+            return reply(sock, m, 
+                `「✿」 RETO MATEMÁTICO // ${info.label.toUpperCase()} 🧮✨\n\n` +
+                `₊˚ˑ༄ Resuelve la siguiente operación:\n` +
+                `❀ *Problema:* \`${session.text} = ?\`\n` +
+                `❀ ⏱️ *Tiempo límite:* 30 segundos\n` +
+                `❀ 💰 *Premio:* \`$${rewardF} Bolívares\`\n` +
+                `───────────────────\n` +
+                `❀ _Responde con_ \`${usedPrefix}math <resultado>\` 🌸`
+            );
+
         } catch (error) {
             console.error('Error en !math:', error.message);
-            return reply(sock, m, '「✿」 No pude procesar el juego; inténtalo de nuevo en un momento.');
+            return reply(sock, m, '「✿」 ERROR DE RED // No pude procesar el juego matemático; inténtalo de nuevo en un momento. 🥀');
         }
     }
 };
