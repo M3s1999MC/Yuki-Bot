@@ -18,7 +18,7 @@ module.exports = {
     const menuHeader = `╭─── 🌸 *YUKI* 🌸 ───╮
 │ Hola @${mentionJid.split('@')[0]} 👋
 │ Aquí tienes mis comandos
-│ ✿ Comandos: 339
+│ ✿ Comandos: 342
 ╰──────────────────╯
 
 ✿ *Desarrollado por:* InKra Studios
