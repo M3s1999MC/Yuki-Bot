@@ -1,4 +1,5 @@
 const axios = require('axios');
+const activeSpawns = require('../../utils/gachaSpawns');
 
 function getRareza() {
     const num = Math.floor(Math.random() * 1000) + 1;
@@ -11,7 +12,7 @@ function getRareza() {
 
 module.exports = {
     name: 'roll',
-    aliases: ['rw', 'rollwaifu', 'waifu'],
+    aliases: ['rw', 'rollwaifu', 'waifu', 'waifus', 'rollwaifus'],
     category: 'gacha',
     description: 'Tira un personaje de anime oficial al instante.',
 
@@ -23,9 +24,8 @@ module.exports = {
         try {
             let post = null;
 
-            // Consulta GraphQL a AniList API (Personajes reales y series oficiales de anime)
+            // Consulta GraphQL a AniList API (Personajes y series oficiales de anime)
             try {
-                // Seleccionamos un ID de personaje aleatorio dentro de un rango popular y seguro
                 const randomId = Math.floor(Math.random() * 2000) + 1;
                 
                 const query = `
@@ -69,10 +69,10 @@ module.exports = {
                     };
                 }
             } catch (e) {
-                console.log('AniList falló, intentando respaldo con Nekos:', e.message);
+                console.log('AniList falló, usando respaldo con Nekos:', e.message);
             }
 
-            // Respaldo por si AniList no encuentra el ID al primer intento
+            // Respaldo por si AniList falla
             if (!post) {
                 try {
                     const resNekos = await axios.get('https://nekos.best/api/v2/waifu', { timeout: 6000 });
@@ -87,7 +87,7 @@ module.exports = {
                 }
             }
 
-            // Respaldo definitivo de emergencia
+            // Respaldo de emergencia definitivo
             if (!post) {
                 post = {
                     nombre: 'Yuki Special Edition',
@@ -104,17 +104,23 @@ module.exports = {
             const imgRes = await axios.get(post.imagen, { responseType: 'arraybuffer', timeout: 8000 });
             const imageBuffer = Buffer.from(imgRes.data);
 
+            // Enviamos el mensaje del gacha limpio y adaptado
             await sock.sendMessage(jid, {
                 image: imageBuffer,
-                caption: `╭━━━ 𝖄𝖚𝖐𝖎'𝖘 𝕲𝖆𝖈𝖍𝖆 ━━━╮\n` +
-                         `┃ 🌸 *¡NUEVO PERSONAJE OBTENIDO!*\n` +
-                         `┣━━━━━━━━━━━━━━━━━━\n` +
-                         `┃ • *Nombre:* ${nombre}\n` +
-                         `┃ • *Serie:* ${serie}\n` +
-                         `┃ • *Rareza:* ${rareza.emoji} *${rareza.nombre}*\n` +
-                         `╰━━━━━━━━━━━━━━━━━━╯\n\n` +
-                         `> 💡 Usa tu comando de claim para reclamarlo a tu harem.`
+                caption: `🌸 *¡NUEVO PERSONAJE OBTENIDO!* 🌸\n\n` +
+                         `• *Nombre:* ${nombre}\n` +
+                         `• *Serie:* ${serie}\n` +
+                         `• *Rareza:* ${rareza.emoji} *${rareza.nombre}*\n\n` +
+                         `> 💡 ¡Responde a este mensaje con !claim para reclamarlo!`
             }, { quoted: m });
+
+            // Guardamos el spawn en memoria para que cualquiera en el chat pueda reclamarlo
+            activeSpawns.set(jid, {
+                name: nombre,
+                serie: serie,
+                image_url: post.imagen,
+                price: rareza.nombre === 'Mítica' ? 500 : rareza.nombre === 'Legendaria' ? 300 : 100
+            });
 
         } catch (error) {
             console.error('Error crítico en roll.js:', error.message);
