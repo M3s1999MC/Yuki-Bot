@@ -1,20 +1,48 @@
+const db = require('../../database/db');
+
 module.exports = {
     name: 'antilink',
     category: 'groups',
-    description: 'Expulsar a quien envíe enlaces de otros grupos.',
+    description: 'Activa o desactiva el sistema antienlaces en el grupo.',
 
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
+
+        // Verificar si es un grupo
+        if (!jid.endsWith('@g.us')) {
+            return await sock.sendMessage(jid, {
+                text: '₊˚ˑ༄ [✿] Este comando solo se puede utilizar dentro de un grupo. 🪞'
+            }, { quoted: m });
+        }
+
         const estado = args[0]?.toLowerCase();
 
         if (!['on', 'off'].includes(estado)) {
             return await sock.sendMessage(jid, {
-                text: '(「✿」 "SEGURIDAD - ANTILINK"🌸)\n\n⚠️ Especifica el estado.\n*Uso:* `!antilink on` o `!antilink off`'
+                text: `₊˚ˑ༄ 𝖄𝖚𝖐𝖎 // SECURITY - ANTILINK 𓍢ִ໋☕\n\n` +
+                      `❀ ❟ Especifica el estado deseado.\n` +
+                      `❀ Uso: \`!antilink on\` o \`!antilink off\` 🥀`
             }, { quoted: m });
         }
 
-        await sock.sendMessage(jid, {
-            text: `(「✿」 "ANTILINK ACTUALIZADO"🌸)\n\n🛡️ El sistema antienlaces de otros grupos ha sido puesto en: *${estado.toUpperCase()}*.`
-        }, { quoted: m });
+        const antilinkValue = estado === 'on' ? 1 : 0;
+
+        db.run(
+            `INSERT INTO group_settings (group_jid, antilink) VALUES (?, ?)
+             ON CONFLICT(group_jid) DO UPDATE SET antilink = ?`,
+            [jid, antilinkValue, antilinkValue],
+            async (err) => {
+                if (err) {
+                    console.error('Error al actualizar antilink:', err.message);
+                    return await sock.sendMessage(jid, {
+                        text: '₊˚ˑ༄ [!] Error crítico al actualizar el sistema antilink en la base de datos.'
+                    }, { quoted: m });
+                }
+
+                await sock.sendMessage(jid, {
+                    text: `₊˚ˑ༄ 𝖄𝖚𝖐𝖎 ꔛ ¡Sistema Antilink actualizado!\n❀ ❟ *Estado:* \`${estado.toUpperCase()}\` 🛡️✿`
+                }, { quoted: m });
+            }
+        );
     }
 };
