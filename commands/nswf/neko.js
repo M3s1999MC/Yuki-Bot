@@ -4,7 +4,7 @@ module.exports = {
     name: 'neko',
     aliases: ['nsfwneko'],
     category: 'nsfw',
-    description: 'Envía una imagen NSFW de la categoría neko',
+    description: 'Envía una imagen o GIF NSFW de la categoría neko',
     
     async execute(sock, m, args) {
         const categoria = 'neko'; 
@@ -19,15 +19,13 @@ module.exports = {
                 return sock.sendMessage(m.key.remoteJid, { text: '❌ Ocurrió un error al obtener la imagen.' }, { quoted: m });
             }
 
-            const mediaUrl = response.data.url;
-
             await sock.sendMessage(m.key.remoteJid, { 
-                image: { url: mediaUrl }, 
+                image: { url: response.data.url }, 
                 caption: `「✿」 Categoría: **${categoria.toUpperCase()}** 🔞✨` 
             }, { quoted: m });
 
         } catch (error) {
-            console.error('Error en comando NSFW:', error);
+            console.error('Error en comando NSFW neko:', error);
             await sock.sendMessage(m.key.remoteJid, { text: '⚠️ Hubo un fallo al conectar con la API.' }, { quoted: m });
         }
     }
