@@ -1,53 +1,46 @@
-const ytdlp = require('yt-dlp-exec');
-
-if (!global.yukiLastPlay) global.yukiLastPlay = new Map();
-const lastPlay = global.yukiLastPlay;
+const { downloadWithYtDlp } = require('../../utils/mediaDownloader');
 
 module.exports = {
     name: 'video',
-    category: 'downloader',
-    description: 'Descarga en video la última canción buscada con !play.',
-    async execute(sock, m, args) {
-        const jid = m.key.remoteJid;
-        const data = lastPlay.get(jid);
+    aliases: ['ytvideo'],
+    category: 'downloads',
+    description: 'Descarga el video MP4 del último enlace o búsqueda enviada.',
 
-        if (!data || !data.video) {
-            return await sock.sendMessage(jid, { text: '「✿」 Primero busca algo con `!play`, por ejemplo: `!play Feid Luna`' }, { quoted: m });
+    async execute(sock, m) {
+        const jid = m.key.remoteJid;
+        const saved = global.yukiLastPlay?.get(jid);
+        const url = saved?.url || saved?.video?.url;
+        const title = saved?.title || saved?.video?.title || 'Video descargado';
+
+        if (!url) {
+            return sock.sendMessage(jid, {
+                text: `「✿」 SIN ENLACE GUARDADO 🥀\n\n` +
+                      `₊˚ˑ༄ Primero usa \`!play\`, \`!tiktok\`, \`!ig\`, \`!fb\` o \`!x\`.`
+            }, { quoted: m });
         }
 
-        const video = data.video;
-        await sock.sendMessage(jid, { text: `「✿」 Descargando video de *${video.title}*... Esto puede tardar un poco.` }, { quoted: m });
+        await sock.sendMessage(jid, {
+            text: `「✿」 DESCARGANDO VIDEO MP4 📹🌸\n\n` +
+                  `₊˚ˑ༄ *${title}*\n` +
+                  `❀ _Procesando con yt-dlp..._`
+        }, { quoted: m });
 
+        let media;
         try {
-            const videoUrl = await ytdlp(video.url, {
-                getUrl: true,
-                format: 'mp4[height<=360]/best[height<=360]/best',
-                noPlaylist: true,
-                noWarnings: true,
-            });
-
-            const cleanUrl = videoUrl.trim().split('\n')[0];
-            const res = await fetch(cleanUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-            if (!res.ok) throw new Error('Fetch fallo: ' + res.status);
-            const buffer = Buffer.from(await res.arrayBuffer());
-
-            console.log(`Video descargado: ${(buffer.length / 1024 / 1024).toFixed(2)} MB`);
-
-            if (buffer.length > 16 * 1024 * 1024) {
-                return await sock.sendMessage(jid, { text: '「✿」 El video pesa más de 16MB y WhatsApp no lo deja mandar. Intenta con `!audio`.' }, { quoted: m });
-            }
-            if (buffer.length < 1000) throw new Error('Video muy pequeño');
-
+            media = await downloadWithYtDlp(url, { type: 'video', prefix: 'btn_video' });
             await sock.sendMessage(jid, {
-                video: buffer,
+                video: { url: media.filePath },
                 mimetype: 'video/mp4',
-                fileName: `${video.title}.mp4`,
-                caption: `「✿」 Listo 🌸\n\n🎵 *${video.title}*`
+                caption: `「✿」 *${title}* 🌸`
             }, { quoted: m });
-
-        } catch (e) {
-            console.error('Error en !video:', e.message);
-            await sock.sendMessage(jid, { text: '「✿」 No pude descargar el video, intenta con otro o en audio.' }, { quoted: m });
+        } catch (err) {
+            console.error('Error en video.js:', err.message);
+            await sock.sendMessage(jid, {
+                text: `「✿」 ERROR AL DESCARGAR VIDEO 🥀\n\n` +
+                      `₊˚ˑ༄ No pude procesar el video de este enlace.`
+            }, { quoted: m });
+        } finally {
+            if (media?.cleanup) media.cleanup();
         }
     }
 };
