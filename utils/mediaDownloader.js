@@ -13,8 +13,7 @@ if (!fs.existsSync(tempDir)) {
 async function downloadFile(url, dest) {
     const res = await fetch(url, {
         headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': '*/*'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         }
     });
 
@@ -33,9 +32,14 @@ async function downloadWithYtDlp(queryOrUrl, options = {}) {
     const id = `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const filePath = path.join(tempDir, `${id}.${ext}`);
 
+    const apiToken = process.env.APIFY_API_TOKEN;
+    if (!apiToken) {
+        throw new Error('Falta configurar la variable de entorno APIFY_API_TOKEN en Render.');
+    }
+
     let targetUrl = queryOrUrl;
 
-    // Si no es un enlace de YouTube, lo buscamos primero automáticamente
+    // Si le pasan texto de búsqueda en lugar de un enlace, usamos una búsqueda rápida previa
     if (!queryOrUrl.includes('youtube.com') && !queryOrUrl.includes('youtu.be')) {
         const searchApi = `https://api.siputzx.my.id/api/s/youtube?query=${encodeURIComponent(queryOrUrl)}`;
         const searchRes = await fetch(searchApi);
@@ -47,17 +51,58 @@ async function downloadWithYtDlp(queryOrUrl, options = {}) {
         targetUrl = searchJson.data[0].url;
     }
 
-    // Ahora pedimos el enlace de descarga directo del video
-    const apiUrl = `https://api.siputzx.my.id/api/d/ytmp4?url=${encodeURIComponent(targetUrl)}`;
-    
-    const response = await fetch(apiUrl);
-    const json = await response.json();
+    // ID del Actor de Apify que estás usando (streamers/youtube-video-downloader)
+    const actorId = 'streamers~youtube-video-downloader';
+    const runUrl = `https://api.apify.com/v2/acts/${actorId}/runs?token=${apiToken}`;
 
-    if (!json || !json.status || !json.data?.dl) {
-        throw new Error('La API no pudo procesar el enlace de descarga.');
+    // Ejecutamos el actor en Apify pasando la URL del video
+    const runRes = await fetch(runUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            videos: [{ url: targetUrl }],
+            preferredQuality: '720p'
+        })
+    });
+
+    const runData = await runRes.json();
+    if (!runData.data || !runData.data.id) {
+        throw new Error('No se pudo iniciar el proceso de descarga en Apify.');
     }
 
-    const downloadLink = json.data.dl;
+    const runId = runData.data.id;
+    const datasetId = runData.data.defaultDatasetId;
+
+    // Esperar a que el actor termine (Polling cada 3 segundos, máximo 60 segundos)
+    let isFinished = false;
+    let attempts = 0;
+    while (!isFinished && attempts < 20) {
+        await new Promise(r => setTimeout(r, 3000));
+        attempts++;
+
+        const statusRes = await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${apiToken}`);
+        const statusData = await statusRes.json();
+        
+        if (statusData.data?.status === 'SUCCEEDED') {
+            isFinished = true;
+        } else if (['FAILED', 'ABORTED', 'TIMED-OUT'].includes(statusData.data?.status)) {
+            throw new Error(`El proceso en Apify falló con estado: ${statusData.data.status}`);
+        }
+    }
+
+    if (!isFinished) {
+        throw new Error('El tiempo de espera para procesar el video en Apify expiró.');
+    }
+
+    // Obtener los resultados del Dataset generado
+    const itemsRes = await fetch(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${apiToken}`);
+    const items = await itemsRes.json();
+
+    if (!items || items.length === 0 || (!items[0].url && !items[0].downloadUrl)) {
+        throw new Error('Apify terminó pero no devolvió ningún enlace de descarga válido.');
+    }
+
+    const downloadLink = items[0].downloadUrl || items[0].url;
     await downloadFile(downloadLink, filePath);
 
     if (!fs.existsSync(filePath)) {
