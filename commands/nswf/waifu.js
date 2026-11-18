@@ -4,29 +4,36 @@ module.exports = {
     name: 'waifu',
     aliases: ['nsfwwaifu'],
     category: 'nsfw',
-    description: 'Envía una imagen o GIF NSFW de waifus',
+    description: 'Envía contenido waifu desde el ciberespacio',
     
-    async execute(sock, m, args) {
-        const categoria = 'waifu'; 
-        const tipo = 'nsfw';
+    async execute(sock, m, args, usedPrefix = '!') {
+        const jid = m.key.remoteJid;
 
         try {
-            await sock.sendMessage(m.key.remoteJid, { text: '「✿」 Buscando en el ciberespacio... 🌸' }, { quoted: m });
+            await sock.sendMessage(jid, { 
+                text: '「✿」 Buscando en el ciberespacio... ⏳' 
+            }, { quoted: m });
 
-            const response = await axios.get(`https://api.waifu.pics/${tipo}/${categoria}`);
+            const response = await axios.get('https://nekos.best/api/v2/waifu');
+            const imageUrl = response.data?.results?.[0]?.url;
             
-            if (!response.data || !response.data.url) {
-                return sock.sendMessage(m.key.remoteJid, { text: '❌ Ocurrió un error al obtener la imagen.' }, { quoted: m });
+            if (!imageUrl) {
+                return sock.sendMessage(jid, { 
+                    text: '「✿」 ERROR DE RED // No se pudo recuperar el archivo multimedia. 🥀' 
+                }, { quoted: m });
             }
 
-            await sock.sendMessage(m.key.remoteJid, { 
-                image: { url: response.data.url }, 
-                caption: `「✿」 Categoría: **${categoria.toUpperCase()}** 🔞✨` 
-            }, { quoted: m });
+            const text = `「✿」 YUKI // MÓDULO NSFW 🔞\n\n` +
+                         `₊˚ˑ༄ Archivo recuperado con éxito en la red:\n\n` +
+                         `> 📂 *Categoría:* \`WAIFU\`\n` +
+                         `───────────────────\n` +
+                         `❀ _Disfruta el contenido en el ciberespacio._ 🌸`;
+
+            await sock.sendMessage(jid, { image: { url: imageUrl }, caption: text }, { quoted: m });
 
         } catch (error) {
             console.error('Error en comando NSFW waifu:', error);
-            await sock.sendMessage(m.key.remoteJid, { text: '⚠️ Hubo un fallo al conectar con la API.' }, { quoted: m });
+            await sock.sendMessage(jid, { text: '「✿」 ERROR CRÍTICO // Falló la conexión con la API externa. 🥀' }, { quoted: m });
         }
     }
 };
