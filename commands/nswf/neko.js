@@ -8,17 +8,19 @@ module.exports = {
     
     async execute(sock, m, args, usedPrefix = '!') {
         const jid = m.key.remoteJid;
-        const categoria = 'neko';
-        const tipo = 'nsfw';
 
         try {
             await sock.sendMessage(jid, { 
                 text: '「✿」 Buscando en el ciberespacio... ⏳' 
             }, { quoted: m });
 
-            const response = await axios.get(`https://api.waifu.pics/${tipo}/${categoria}`);
+            // Petición a la API pública de nekos.dev para contenido NSFW
+            const response = await axios.get('https://nekos.dev/api/v3/images?rating=nsfw&category=neko');
             
-            if (!response.data || !response.data.url) {
+            // Verificamos que la estructura devuelva la imagen correctamente
+            const imageUrl = response.data?.data?.[0]?.url;
+            
+            if (!imageUrl) {
                 return sock.sendMessage(jid, { 
                     text: '「✿」 ERROR DE RED // No se pudo recuperar el archivo multimedia. 🥀' 
                 }, { quoted: m });
@@ -26,12 +28,12 @@ module.exports = {
 
             const text = `「✿」 YUKI // MÓDULO NSFW 🔞\n\n` +
                          `₊˚ˑ༄ Archivo recuperado con éxito en la red:\n\n` +
-                         `> 📂 *Categoría:* \`${categoria.toUpperCase()}\`\n` +
+                         `> 📂 *Categoría:* \`NEKO\`\n` +
                          `───────────────────\n` +
                          `❀ _Disfruta el contenido en el ciberespacio._ 🌸`;
 
             await sock.sendMessage(jid, { 
-                image: { url: response.data.url }, 
+                image: { url: imageUrl }, 
                 caption: text 
             }, { quoted: m });
 
