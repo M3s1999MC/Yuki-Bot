@@ -10,7 +10,6 @@ if (!fs.existsSync(tempDir)) {
     fs.mkdirSync(tempDir, { recursive: true });
 }
 
-// Función de descarga usando fetch moderno con headers de navegador
 async function downloadFile(url, dest) {
     const res = await fetch(url, {
         headers: {
@@ -27,14 +26,29 @@ async function downloadFile(url, dest) {
     fs.writeFileSync(dest, buffer);
 }
 
-async function downloadWithYtDlp(videoUrl, options = {}) {
+async function downloadWithYtDlp(queryOrUrl, options = {}) {
     const type = options.type || 'video';
     const ext = type === 'audio' ? 'mp3' : 'mp4';
     const prefix = options.prefix || 'media';
     const id = `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const filePath = path.join(tempDir, `${id}.${ext}`);
 
-    const apiUrl = `https://api.siputzx.my.id/api/d/ytmp4?url=${encodeURIComponent(videoUrl)}`;
+    let targetUrl = queryOrUrl;
+
+    // Si no es un enlace de YouTube, lo buscamos primero automáticamente
+    if (!queryOrUrl.includes('youtube.com') && !queryOrUrl.includes('youtu.be')) {
+        const searchApi = `https://api.siputzx.my.id/api/s/youtube?query=${encodeURIComponent(queryOrUrl)}`;
+        const searchRes = await fetch(searchApi);
+        const searchJson = await searchRes.json();
+
+        if (!searchJson || !searchJson.status || !searchJson.data || searchJson.data.length === 0) {
+            throw new Error('No se encontró ningún resultado en YouTube para esa búsqueda.');
+        }
+        targetUrl = searchJson.data[0].url;
+    }
+
+    // Ahora pedimos el enlace de descarga directo del video
+    const apiUrl = `https://api.siputzx.my.id/api/d/ytmp4?url=${encodeURIComponent(targetUrl)}`;
     
     const response = await fetch(apiUrl);
     const json = await response.json();
