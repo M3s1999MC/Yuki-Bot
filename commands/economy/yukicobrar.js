@@ -1,26 +1,56 @@
-const economy = require('../../utils/economy');
 const { collectAll } = require('../../utils/businesses');
 const missions = require('../../utils/missions');
-const { reply, senderJid } = require('../../utils/commandHelpers');
+const { getMessageSenderJid } = require('../../utils/messageSender');
 
 module.exports = {
     name: 'yukicobrar',
     aliases: ['yukiclaim', 'reclamarnegocios', 'cobrarnegocios', 'ygc'],
     category: 'economy',
-    description: 'Cobrar el dinero acumulado de tus negocios',
+    description: 'Cobra las ganancias acumuladas de todos tus negocios y empresas en la red.',
 
     async execute(sock, m, args, usedPrefix = '!') {
+        const jid = m.key.remoteJid;
+        const sender = getMessageSenderJid(m, sock);
+        const username = sender.split('@')[0];
+
         try {
-            const jid = senderJid(m, sock);
-            const result = await collectAll(jid);
-            if (!result.owned) return reply(sock, m, `「✿」 No tienes negocios. Mira la tienda con *${usedPrefix}negocios*.`);
-            if (result.total <= 0) return reply(sock, m, `「✿」 Aún no hay ganancias por cobrar. Si un negocio no produce, revisa su mantenimiento con *${usedPrefix}minegocios*.`);
-            await missions.track(jid, 'negocio');
-            const detail = result.details.map(item => `${item.business.emoji} ${item.business.name}: ${economy.money(item.amount)}`).join('\n');
-            return reply(sock, m, `「✿」 💰 *Ganancias cobradas*\n\n${detail}\n\n*Total: +${economy.money(result.total)}* 🌸`);
+            const result = await collectAll(sender);
+
+            if (!result.owned) {
+                return sock.sendMessage(jid, { 
+                    text: `「✿」 SIN NEGOCIOS REGISTRADOS 🥀\n\n₊˚ˑ༄ Aún no posees empresas en el ciberespacio.\n❀ *Explora el catálogo con:* \`${usedPrefix}negocios\` 🌸` 
+                }, { quoted: m });
+            }
+
+            if (result.total <= 0) {
+                return sock.sendMessage(jid, { 
+                    text: `「✿」 SIN GANANCIAS POR COBRAR ⏳\n\n₊˚ˑ༄ Tus negocios todavía están generando fondos.\n❀ *Revisa el mantenimiento con:* \`${usedPrefix}minegocios\` 🌸` 
+                }, { quoted: m });
+            }
+
+            // Registrar avance de misiones si aplica
+            await missions.track(sender, 'negocio');
+
+            const detail = result.details.map(item => {
+                const amountFormatted = Number(item.amount || 0).toLocaleString('es-CO');
+                return `❀ ${item.business.emoji} ${item.business.name}: \`+$${amountFormatted} Bolívares\``;
+            }).join('\n');
+
+            const totalFormatted = Number(result.total || 0).toLocaleString('es-CO');
+
+            const text = `「✿」 GANANCIAS DE NEGOCIOS COBRADAS 🏢✨\n\n` +
+                         `₊˚ˑ༄ Has recolectado los ingresos de tus empresas en la red:\n\n` +
+                         detail + `\n\n` +
+                         `───────────────────\n` +
+                         `❀ 👤 *Propietario:* @${username}\n` +
+                         `❀ 💰 *Total ingresado:* \`+$${totalFormatted} Bolívares\` 💵\n` +
+                         `───────────────────\n` +
+                         `❀ _¡Tu imperio empresarial en el ciberespacio sigue creciendo!_ 🌸`;
+
+            await sock.sendMessage(jid, { text, mentions: [sender] }, { quoted: m });
         } catch (error) {
             console.error('Error en !yukicobrar:', error.message);
-            return reply(sock, m, '「✿」 No pude cobrar; inténtalo de nuevo en un momento.');
+            return sock.sendMessage(jid, { text: '「✿」 ERROR CRÍTICO // No pude cobrar las ganancias de tus negocios. 🥀' }, { quoted: m });
         }
     }
 };
