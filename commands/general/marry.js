@@ -12,14 +12,14 @@ module.exports = {
         const target = M.getMentioned(m);
         const send = (text, mentions = []) => sock.sendMessage(jid, { text, mentions }, { quoted: m });
 
-        if (!target) return send('「✿」 Menciona a alguien: !marry @usuario');
-        if (target === me) return send('「✿」 No puedes casarte contigo mismo 🌸');
+        if (!target) return send('₊˚ˑ༄ [✿] Debes mencionar a alguien: \`!marry @usuario\` 🥀');
+        if (target === me) return send('₊˚ˑ༄ [✿] No puedes casarte contigo mismo, ¡qué solitario! 🌸');
 
         try {
             const [u1, u2] = await Promise.all([M.getUser(me), M.getUser(target)]);
             const p1 = M.partnerOf(u1);
-            if (p1) return send(`「✿」 Ya estás casado con ${M.tag(p1)} 💍`, [p1]);
-            if (M.partnerOf(u2)) return send(`「✿」 ${M.tag(target)} ya está casado/a 💔`, [target]);
+            if (p1) return send(`₊˚ˑ༄ [✿] Ya estás casado con ${M.tag(p1)} 💍`, [p1]);
+            if (M.partnerOf(u2)) return send(`₊˚ˑ༄ [✿] Lo siento, *${M.tag(target)}* ya está casado/a con otra persona 💔`, [target]);
 
             clearTimeout(M.proposals[target]?.timer);
             M.proposals[target] = {
@@ -27,13 +27,14 @@ module.exports = {
                 timer: setTimeout(() => delete M.proposals[target], 2 * 60 * 1000),
             };
             send(
-                `「✿」 💍 ${M.tag(me)} le propuso matrimonio a ${M.tag(target)}\n\n` +
-                `Responde con *!aceptar* o *!rechazar* (2 min)`,
+                `₊˚ˑ༄ 𝖄𝖚𝖐𝖎 ꔛ PROPUESTA DE MATRIMONIO 💍\n\n` +
+                `❀ ❟ *${M.tag(me)}* le ha propuesto matrimonio a *${M.tag(target)}*.\n\n` +
+                `° Responde con \`!aceptar\` o \`!rechazar\` (Expira en 2 minutos). ✿`,
                 [me, target]
             );
         } catch (e) {
             console.error('Error en marry:', e.message);
-            send('「✿」 No pude procesar la propuesta.');
+            send('₊˚ˑ༄ [!] Error crítico al procesar la propuesta en el sistema.');
         }
     }
 };
