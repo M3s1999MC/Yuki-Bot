@@ -7,22 +7,47 @@ module.exports = {
     name: 'minegocios',
     aliases: ['misnegocios', 'yukingmis', 'ngmis', 'miempresa'],
     category: 'economy',
-    description: 'Ver el estado de tus negocios',
+    description: 'Ver el estado de tus negocios y ganancias acumuladas en Bolívares',
 
     async execute(sock, m, args, usedPrefix = '!') {
         try {
-            const owned = await listOwned(senderJid(m, sock));
-            if (!owned.length) return reply(sock, m, `「✿」 Todavía no tienes negocios. Mira la tienda con *${usedPrefix}negocios*.`);
+            const sender = senderJid(m, sock);
+            const owned = await listOwned(sender);
+
+            if (!owned.length) {
+                return reply(sock, m, 
+                    `「✿」 SIN EMPRESAS REGISTRADAS 🥀\n\n` +
+                    `₊˚ˑ༄ Todavía no posees ningún negocio comercial en la red.\n` +
+                    `❀ Explora el catálogo de la tienda con: \`${usedPrefix}negocios\` 🌸`
+                );
+            }
+
             const now = Date.now();
             const lines = owned.map(({ business, row }) => {
                 const left = Number(row.paid_until) - now;
-                const state = left > 0 ? `mantenimiento: ${formatDuration(left)}` : '⚠️ sin mantenimiento (no produce)';
-                return `${business.emoji} *${business.name}*\n   Por cobrar: ${economy.money(pendingIncome(business, row, now))} · ${state}`;
+                const pendiente = pendingIncome(business, row, now);
+                const pendienteFormateado = pendiente.toLocaleString('es-CO');
+                
+                const state = left > 0 
+                    ? `Mantenimiento activo: *${formatDuration(left)}*` 
+                    : `⚠️ *Sin mantenimiento* (no produce ingresos)`;
+
+                return `❀ ${business.emoji} *${business.name}*\n` +
+                       `   ↳ Por cobrar: \`$${pendienteFormateado} Bolívares\`\n` +
+                       `   ↳ Estado: ${state}`;
             });
-            return reply(sock, m, `「✿」 🏪 *Tus negocios*\n\n${lines.join('\n\n')}`);
+
+            const text = `「✿」 PORTAFOLIO DE NEGOCIOS 🏪✨\n\n` +
+                         `₊˚ˑ༄ Estado actual de tus establecimientos comerciales:\n\n` +
+                         lines.join('\n\n') + `\n\n` +
+                         `───────────────────\n` +
+                         `❀ _¡Gestiona tus fondos y expande tu emporio en la red de Yuki!_ 🌸`;
+
+            return reply(sock, m, text, [sender]);
+
         } catch (error) {
             console.error('Error en !minegocios:', error.message);
-            return reply(sock, m, '「✿」 No pude consultar tus negocios; inténtalo de nuevo en un momento.');
+            return reply(sock, m, '「✿」 ERROR DE RED // No pude consultar tus negocios; inténtalo de nuevo en un momento. 🥀');
         }
     }
 };
