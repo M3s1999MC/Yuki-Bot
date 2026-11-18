@@ -1,41 +1,44 @@
 const axios = require('axios');
 
 module.exports = {
-    name: 'neko', // Cambia según el comando (neko, waifu, trap, blowjob)
+    name: 'neko',
     aliases: ['nsfwneko'],
     category: 'nsfw',
-    description: 'Envía contenido NSFW aleatorio con el estilo de Yuki',
+    description: 'Envía contenido NSFW de la categoría neko',
     
-    async execute(sock, m, args) {
-        const categoria = 'neko'; // Cambia según la categoría del archivo
+    async execute(sock, m, args, usedPrefix = '!') {
+        const jid = m.key.remoteJid;
+        const categoria = 'neko';
         const tipo = 'nsfw';
 
         try {
-            // Estilo visual clásico de Yuki procesando en el ciberespacio
-            await sock.sendMessage(m.key.remoteJid, { 
-                text: '「✿」 Conectando con los servidores del ciberespacio... 🔄✨' 
+            await sock.sendMessage(jid, { 
+                text: '「✿」 Buscando en el ciberespacio... ⏳' 
             }, { quoted: m });
 
             const response = await axios.get(`https://api.waifu.pics/${tipo}/${categoria}`);
             
             if (!response.data || !response.data.url) {
-                return sock.sendMessage(m.key.remoteJid, { 
-                    text: '「❌」 Error crítico: No se pudo recuperar el archivo multimedia.' 
+                return sock.sendMessage(jid, { 
+                    text: '「✿」 ERROR DE RED // No se pudo recuperar el archivo multimedia. 🥀' 
                 }, { quoted: m });
             }
 
-            // Envío con el formato estético de Yuki
-            await sock.sendMessage(m.key.remoteJid, { 
+            const text = `「✿」 YUKI // MÓDULO NSFW 🔞\n\n` +
+                         `₊˚ˑ༄ Archivo recuperado con éxito en la red:\n\n` +
+                         `> 📂 *Categoría:* \`${categoria.toUpperCase()}\`\n` +
+                         `───────────────────\n` +
+                         `❀ _Disfruta el contenido en el ciberespacio._ 🌸`;
+
+            await sock.sendMessage(jid, { 
                 image: { url: response.data.url }, 
-                caption: `「✿」 **YUKI-BOT // MÓDULO NSFW** 🔞\n\n` +
-                         `* **Categoría:** ${categoria.toUpperCase()}\n` +
-                         `* **Estado:** Transmisión exitosa 🚀`
+                caption: text 
             }, { quoted: m });
 
         } catch (error) {
-            console.error('Error en comando NSFW:', error);
-            await sock.sendMessage(m.key.remoteJid, { 
-                text: '「⚠️」 Fallo de red al intentar conectar con la API.' 
+            console.error('Error en comando NSFW neko:', error);
+            await sock.sendMessage(jid, { 
+                text: '「✿」 ERROR CRÍTICO // Falló la conexión con la API externa. 🥀' 
             }, { quoted: m });
         }
     }
