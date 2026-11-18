@@ -5,10 +5,9 @@ const { CHEST, BOMB, TRIVIA, PERIODIC } = require('../../utils/ecoConfig');
 const { reply, senderJid, targetJid, mentionTag } = require('../../utils/commandHelpers');
 
 function line(label, ms) {
-    return ms > 0 ? `⏳ ${label}: ${formatDuration(ms)}` : `✅ ${label}: disponible`;
+    return ms > 0 ? `❀ ⏳ *${label}:* ${formatDuration(ms)}` : `❀ ✅ *${label}:* disponible`;
 }
 
-// !winfo ya es del gacha, por eso este comando se llama !esperas.
 module.exports = {
     name: 'esperas',
     aliases: ['cooldowns', 'espera'],
@@ -27,11 +26,19 @@ module.exports = {
             const extras = [];
             for (const item of [CHEST, BOMB, TRIVIA]) extras.push(line(item.label, await remaining(jid, item.key, now)));
 
-            const text = `「✿」 ⏱️ *Esperas de ${mentionTag(jid)}*\n\n*Recompensas*\n${periodic.join('\n')}\n\n*Trabajos*\n${jobs.join('\n')}\n\n*Otros*\n${extras.join('\n')}`;
+            const text = `「✿」 TIEMPOS DE ESPERA // Cooldowns de ${mentionTag(jid)} ⏱️✨\n\n` +
+                         `₊˚ˑ༄ Consulta el estado actual de tus tiempos de recarga:\n\n` +
+                         `*Recompensas*\n${periodic.join('\n')}\n\n` +
+                         `*Trabajos*\n${jobs.join('\n')}\n\n` +
+                         `*Otros*\n${extras.join('\n')}\n\n` +
+                         `───────────────────\n` +
+                         `❀ _¡Paciencia en la red, ya casi podrás volver a operar!_ 🌸`;
+
             return reply(sock, m, text, [jid]);
+
         } catch (error) {
             console.error('Error en !esperas:', error.message);
-            return reply(sock, m, '「✿」 No pude consultar las esperas; inténtalo de nuevo en un momento.');
+            return reply(sock, m, '「✿」 ERROR DE RED // No pude consultar las esperas; inténtalo de nuevo en un momento. 🥀');
         }
     }
 };
