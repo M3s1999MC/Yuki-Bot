@@ -85,7 +85,7 @@ async function downloadWithYtDlp(url, options = {}) {
     const baseArgs = [
         '--no-playlist',
         '--no-warnings',
-        '--extractor-args', 'youtube:player_client=android,web'
+        '--extractor-args', 'youtube:player_client=mweb,android'
     ];
 
     if (type === 'audio') {
