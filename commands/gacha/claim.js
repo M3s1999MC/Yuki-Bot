@@ -6,7 +6,7 @@ module.exports = {
     name: 'claim',
     aliases: ['c', 'reclamar'],
     category: 'gacha',
-    description: 'Reclama el personaje que apareció en el chat.',
+    description: 'Reclama el personaje activo en el chat.',
 
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
@@ -15,10 +15,10 @@ module.exports = {
         const spawned = activeSpawns.get(jid);
 
         if (!context?.quotedMessage) {
-            return sock.sendMessage(jid, { text: '[!] Responde directamente al mensaje del personaje con !claim para reclamarlo.' }, { quoted: m });
+            return sock.sendMessage(jid, { text: `₊˚ˑ༄ [✿] Responde directamente a la tarjeta del personaje con \`!claim\` 🥀` }, { quoted: m });
         }
         if (!spawned) {
-            return sock.sendMessage(jid, { text: '[!] No hay ningún personaje activo en este chat. Usa !roll para invocar uno.' }, { quoted: m });
+            return sock.sendMessage(jid, { text: `₊˚ˑ༄ [✿] Este personaje ya expiró o no hay ninguno activo. Usa \`!roll\` 🪞` }, { quoted: m });
         }
 
         activeSpawns.delete(jid);
@@ -26,7 +26,7 @@ module.exports = {
             if (userErr) {
                 activeSpawns.set(jid, spawned);
                 console.error('Error al registrar usuario para reclamar personaje:', userErr.message);
-                return sock.sendMessage(jid, { text: '[SYSTEM] Error al preparar tu cuenta para el reclamo.' }, { quoted: m });
+                return sock.sendMessage(jid, { text: `₊˚ˑ༄ [!] Error al procesar tu cuenta en la base de datos.` }, { quoted: m });
             }
 
             db.run(
@@ -38,21 +38,21 @@ module.exports = {
                     if (err) {
                         if (!activeSpawns.has(jid)) activeSpawns.set(jid, spawned);
                         console.error('Error al guardar personaje reclamado:', err.message);
-                        return sock.sendMessage(jid, { text: '[SYSTEM] No se pudo guardar el personaje en la base de datos.' }, { quoted: m });
+                        return sock.sendMessage(jid, { text: `₊˚ˑ༄ [!] No se pudo guardar el personaje en el harem.` }, { quoted: m });
                     }
                     if (!this.changes) {
                         if (!activeSpawns.has(jid)) activeSpawns.set(jid, spawned);
                         return sock.sendMessage(jid, {
-                            text: `[!] Ya posees a [${spawned.name}] de (${spawned.serie}) en tu harem.`
+                            text: `₊˚ˑ༄ 𝖄𝖚𝖐𝖎 ꔛ ¡Ya tienes a *${spawned.name}* en tu colección personal! 🪞`
                         }, { quoted: m });
                     }
                     
-                    const template = user.claim_message || '[✦] @user ha reclamado a *{character}* de _{series}_';
+                    const template = user.claim_message || `₊˚ˑ༄ 𝖄𝖚𝖐𝖎 ꔛ @user ha vinculado a *{character}* [_{series}_] a su red ✿`;
                     const text = template
                         .replace(/@user/g, `@${sender.split('@')[0]}`)
                         .replace(/\{character\}/g, spawned.name)
                         .replace(/\{series\}/g, spawned.serie) +
-                        (spawned.role ? `\n▸ Rol: ${spawned.role}` : '');
+                        (spawned.role ? `\n𐐪𐑂 Rol: ${spawned.role}` : '');
                     
                     sock.sendMessage(jid, {
                         text,
