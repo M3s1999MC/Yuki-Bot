@@ -3,18 +3,18 @@ const activeSpawns = require('../../utils/gachaSpawns');
 
 function getRareza() {
     const num = Math.floor(Math.random() * 1000) + 1;
-    if (num <= 600) return { nombre: 'Común', simbolo: '[-] ' };
-    if (num <= 850) return { nombre: 'Rara', simbolo: '[◆] ' };
-    if (num <= 970) return { nombre: 'Épica', simbolo: '[◈] ' };
-    if (num <= 995) return { nombre: 'Legendaria', simbolo: '[✦] ' };
-    return { nombre: 'Mítica', simbolo: '[★] ' };
+    if (num <= 600) return { nombre: 'Común', simbolo: '✧ ─── ⋆' };
+    if (num <= 850) return { nombre: 'Rara', simbolo: '✦ ─── ⋆' };
+    if (num <= 970) return { nombre: 'Épica', simbolo: '❀ ─── ⋆' };
+    if (num <= 995) return { nombre: 'Legendaria', simbolo: '✿ ─── ⋆' };
+    return { nombre: 'Mítica', simbolo: '☾ ─── ⋆' };
 }
 
 module.exports = {
     name: 'roll',
     aliases: ['rw', 'rollwaifu', 'waifu', 'waifus', 'rollwaifus'],
     category: 'gacha',
-    description: 'Tira un personaje de anime oficial al instante.',
+    description: 'Invocación de registros a través de la red.',
 
     async execute(sock, m, args) {
         if (m.isProcessed) return;
@@ -77,7 +77,7 @@ module.exports = {
                     const data = resNekos.data.results[0];
                     post = {
                         nombre: 'Waifu Sorpresa',
-                        serie: 'Arte Anime',
+                        serie: 'Digital Core',
                         imagen: data.url
                     };
                 } catch (err) {
@@ -87,7 +87,7 @@ module.exports = {
 
             if (!post) {
                 post = {
-                    nombre: 'Yuki Special Edition',
+                    nombre: 'Yuki Protocol',
                     serie: 'INKRA STUDIOS',
                     imagen: 'https://i.pinimg.com/736x/dd/6c/8c/dd6c8cf3d2574a79a9f1261c541866e9.jpg'
                 };
@@ -102,11 +102,11 @@ module.exports = {
 
             await sock.sendMessage(jid, {
                 image: imageBuffer,
-                caption: `『 YUKI // GACHA SYSTEM 』\n\n` +
-                         `▸ PERSONAJE: ${nombre}\n` +
-                         `▸ SERIE: ${serie}\n` +
-                         `▸ RAREZA: ${rareza.simbolo}${rareza.nombre}\n\n` +
-                         `> Responde a este mensaje con !claim para registrar en tu harem.`
+                caption: `₊˚ˑ༄ 𝖄𝖚𝖐𝖎'𝖘 𝕲𝖆𝖈𝖍𝖆 𓍢ִ໋☕\n\n` +
+                         `❀ ❟ *Personaje:* ${nombre}\n` +
+                         `❀ ❟ *Serie:* _${serie}_\n` +
+                         `❀ ❟ *Rareza:* ${rareza.simbolo} *${rareza.nombre}*\n\n` +
+                         `° 𐐪𐑂 Responde a este mensaje con \`!claim\` para atraparlo 𐂂𐐪`
             }, { quoted: m });
 
             activeSpawns.set(jid, {
@@ -118,7 +118,7 @@ module.exports = {
 
         } catch (error) {
             console.error('Error crítico en roll.js:', error.message);
-            await sock.sendMessage(jid, { text: `[SYSTEM] Error al procesar la invocación. Inténtalo de nuevo.` }, { quoted: m });
+            await sock.sendMessage(jid, { text: `₊˚ˑ༄ [!] Error en la invocación de red 🥀` }, { quoted: m });
         }
     }
 };
