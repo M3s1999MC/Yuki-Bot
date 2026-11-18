@@ -1,5 +1,5 @@
 // utils/businesses.js
-// Sistema de negocios: se compran una vez, generan ganancias por hora (acumulan hasta 24 h)
+// Sistema de negocios expandido: se compran una vez, generan ganancias por hora (acumulan hasta 24 h)
 // y requieren pagar mantenimiento semanal; sin mantenimiento dejan de producir.
 const economy = require('./economy');
 const { ensureTables } = require('./extraTables');
@@ -7,16 +7,29 @@ const { ensureTables } = require('./extraTables');
 const HOUR = 3600000;
 const WEEK = 7 * 24 * HOUR;
 const MAX_STORED = 24 * HOUR;       // lo máximo que acumula un negocio sin cobrar
-const MAX_PREPAID = 21 * 24 * HOUR; // no se puede adelantar más de 4 semanas en total
+const MAX_PREPAID = 21 * 24 * HOUR; // no se puede adelantar más de 3 semanas de mantenimiento en total
 
-const BUSINESSES = [
-    { id: 'arepas', num: 1, emoji: '🫓', name: 'Puesto de arepas', price: 5000, perHour: 150 },
-    { id: 'tienda', num: 2, emoji: '🏪', name: 'Tienda de barrio', price: 20000, perHour: 650 },
-    { id: 'cafe', num: 3, emoji: '☕', name: 'Cafetería', price: 60000, perHour: 2000 },
-    { id: 'gimnasio', num: 4, emoji: '🏋️', name: 'Gimnasio', price: 150000, perHour: 5200 },
-    { id: 'restaurante', num: 5, emoji: '🍽️', name: 'Restaurante', price: 400000, perHour: 14000 },
-    { id: 'hotel', num: 6, emoji: '🏨', name: 'Hotel', price: 1500000, perHour: 55000 }
-].map(item => ({ ...item, upkeep: Math.round(item.price * 0.1) }));
+const RAW_BUSINESSES = [
+    { id: 'arepas', emoji: '🫓', name: 'Puesto de arepas', price: 5000, perHour: 150 },
+    { id: 'tienda', emoji: '🏪', name: 'Tienda de barrio', price: 20000, perHour: 650 },
+    { id: 'cafe', emoji: '☕', name: 'Cafetería', price: 60000, perHour: 2000 },
+    { id: 'arcade', emoji: '🕹️', name: 'Salón de Arcade', price: 100000, perHour: 3400 },
+    { id: 'gimnasio', emoji: '🏋️', name: 'Gimnasio', price: 150000, perHour: 5200 },
+    { id: 'libreria', emoji: '📚', name: 'Librería digital y Manga Store', price: 250000, perHour: 8800 },
+    { id: 'restaurante', emoji: '🍽️', name: 'Restaurante gourmet', price: 400000, perHour: 14000 },
+    { id: 'estudio', emoji: '🎙️', name: 'Estudio de Animación Inkra', price: 750000, perHour: 27000 },
+    { id: 'hotel', emoji: '🏨', name: 'Hotel Ciberespacio', price: 1500000, perHour: 55000 },
+    { id: 'servidores', emoji: '💻', name: 'Granja de Servidores Node.js', price: 3000000, perHour: 115000 },
+    { id: 'corporacion', emoji: '🏢', name: 'Torre Corporativa StarLight', price: 7500000, perHour: 300000 },
+    { id: 'estacion', emoji: '🚀', name: 'Estación Espacial Orbital', price: 20000000, perHour: 850000 }
+];
+
+// Asignar numeración automática ordenada y mantenimiento (10% del precio de compra)
+const BUSINESSES = RAW_BUSINESSES.map((item, index) => ({
+    ...item,
+    num: index + 1,
+    upkeep: Math.round(item.price * 0.1)
+}));
 
 function findBusiness(query) {
     const text = String(query || '').trim().toLowerCase();
@@ -79,7 +92,7 @@ async function collectAll(jid, now = Date.now()) {
     return { total, details, owned: owned.length };
 }
 
-/** Paga una semana de mantenimiento. Si estaba vencido, primero se abonan las ganancias pendientes. */
+/** Paga una semana de mantenimiento. Si estava vencido, primero se abonan las ganancias pendientes. */
 async function payUpkeep(jid, business, now = Date.now()) {
     const owned = (await listOwned(jid)).find(item => item.business.id === business.id);
     if (!owned) return { ok: false, reason: 'not-owned' };
