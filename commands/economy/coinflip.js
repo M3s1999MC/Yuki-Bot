@@ -20,7 +20,7 @@ module.exports = {
     name: 'coinflip',
     aliases: ['flip', 'cf'],
     category: 'economy',
-    description: 'Apuesta monedas a cara o cruz: !coinflip <cantidad|all> <cara|cruz>',
+    description: 'Apuesta tus Bolívares a cara o cruz: !coinflip <cantidad|all> <cara|cruz>',
     parseBet,
 
     async execute(sock, m, args, usedPrefix = '!') {
@@ -28,27 +28,66 @@ module.exports = {
         try {
             const wallet = await economy.getWallet(jid);
             const { side, amount } = parseBet(args || [], wallet);
+
             if (!side || !amount || amount <= 0) {
-                return reply(sock, m, `「✿」 Uso: *${usedPrefix}coinflip <cantidad|all> <cara|cruz>*. Ejemplo: ${usedPrefix}coinflip 500 cara`);
+                return reply(sock, m, 
+                    `(「✿ / COINFLIP」 🪙)\n\n` +
+                    `₊˚ˑ༄ Uso incorrecto del comando de apuestas.\n` +
+                    `❀ *Formato:* \`${usedPrefix}coinflip <cantidad|all> <cara|cruz>\`\n` +
+                    `❀ *Ejemplo:* \`${usedPrefix}coinflip 500 cara\` 🌸`
+                );
             }
-            if (amount > wallet) return reply(sock, m, `「✿」 No tienes tanto en la billetera (${economy.money(wallet)}).`);
+
+            if (amount > wallet) {
+                const walletFormateada = typeof wallet === 'number' ? wallet.toLocaleString('es-CO') : wallet;
+                return reply(sock, m, 
+                    `(「✿」 "FONDOS INSUFICIENTES" 🥀)\n\n` +
+                    `₊˚ˑ༄ No tienes tantos Bolívares en la billetera.\n` +
+                    `❀ *Tu saldo actual:* \`$${walletFormateada} Bolívares\` 📉`
+                );
+            }
 
             const cooldown = await claim(jid, 'coinflip', 8000);
-            if (!cooldown.ok) return reply(sock, m, `「✿」 ⏳ Espera *${formatDuration(cooldown.remainingMs)}* para otra moneda.`);
+            if (!cooldown.ok) {
+                return reply(sock, m, 
+                    `(「✿」 "ESPERA UN MOMENTO" ⏳)\n\n` +
+                    `₊˚ˑ༄ Estás lanzando monedas muy rápido.\n` +
+                    `❀ Podrás volver a apostar en: *${formatDuration(cooldown.remainingMs)}* ☕`
+                );
+            }
+
             if (!(await economy.debit(jid, amount))) {
                 await release(jid, 'coinflip').catch(() => {});
-                return reply(sock, m, '「✿」 Tu saldo cambió; inténtalo de nuevo.');
+                return reply(sock, m, '(「✿」 "ERROR DE RED" 🥀)\n\nTu saldo cambió de último momento; inténtalo de nuevo.');
             }
 
             const result = Math.random() < 0.5 ? 'cara' : 'cruz';
+            const cantidadFormateada = amount.toLocaleString('es-CO');
+
             if (result === side) {
                 await economy.credit(jid, amount * 2);
-                return reply(sock, m, `「✿」 🪙 Salió *${result}*. ¡Ganaste *+${economy.money(amount)}*! 🌸`);
+                const gananciaTotal = (amount * 2).toLocaleString('es-CO');
+                
+                return reply(sock, m, 
+                    `(「✿」 "¡VICTORIA EN COINFLIP!" 🌸)\n\n` +
+                    `₊˚ˑ༄ La moneda giró y cayó en: *${result.toUpperCase()}* 🪙✨\n` +
+                    `❀ *Ganancia obtenida:* \`+$${gananciaTotal} Bolívares\` 💵\n` +
+                    `───────────────────\n` +
+                    `❀ ¡Excelente tirada!`
+                );
             }
-            return reply(sock, m, `「✿」 🪙 Salió *${result}*. Perdiste *${economy.money(amount)}*.`);
+
+            return reply(sock, m, 
+                `(「✿」 "DERROTA EN COINFLIP" 💀📉)\n\n` +
+                `₊˚ˑ༄ La moneda giró y cayó en: *${result.toUpperCase()}* 🪙\n` +
+                `❀ *Perdiste en la apuesta:* \`-$${cantidadFormateada} Bolívares\` 🥀\n` +
+                `───────────────────\n` +
+                `❀ ¡La casa se queda con todo, tonto!`
+            );
+
         } catch (error) {
             console.error('Error en !coinflip:', error.message);
-            return reply(sock, m, '「✿」 No pude lanzar la moneda; inténtalo de nuevo en un momento.');
+            return reply(sock, m, '(「✿」 "ERROR CRÍTICO" 🥀)\n\nNo pude lanzar la moneda; inténtalo de nuevo en un momento.');
         }
     }
 };
