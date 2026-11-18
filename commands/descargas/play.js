@@ -6,9 +6,10 @@ const lastPlay = global.yukiLastPlay;
 
 module.exports = {
     name: 'play',
+    aliases: ['yta', 'ytmp3', 'playdoc', 'play2', 'ytv', 'ytmp4', 'play2doc', 'playaudio', 'mp4'],
     category: 'downloader',
     description: 'Busca en YouTube, muestra la portada y pregunta con botones si quieres audio o video.',
-
+    // ... resto de tu código igual
     // Acepta cualquier forma de llamada del handler: (sock,m,args) / (sock,m,args,ctx) / (ctx) / (sock,m,body)
     async execute(...params) {
         // --- Normalizar parámetros, sin importar cómo lo llame tu handler ---
