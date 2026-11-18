@@ -206,9 +206,14 @@ module.exports = {
             await sock.relayMessage(jid, msg.message, { messageId: msg.key.id });
 
         } catch (e) {
-            console.error('Error fatal en !play:', e);
-            try { await enviar({ text: '「✿」 Algo falló al procesar la solicitud, intenta de nuevo.' }); } catch {}
-        }
+                    console.error('Error fatal en !play:', e);
+                    const errorReal = e?.stderr?.toString().trim() || e?.message || 'Error desconocido';
+                    try { 
+                        await enviar({ 
+                            text: `「✿」 *ERROR DE DESCARGA*\n\n\`\`\`${errorReal.slice(-300)}\`\`\`` 
+                        }); 
+                    } catch {}
+                }
     },
 
     async run(...params) {
