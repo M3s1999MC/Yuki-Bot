@@ -20,7 +20,9 @@ module.exports = {
         }
 
         await sock.sendMessage(jid, {
-            text: `「✿」 Buscando en YouTube...`
+            text: `「✿」 BUSCANDO EN YOUTUBE 🌸\n\n` +
+                  `₊˚ˑ༄ Consulta: *${query}*\n` +
+                  `❀ _Consultando resultados..._`
         }, { quoted: m });
 
         try {
@@ -38,37 +40,47 @@ module.exports = {
             }
 
             const video = videos[0];
+            const descLimpia = video.description
+                ? `${video.description.replace(/\s+/g, ' ').trim().slice(0, 140)}...`
+                : 'Sin descripción disponible.';
 
-            // Formato limpio con portada, título, descripción y autor
-            const caption = 
+            const caption =
                 `「✿」 RESULTADO DE YOUTUBE 🌸\n\n` +
-                `🎵 *Título:* ${video.title}\n` +
-                `👤 *Canal:* ${video.author?.name || 'Desconocido'}\n` +
-                `⏱️ *Duración:* ${video.timestamp || 'N/A'} | 👀 *Vistas:* ${video.views?.toLocaleString() || 'N/A'}\n` +
-                `📝 *Descripción:* ${video.description ? video.description.slice(0, 150) + '...' : 'Sin descripción'}\n` +
-                `🔗 *Enlace:* ${video.url}`;
+                `❀ *Título:*\n` +
+                `│ ${video.title}\n` +
+                `❀ *Canal:*\n` +
+                `│ ${video.author?.name || 'Desconocido'}\n` +
+                `❀ *Duración:*\n` +
+                `│ ${video.timestamp || 'N/A'}\n` +
+                `❀ *Vistas:*\n` +
+                `│ ${Number(video.views || 0).toLocaleString('es-CO')}\n` +
+                `❀ *Descripción:*\n` +
+                `│ ${descLimpia}\n` +
+                `❀ *Enlace:*\n` +
+                `│ ${video.url}\n` +
+                `───────────────────\n` +
+                `₊˚ˑ༄ Selecciona el formato que prefieras`;
 
             try {
                 await sock.sendMessage(jid, {
                     image: { url: video.thumbnail },
-                    caption: caption
+                    caption
                 }, { quoted: m });
             } catch (e) {
                 console.error('Error enviando miniatura en ytsearch:', e.message);
                 await sock.sendMessage(jid, { text: caption }, { quoted: m });
             }
 
-            // Enviar botones interactivos de Audio y Video (igual que !play)
             await sendMediaChoiceButtons(sock, jid, m, {
                 url: video.url,
                 title: video.title
-            }, '¿Qué deseas hacer con este video?');
+            }, '「✿」 Elige el formato de descarga 🌸');
 
         } catch (err) {
             console.error('Error en ytsearch.js:', err.message);
             await sock.sendMessage(jid, {
                 text: `「✿」 ERROR DE BÚSQUEDA 🥀\n\n` +
-                      `₊˚ˑ༄ Ocurrió un error al buscar en YouTube.`
+                      `₊˚ˑ༄ No pude completar la búsqueda en YouTube.`
             }, { quoted: m });
         }
     }
