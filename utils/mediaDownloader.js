@@ -2,6 +2,9 @@ const { execFile } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { generateWAMessageFromContent, proto } = require('@whiskeysockets/baileys');
+
+if (!global.yukiLastPlay) global.yukiLastPlay = new Map();
 
 const tempDir = path.join(os.tmpdir(), 'yuki_downloads');
 if (!fs.existsSync(tempDir)) {
@@ -20,11 +23,6 @@ function runCommand(bin, args, timeoutMs = 120000) {
     });
 }
 
-/**
- * Descarga video o audio usando yt-dlp y convierte a mp3 con ffmpeg si se solicita.
- * @param {string} url
- * @param {{ type?: 'video' | 'audio', prefix?: string }} options
- */
 async function downloadWithYtDlp(url, options = {}) {
     const type = options.type || 'video';
     const prefix = options.prefix || 'media';
@@ -49,7 +47,6 @@ async function downloadWithYtDlp(url, options = {}) {
             return { filePath: mp3Path, ext: 'mp3', cleanup: () => safeUnlink(mp3Path) };
         }
 
-        // Respaldo con ffmpeg si yt-dlp dejó otro formato de audio
         const files = fs.readdirSync(tempDir).filter(f => f.startsWith(id));
         if (!files.length) throw new Error('No se generó ningún archivo de audio.');
 
@@ -101,8 +98,46 @@ function safeUnlink(filePath) {
     } catch (_) {}
 }
 
+async function sendMediaChoiceButtons(sock, jid, m, itemData, bodyText = '¿Cómo lo quieres?') {
+    global.yukiLastPlay.set(jid, itemData);
+
+    const msg = generateWAMessageFromContent(jid, {
+        viewOnceMessage: {
+            message: {
+                messageContextInfo: {
+                    deviceListMetadata: {},
+                    deviceListMetadataVersion: 2
+                },
+                interactiveMessage: proto.Message.InteractiveMessage.create({
+                    body: proto.Message.InteractiveMessage.Body.create({
+                        text: bodyText
+                    }),
+                    footer: proto.Message.InteractiveMessage.Footer.create({
+                        text: 'Yuki Bot 🌸'
+                    }),
+                    nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.create({
+                        buttons: [
+                            {
+                                name: 'quick_reply',
+                                buttonParamsJson: JSON.stringify({ display_text: '🎧 Audio', id: '!audio' })
+                            },
+                            {
+                                name: 'quick_reply',
+                                buttonParamsJson: JSON.stringify({ display_text: '📹 Video', id: '!video' })
+                            }
+                        ]
+                    })
+                })
+            }
+        }
+    }, { quoted: m });
+
+    await sock.relayMessage(jid, msg.message, { messageId: msg.key.id });
+}
+
 module.exports = {
     downloadWithYtDlp,
     runCommand,
-    tempDir
+    tempDir,
+    sendMediaChoiceButtons
 };
