@@ -13,14 +13,14 @@ module.exports = {
 
         try {
             const partner = M.partnerOf(await M.getUser(me));
-            if (!partner) return send('「✿」 No estás casado con nadie.');
+            if (!partner) return send('₊˚ˑ༄ [✿] No estás casado con nadie en este momento. 🪞');
 
             await M.setMarried(me, M.SINGLE);
             await M.setMarried(partner, M.SINGLE);
-            send(`「✿」 💔 ${M.tag(me)} se divorció de ${M.tag(partner)}`, [me, partner]);
+            send(`₊˚ˑ༄ 𝖄𝖚𝖐𝖎 ꔛ Vínculo disuelto: *${M.tag(me)}* y *${M.tag(partner)}* han terminado su matrimonio. 🥀`, [me, partner]);
         } catch (e) {
             console.error('Error en divorciar:', e.message);
-            send('「✿」 No pude procesar el divorcio.');
+            send('₊˚ˑ༄ [!] Error crítico al procesar la ruptura en la base de datos.');
         }
     }
 };
