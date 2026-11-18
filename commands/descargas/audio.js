@@ -1,54 +1,46 @@
-const ytdlp = require('yt-dlp-exec');
-
-if (!global.yukiLastPlay) global.yukiLastPlay = new Map();
-const lastPlay = global.yukiLastPlay;
+const { downloadWithYtDlp } = require('../../utils/mediaDownloader');
 
 module.exports = {
     name: 'audio',
-    category: 'downloader',
-    description: 'Descarga en audio la última canción buscada con !play.',
-    async execute(sock, m, args) {
-        const jid = m.key.remoteJid;
-        const data = lastPlay.get(jid);
+    aliases: ['ytaudio', 'mp3'],
+    category: 'downloads',
+    description: 'Descarga el audio MP3 del último enlace o búsqueda enviada.',
 
-        if (!data || !data.video) {
-            return await sock.sendMessage(jid, { text: '「✿」 Primero busca algo con `!play`, por ejemplo: `!play Feid Luna`' }, { quoted: m });
+    async execute(sock, m) {
+        const jid = m.key.remoteJid;
+        const saved = global.yukiLastPlay?.get(jid);
+        const url = saved?.url || saved?.video?.url;
+        const title = saved?.title || saved?.video?.title || 'Audio descargado';
+
+        if (!url) {
+            return sock.sendMessage(jid, {
+                text: `「✿」 SIN ENLACE GUARDADO 🥀\n\n` +
+                      `₊˚ˑ༄ Primero usa \`!play\`, \`!tiktok\`, \`!ig\`, \`!fb\` o \`!x\`.`
+            }, { quoted: m });
         }
 
-        const video = data.video;
-        await sock.sendMessage(jid, { text: `「✿」 Descargando audio de *${video.title}*...` }, { quoted: m });
+        await sock.sendMessage(jid, {
+            text: `「✿」 EXTRAYENDO AUDIO MP3 🎧🌸\n\n` +
+                  `₊˚ˑ༄ *${title}*\n` +
+                  `❀ _Convirtiendo con yt-dlp y FFmpeg..._`
+        }, { quoted: m });
 
+        let media;
         try {
-            // 1. Pedirle a yt-dlp la URL directa del mejor audio
-            const audioUrl = await ytdlp(video.url, {
-                getUrl: true,
-                format: 'bestaudio[ext=m4a]/bestaudio/best',
-                noPlaylist: true,
-                noWarnings: true,
-            });
-
-            const cleanUrl = audioUrl.trim().split('\n')[0];
-            console.log('Audio URL:', cleanUrl.slice(0, 100));
-
-            // 2. Descargar ese audio
-            const res = await fetch(cleanUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-            if (!res.ok) throw new Error('Fetch fallo: ' + res.status);
-            const arrayBuffer = await res.arrayBuffer();
-            const buffer = Buffer.from(arrayBuffer);
-
-            console.log(`Audio descargado: ${(buffer.length / 1024 / 1024).toFixed(2)} MB`);
-
-            if (buffer.length < 1000) throw new Error('Audio muy pequeño');
-
+            media = await downloadWithYtDlp(url, { type: 'audio', prefix: 'btn_audio' });
             await sock.sendMessage(jid, {
-                audio: buffer,
+                audio: { url: media.filePath },
                 mimetype: 'audio/mpeg',
-                fileName: `${video.title}.mp3`
+                ptt: false
             }, { quoted: m });
-
-        } catch (e) {
-            console.error('Error en !audio:', e.message);
-            await sock.sendMessage(jid, { text: '「✿」 No pude descargar el audio, intenta de nuevo.' }, { quoted: m });
+        } catch (err) {
+            console.error('Error en audio.js:', err.message);
+            await sock.sendMessage(jid, {
+                text: `「✿」 ERROR AL EXTRAER AUDIO 🥀\n\n` +
+                      `₊˚ˑ༄ No pude convertir este enlace a MP3.`
+            }, { quoted: m });
+        } finally {
+            if (media?.cleanup) media.cleanup();
         }
     }
 };
