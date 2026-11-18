@@ -27,13 +27,13 @@ module.exports = {
                 const bank = row ? row.bank : 0;
                 const total = bal + bank;
 
-                const text = `🏦 *ESTADO FINANCIERO*\n\n` +
-                    `👤 Usuario: @${sender.split('@')[0]}\n` +
-                    `💵 Efectivo: *$${fmt(bal)}*\n` +
-                    `💳 Banco: *$${fmt(bank)}*\n` +
-                    `💎 Total: *$${fmt(total)}*`;
+                const text = `₊˚ˑ༄ 𝖄𝖚𝖐𝖎 // ESTADO FINANCIERO 𓍢ִ໋☕\n\n` +
+                    `❀ 👤 Usuario: @${sender.split('@')[0]}\n` +
+                    `❀ 💵 Efectivo: *\$$ {fmt(bal)} Bolívares*\n` +
+                    `❀ 💳 Banco: *\$$ {fmt(bank)} Bolívares*\n` +
+                    `❀ 💎 Total: *\$$ {fmt(total)} Bolívares* 📉`;
 
-                await sock.sendMessage(jid, { text, mentions: [sender] }, { quoted: m });
+                await sock.sendMessage(jid, { text: text.replace(/\$ /g, '$'), mentions: [sender] }, { quoted: m });
             });
             return;
         }
@@ -43,7 +43,7 @@ module.exports = {
             const amountArg = args[0];
             db.get(`SELECT balance FROM users WHERE jid = ?`, [sender], async (err, row) => {
                 if (!row || row.balance <= 0) {
-                    return await sock.sendMessage(jid, { text: '❌ No tienes efectivo para depositar.' }, { quoted: m });
+                    return await sock.sendMessage(jid, { text: '₊˚ˑ༄ [!] No tienes efectivo para depositar en el banco. 🥀' }, { quoted: m });
                 }
 
                 let amount = amountArg?.toLowerCase() === 'all' || amountArg?.toLowerCase() === 'todo' 
@@ -51,23 +51,23 @@ module.exports = {
                     : parseFloat(amountArg);
 
                 if (isNaN(amount) || amount <= 0) {
-                    return await sock.sendMessage(jid, { text: '⚠️ Indica una cantidad válida o usa `.dep all`.' }, { quoted: m });
+                    return await sock.sendMessage(jid, { text: '₊˚ˑ༄ [✿] Indica una cantidad válida o usa `.dep all`. 🏦' }, { quoted: m });
                 }
 
                 if (amount > row.balance) {
-                    return await sock.sendMessage(jid, { text: `❌ No tienes tanto efectivo. Tu saldo actual es $${fmt(row.balance)}.` }, { quoted: m });
+                    return await sock.sendMessage(jid, { text: `₊˚ˑ༄ [!] No tienes tanto efectivo. Tu saldo actual es $${fmt(row.balance)} Bolívares. 📉` }, { quoted: m });
                 }
 
-                // TRANSACCIÓN SEGURA (Regla 4)
+                // TRANSACCIÓN SEGURA
                 db.serialize(() => {
                     db.run('BEGIN TRANSACTION');
                     db.run(`UPDATE users SET balance = balance - ?, bank = bank + ? WHERE jid = ?`, [amount, amount, sender], (err) => {
                         if (err) {
                             db.run('ROLLBACK');
-                            return sock.sendMessage(jid, { text: '❌ Error en la transacción bancaria.' }, { quoted: m });
+                            return sock.sendMessage(jid, { text: '₊˚ˑ༄ [!] Error crítico en la transacción bancaria. 🥀' }, { quoted: m });
                         }
                         db.run('COMMIT', async () => {
-                            await sock.sendMessage(jid, { text: `✅ Has depositado *$${fmt(amount)}* en tu cuenta bancaria.` }, { quoted: m });
+                            await sock.sendMessage(jid, { text: `₊˚ˑ༄ 𝖄𝖚𝖐𝖎 ꔛ ¡Depósito exitoso!\n❀ Has guardado *$${fmt(amount)} Bolívares* en tu cuenta bancaria. 💳✨` }, { quoted: m });
                         });
                     });
                 });
@@ -80,7 +80,7 @@ module.exports = {
             const amountArg = args[0];
             db.get(`SELECT bank FROM users WHERE jid = ?`, [sender], async (err, row) => {
                 if (!row || row.bank <= 0) {
-                    return await sock.sendMessage(jid, { text: '❌ No tienes dinero en el banco.' }, { quoted: m });
+                    return await sock.sendMessage(jid, { text: '₊˚ˑ༄ [!] No tienes dinero guardado en el banco. 🥀' }, { quoted: m });
                 }
 
                 let amount = amountArg?.toLowerCase() === 'all' || amountArg?.toLowerCase() === 'todo' 
@@ -88,23 +88,23 @@ module.exports = {
                     : parseFloat(amountArg);
 
                 if (isNaN(amount) || amount <= 0) {
-                    return await sock.sendMessage(jid, { text: '⚠️ Indica una cantidad válida o usa `.wd all`.' }, { quoted: m });
+                    return await sock.sendMessage(jid, { text: '₊˚ˑ༄ [✿] Indica una cantidad válida o usa `.wd all`. 🏦' }, { quoted: m });
                 }
 
                 if (amount > row.bank) {
-                    return await sock.sendMessage(jid, { text: `❌ No tienes tanto en el banco. Tu saldo es $${fmt(row.bank)}.` }, { quoted: m });
+                    return await sock.sendMessage(jid, { text: `₊˚ˑ༄ [!] No tienes tanto en el banco. Tu saldo bancario es $${fmt(row.bank)} Bolívares. 📉` }, { quoted: m });
                 }
 
-                // TRANSACCIÓN SEGURA (Regla 4)
+                // TRANSACCIÓN SEGURA
                 db.serialize(() => {
                     db.run('BEGIN TRANSACTION');
                     db.run(`UPDATE users SET bank = bank - ?, balance = balance + ? WHERE jid = ?`, [amount, amount, sender], (err) => {
                         if (err) {
                             db.run('ROLLBACK');
-                            return sock.sendMessage(jid, { text: '❌ Error al retirar fondos.' }, { quoted: m });
+                            return sock.sendMessage(jid, { text: '₊˚ˑ༄ [!] Error al retirar fondos del banco. 🥀' }, { quoted: m });
                         }
                         db.run('COMMIT', async () => {
-                            await sock.sendMessage(jid, { text: `✅ Has retirado *$${fmt(amount)}* de tu banco.` }, { quoted: m });
+                            await sock.sendMessage(jid, { text: `₊˚ˑ༄ 𝖄𝖚𝖐𝖎 ꔛ ¡Retiro exitoso!\n❀ Has retirado *$${fmt(amount)} Bolívares* a tu efectivo. 💵✨` }, { quoted: m });
                         });
                     });
                 });
@@ -125,7 +125,7 @@ module.exports = {
                     db.run('COMMIT', async () => {
                         const works = ['programando un bot en Godot y Node.js', 'reparando servidores', 'diseñando animaciones 3D', 'vendiendo arepas artesanales'];
                         const job = works[Math.floor(Math.random() * works.length)];
-                        await sock.sendMessage(jid, { text: `💼 Trabajaste duro ${job} y ganaste *$${fmt(earnings)}*.` }, { quoted: m });
+                        await sock.sendMessage(jid, { text: `₊˚ˑ༄ 𝖄𝖚𝖐𝖎 ꔛ ¡Jornada laboral terminada! 💼\n❀ Trabajaste duro ${job} y ganaste *\$$ {fmt(earnings)} Bolívares*. ✨`.replace(/\$ /g, '$') }, { quoted: m });
                     });
                 });
             });
@@ -139,19 +139,19 @@ module.exports = {
             const amount = parseFloat(args[1] || args[0]);
 
             if (!mentioned || isNaN(amount) || amount <= 0) {
-                return await sock.sendMessage(jid, { text: '⚠️ Uso correcto: `.pay @usuario cantidad`' }, { quoted: m });
+                return await sock.sendMessage(jid, { text: '₊˚ˑ༄ [✿] Uso correcto: `.pay @usuario cantidad` 💸' }, { quoted: m });
             }
 
             if (mentioned === sender) {
-                return await sock.sendMessage(jid, { text: '❌ No puedes transferirte dinero a ti mismo.' }, { quoted: m });
+                return await sock.sendMessage(jid, { text: '₊˚ˑ༄ [!] ¿Intentando transferirte dinero a ti mismo? Qué trampa ni más absurda. 🥀' }, { quoted: m });
             }
 
             db.get(`SELECT balance FROM users WHERE jid = ?`, [sender], async (err, row) => {
                 if (!row || row.balance < amount) {
-                    return await sock.sendMessage(jid, { text: `❌ No tienes suficiente efectivo. Tu saldo es $${fmt(row?.balance || 0)}.` }, { quoted: m });
+                    return await sock.sendMessage(jid, { text: `₊˚ˑ༄ [!] No tienes suficiente efectivo. Tu saldo es $${fmt(row?.balance || 0)} Bolívares. 📉` }, { quoted: m });
                 }
 
-                // TRANSACCIÓN ATÓMICA SEGURA ENTRE DOS CUENTAS (Regla 4)
+                // TRANSACCIÓN ATÓMICA SEGURA ENTRE DOS CUENTAS
                 db.serialize(() => {
                     db.run('BEGIN TRANSACTION');
                     db.run(`INSERT OR IGNORE INTO users (jid, balance, bank) VALUES (?, 0, 0)`, [mentioned]);
@@ -159,18 +159,18 @@ module.exports = {
                     db.run(`UPDATE users SET balance = balance - ? WHERE jid = ?`, [amount, sender], (err1) => {
                         if (err1) {
                             db.run('ROLLBACK');
-                            return sock.sendMessage(jid, { text: '❌ Error en la transferencia.' }, { quoted: m });
+                            return sock.sendMessage(jid, { text: '₊˚ˑ༄ [!] Error en la transferencia. 🥀' }, { quoted: m });
                         }
 
                         db.run(`UPDATE users SET balance = balance + ? WHERE jid = ?`, [amount, mentioned], (err2) => {
                             if (err2) {
                                 db.run('ROLLBACK');
-                                return sock.sendMessage(jid, { text: '❌ Error al abonar al destinatario.' }, { quoted: m });
+                                return sock.sendMessage(jid, { text: '₊˚ˑ༄ [!] Error al abonar al destinatario. 🥀' }, { quoted: m });
                             }
 
                             db.run('COMMIT', async () => {
                                 await sock.sendMessage(jid, { 
-                                    text: `💸 Transacción exitosa.\nHas transferido *$${fmt(amount)}* a @${mentioned.split('@')[0]}.`, 
+                                    text: `₊˚ˑ༄ 𝖄𝖚𝖐𝖎 ꔛ ¡Transacción exitosa! 💸✨\n❀ Has transferido *\$$ {fmt(amount)} Bolívares* a @${mentioned.split('@')[0]}.`.replace(/\$ /g, '$'), 
                                     mentions: [mentioned] 
                                 }, { quoted: m });
                             });
@@ -185,14 +185,14 @@ module.exports = {
         if (['leaderboard', 'top', 'ranking'].includes(commandUsed)) {
             db.all(`SELECT jid, (balance + bank) as total FROM users ORDER BY total DESC LIMIT 10`, [], async (err, rows) => {
                 if (err || !rows || rows.length === 0) {
-                    return await sock.sendMessage(jid, { text: '📊 No hay datos de riqueza registrados.' }, { quoted: m });
+                    return await sock.sendMessage(jid, { text: '₊˚ˑ༄ [✿] No hay datos de riqueza registrados todavía. 📊' }, { quoted: m });
                 }
-                let topText = `🏆 *TOP 10 - MILLONARIOS DE CUARTEL* 🏆\n\n`;
+                let topText = `₊˚ˑ༄ 𝖄𝖚𝖐𝖎 // TOP 10 MILLONARIOS 🏆\n\n`;
                 rows.forEach((r, idx) => {
-                    topText += `${idx + 1}. @${r.jid.split('@')[0]} — *$${fmt(r.total)}*\n`;
+                    topText += `❀ ${idx + 1}. @${r.jid.split('@')[0]} — *\$$ {fmt(r.total)} Bolívares*\n`;
                 });
                 const mentions = rows.map(r => r.jid);
-                await sock.sendMessage(jid, { text: topText, mentions }, { quoted: m });
+                await sock.sendMessage(jid, { text: topText.replace(/\$ /g, '$'), mentions }, { quoted: m });
             });
         }
     }
