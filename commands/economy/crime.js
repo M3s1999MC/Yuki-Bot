@@ -3,7 +3,7 @@ const { getMessageSenderJid } = require('../../utils/messageSender');
 
 module.exports = {
     name: 'crime',
-    aliases: ['crimen'],
+    aliases: ['crimen','crime'],
     category: 'economy',
     description: 'Comete un crimen en la red para ganar Bolívares (con riesgo de multa).',
 
