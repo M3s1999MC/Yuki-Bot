@@ -15,7 +15,7 @@ module.exports = {
 
         if (!p) {
             if (await tryRespondToDuel(sock, m, 'aceptar')) return;
-            return send('「✿」 No tienes propuestas pendientes. Si es un duelo, responde al mensaje del reto con !aceptar.');
+            return send('₊˚ˑ༄ [✿] No tienes ninguna propuesta pendiente. Si es un duelo, responde directamente al mensaje del reto con \`!aceptar\` 🥀');
         }
         clearTimeout(p.timer);
         delete M.proposals[me];
@@ -23,14 +23,14 @@ module.exports = {
         try {
             const [u1, u2] = await Promise.all([M.getUser(me), M.getUser(p.from)]);
             if (M.partnerOf(u1) || M.partnerOf(u2))
-                return send('「✿」 Alguno de los dos ya se casó con otra persona.');
+                return send('₊˚ˑ༄ [✿] Vínculo denegado: Uno de los involucrados ya se encuentra enlazado con otra persona 🪞');
 
             await M.setMarried(me, p.from);
             await M.setMarried(p.from, me);
-            send(`「✿」 🎉 ¡${M.tag(p.from)} y ${M.tag(me)} ahora están casados! 💒`, [me, p.from]);
+            send(`₊˚ˑ༄ 𝖄𝖚𝖐𝖎 ꔛ ¡${M.tag(p.from)} y ${M.tag(me)} ahora están unidos en matrimonio! 💍✨`, [me, p.from]);
         } catch (e) {
             console.error('Error en aceptar:', e.message);
-            send('「✿」 No pude registrar el matrimonio.');
+            send('₊˚ˑ༄ [!] Error crítico al registrar el enlace en la base de datos.');
         }
     }
 };
