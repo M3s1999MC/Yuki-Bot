@@ -9,7 +9,7 @@ module.exports = {
     name: 'play',
     aliases: ['yta', 'ytmp3', 'playdoc', 'play2', 'ytv', 'ytmp4', 'play2doc', 'playaudio', 'mp4'],
     category: 'downloader',
-    description: 'Busca en YouTube, muestra la portada y descarga audio o video con yt-dlp y FFmpeg.',
+    description: 'Busca en YouTube o descarga por enlace directo usando yt-dlp y FFmpeg.',
 
     async execute(...params) {
         let sock, m, args = [], ctx = {};
@@ -80,35 +80,47 @@ module.exports = {
             const isDirectAudio = directAudioAliases.includes(invokedCmd);
             const isDirectVideo = directVideoAliases.includes(invokedCmd);
 
-            const query = (args || []).join(' ').trim();
-            if (!query) {
-                return await enviar({ text: '「✿」 Dime qué canción o video buscas, por ejemplo: `!play Feid Luna`' });
+            const queryOrUrl = (args || []).join(' ').trim();
+            if (!queryOrUrl) {
+                return await enviar({ text: '「✿」 Dime qué canción buscas o envía un enlace de YouTube.' });
             }
 
-            await enviar({ text: '「✿」 Buscando en YouTube...' });
+            let video = {};
+            const isUrl = /^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\/.+/i.test(queryOrUrl);
 
-            let r;
-            try {
-                r = await Promise.race([
-                    yts(query),
-                    new Promise((_, rej) => setTimeout(() => rej(new Error('timeout yts')), 15000))
-                ]);
-            } catch (e) {
-                console.error('Error yts en !play:', e.message);
-                return await enviar({ text: '「✿」 YouTube no respondió, intenta de nuevo en un momento.' });
+            if (isUrl) {
+                await enviar({ text: '⚡ Procesando enlace de YouTube...' });
+                video = {
+                    title: 'Video de YouTube',
+                    url: queryOrUrl,
+                    thumbnail: 'https://i.imgur.com/3ZQ383y.png'
+                };
+            } else {
+                await enviar({ text: '「✿」 Buscando en YouTube...' });
+                let r;
+                try {
+                    r = await Promise.race([
+                        yts(queryOrUrl),
+                        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout yts')), 15000))
+                    ]);
+                } catch (e) {
+                    console.error('Error yts en !play:', e.message);
+                    return await enviar({ text: '「✿」 YouTube no respondió, intenta de nuevo en un momento.' });
+                }
+
+                if (!r || !r.videos || !r.videos.length) {
+                    return await enviar({ text: '「✿」 No encontré nada con ese nombre.' });
+                }
+
+                video = r.videos[0];
             }
 
-            if (!r || !r.videos || !r.videos.length) {
-                return await enviar({ text: '「✿」 No encontré nada con ese nombre.' });
-            }
-
-            const video = r.videos[0];
             lastPlay.set(jid, { video });
 
             try {
                 await enviar({
                     image: { url: video.thumbnail },
-                    caption: `「✿」 Encontrado 🌸\n\n🎵 *${video.title}*\n👤 ${video.author.name} | ⏱️ ${video.timestamp} | 👀 ${video.views}`
+                    caption: `「✿」 Encontrado 🌸\n\n🎵 *${video.title}*` + (video.author ? `\n👤 ${video.author.name} | ⏱️ ${video.timestamp}` : '')
                 });
             } catch (e) {
                 console.error('Error enviando portada:', e.message);
