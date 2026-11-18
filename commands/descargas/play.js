@@ -1,5 +1,6 @@
 const yts = require('yt-search');
 const { generateWAMessageFromContent, proto } = require('@whiskeysockets/baileys');
+const { downloadWithYtDlp } = require('../../utils/mediaDownloader');
 
 if (!global.yukiLastPlay) global.yukiLastPlay = new Map();
 const lastPlay = global.yukiLastPlay;
@@ -8,22 +9,18 @@ module.exports = {
     name: 'play',
     aliases: ['yta', 'ytmp3', 'playdoc', 'play2', 'ytv', 'ytmp4', 'play2doc', 'playaudio', 'mp4'],
     category: 'downloader',
-    description: 'Busca en YouTube, muestra la portada y pregunta con botones si quieres audio o video.',
-    // ... resto de tu código igual
-    // Acepta cualquier forma de llamada del handler: (sock,m,args) / (sock,m,args,ctx) / (ctx) / (sock,m,body)
+    description: 'Busca en YouTube, muestra la portada y descarga audio o video con yt-dlp y FFmpeg.',
+
     async execute(...params) {
-        // --- Normalizar parámetros, sin importar cómo lo llame tu handler ---
         let sock, m, args = [], ctx = {};
 
         if (params[0] && typeof params[0] === 'object' && params[0].sock && params[0].m) {
-            // Forma: execute(ctx) donde ctx = { sock, m, args, ... }
             ctx = params[0];
             sock = ctx.sock;
             m = ctx.m || ctx.msg;
             args = ctx.args || [];
             if (typeof args === 'string') args = args.split(' ').filter(Boolean);
         } else {
-            // Forma: execute(sock, m, args, ctx) o execute(sock, m, body)
             sock = params[0];
             m = params[1];
             ctx = params[3] || params[2] || {};
@@ -34,18 +31,16 @@ module.exports = {
             } else if (ctx && Array.isArray(ctx.args)) {
                 args = ctx.args;
             } else if (ctx && typeof ctx.body === 'string') {
-                // Si vino body = "!play Feid Luna", quitar el comando
-                args = ctx.body.replace(/^!play\s*/i, '').split(' ').filter(Boolean);
+                args = ctx.body.replace(/^!?\S+\s*/i, '').split(' ').filter(Boolean);
             }
         }
 
-        const jid = m?.key?.remoteJid || ctx?.sender && (ctx.sender.includes('@') ? ctx.sender : null) || m?.key?.remoteJid;
+        const jid = m?.key?.remoteJid || (ctx?.sender && ctx.sender.includes('@') ? ctx.sender : null);
         if (!sock || !m || !jid) {
-            console.error('Error en !play: no llegaron sock/m/jid. Params:', JSON.stringify(params).slice(0, 500));
+            console.error('Error en !play: no llegaron sock/m/jid.');
             return;
         }
 
-        // Función segura para enviar, usa ctx.reply si existe, si no sock.sendMessage
         const enviar = async (content) => {
             try {
                 if (ctx && typeof ctx.reply === 'function') {
@@ -55,21 +50,43 @@ module.exports = {
                 }
             } catch (e) {
                 console.error('Error enviando en !play:', e.message);
-                // Último intento sin quoted
                 await sock.sendMessage(jid, content).catch(() => {});
             }
         };
 
         try {
+            const rawText = (
+                m.message?.conversation ||
+                m.message?.extendedTextMessage?.text ||
+                m.message?.buttonsResponseMessage?.selectedButtonId ||
+                m.message?.interactiveResponseMessage?.nativeFlowResponseMessage?.paramsJson ||
+                ctx?.body ||
+                ''
+            ).trim();
+
+            let invokedCmd = 'play';
+            try {
+                if (rawText.startsWith('{')) {
+                    const parsed = JSON.parse(rawText);
+                    if (parsed.id) invokedCmd = String(parsed.id).replace(/^[!./#]+/, '').toLowerCase();
+                } else if (rawText) {
+                    const firstToken = rawText.split(/\s+/)[0].replace(/^[!./#]+/, '').toLowerCase();
+                    if (firstToken) invokedCmd = firstToken;
+                }
+            } catch (_) {}
+
+            const directAudioAliases = ['yta', 'ytmp3', 'playdoc', 'playaudio'];
+            const directVideoAliases = ['play2', 'ytv', 'ytmp4', 'play2doc', 'mp4'];
+            const isDirectAudio = directAudioAliases.includes(invokedCmd);
+            const isDirectVideo = directVideoAliases.includes(invokedCmd);
+
             const query = (args || []).join(' ').trim();
             if (!query) {
-                return await enviar({ text: '「✿」 Dime qué canción buscas, por ejemplo: `!play Feid Luna`' });
+                return await enviar({ text: '「✿」 Dime qué canción o video buscas, por ejemplo: `!play Feid Luna`' });
             }
 
-            // Este mensaje DEBE llegar. Si no llega, el problema es el handler, no yts.
             await enviar({ text: '「✿」 Buscando en YouTube...' });
 
-            // yts con timeout de 15s para que no se quede colgado
             let r;
             try {
                 r = await Promise.race([
@@ -96,6 +113,51 @@ module.exports = {
             } catch (e) {
                 console.error('Error enviando portada:', e.message);
                 await enviar({ text: `「✿」 Encontrado 🌸\n\n🎵 *${video.title}*` });
+            }
+
+            if (isDirectAudio || isDirectVideo) {
+                const type = isDirectVideo ? 'video' : 'audio';
+                const asDoc = ['playdoc', 'play2doc'].includes(invokedCmd);
+                let media;
+                try {
+                    await enviar({
+                        text: type === 'audio'
+                            ? '「✿」 Descargando y convirtiendo a MP3 con FFmpeg...'
+                            : '「✿」 Descargando video en MP4 con yt-dlp...'
+                    });
+                    media = await downloadWithYtDlp(video.url, { type, prefix: 'ytplay' });
+
+                    if (type === 'audio') {
+                        if (asDoc) {
+                            await sock.sendMessage(jid, {
+                                document: { url: media.filePath },
+                                mimetype: 'audio/mpeg',
+                                fileName: `${video.title.slice(0, 60)}.mp3`
+                            }, { quoted: m });
+                        } else {
+                            await sock.sendMessage(jid, {
+                                audio: { url: media.filePath },
+                                mimetype: 'audio/mpeg',
+                                ptt: false
+                            }, { quoted: m });
+                        }
+                    } else if (asDoc) {
+                        await sock.sendMessage(jid, {
+                            document: { url: media.filePath },
+                            mimetype: 'video/mp4',
+                            fileName: `${video.title.slice(0, 60)}.mp4`
+                        }, { quoted: m });
+                    } else {
+                        await sock.sendMessage(jid, {
+                            video: { url: media.filePath },
+                            mimetype: 'video/mp4',
+                            caption: `「✿」 *${video.title}* 🌸`
+                        }, { quoted: m });
+                    }
+                } finally {
+                    if (media?.cleanup) media.cleanup();
+                }
+                return;
             }
 
             const msg = generateWAMessageFromContent(jid, {
@@ -133,11 +195,10 @@ module.exports = {
 
         } catch (e) {
             console.error('Error fatal en !play:', e);
-            try { await enviar({ text: '「✿」 Algo falló al buscar, intenta de nuevo.' }); } catch {}
+            try { await enviar({ text: '「✿」 Algo falló al procesar la solicitud, intenta de nuevo.' }); } catch {}
         }
     },
 
-    // Alias por si tu handler busca `run` en vez de `execute`
     async run(...params) {
         return this.execute(...params);
     }
