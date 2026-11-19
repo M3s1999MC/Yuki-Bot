@@ -7,7 +7,7 @@ const fs = require('fs/promises');
 const { Pool } = require('pg');
 const { timingSafeEqual } = require('crypto');
 const QRCode = require('qrcode');
-const db = require('./database/db'); 
+const db = require('./database/db');
 const gachaDatabaseReady = require('./database/gacha_db');
 const CommandHandler = require('./handlers/commandHandler');
 const practiceSessions = require('./utils/practiceSessions');
@@ -23,11 +23,18 @@ const port = process.env.PORT || 8000;
 const dataDir = process.env.YUKI_DATA_DIR
     ? path.resolve(process.env.YUKI_DATA_DIR)
     : __dirname;
+
 let currentQr = null;
 let currentQrImage = null;
+let activeSock = null;
+let lastPairingCode = null;
+let lastPairingPhone = null;
 let authStatePromise;
 let reconnectTimer;
 let authResetPromise;
+
+app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const getRandomDelay = (min = 1500, max = 3500) => {
@@ -57,7 +64,7 @@ class MessageQueue {
                     await sleep(delay);
                     await task();
                 } catch (error) {
-                    console.error("[MessageQueue Error]:", error);
+                    console.error('[MessageQueue Error]:', error);
                 }
             }
         } finally {
@@ -85,16 +92,11 @@ function safeReply(sock, jid, content, options = {}) {
     });
 }
 
-app.get('/', (req, res) => {
-    res.send('Yuki Bot está activo.');
-});
-app.get('/health', (req, res) => {
-    res.status(200).type('text/plain').send('ok');
-});
-app.get('/qr', async (req, res) => {
+function verifyQrBasicAuth(req, res) {
     const accessToken = process.env.QR_ACCESS_TOKEN;
     if (!accessToken || accessToken.length < 32) {
-        return res.status(503).send('Configura QR_ACCESS_TOKEN con al menos 32 caracteres en el entorno del servidor.');
+        res.status(503).send('Configura QR_ACCESS_TOKEN con al menos 32 caracteres en el entorno del servidor.');
+        return false;
     }
     const authorization = req.get('authorization') || '';
     const credentialsMatch = authorization.match(/^Basic\s+([A-Za-z0-9+/]+={0,2})$/i);
@@ -111,17 +113,75 @@ app.get('/qr', async (req, res) => {
         || !timingSafeEqual(password, expectedPassword)
     ) {
         res.set('WWW-Authenticate', 'Basic realm="YukiBot QR", charset="UTF-8"');
-        return res.sendStatus(401);
+        res.sendStatus(401);
+        return false;
     }
+    return true;
+}
+
+app.get('/', (req, res) => {
+    res.send('Yuki Bot está activo.');
+});
+
+app.get('/health', (req, res) => {
+    res.status(200).type('text/plain').send('ok');
+});
+
+app.post('/qr/pair', async (req, res) => {
+    if (!verifyQrBasicAuth(req, res)) return;
+
+    if (!activeSock || typeof activeSock.requestPairingCode !== 'function') {
+        return res.status(503).json({
+            error: 'El socket de WhatsApp aún no está listo. Espera unos segundos y vuelve a intentarlo.'
+        });
+    }
+
+    const rawPhone = String(req.body?.phone || '');
+    const cleanPhone = rawPhone.replace(/\D/g, '');
+    if (cleanPhone.length < 8 || cleanPhone.length > 15) {
+        return res.status(400).json({
+            error: 'Ingresa el número completo con código de país, solo dígitos (ejemplo: 573001234567).'
+        });
+    }
+
+    try {
+        const code = await activeSock.requestPairingCode(cleanPhone);
+        lastPairingCode = code;
+        lastPairingPhone = cleanPhone;
+        return res.json({ code, phone: cleanPhone });
+    } catch (error) {
+        console.error('❌ Error al generar el código de 8 caracteres:', error);
+        return res.status(500).json({
+            error: error?.message || 'No se pudo generar el código de vinculación.'
+        });
+    }
+});
+
+app.get('/qr', async (req, res) => {
+    if (!verifyQrBasicAuth(req, res)) return;
+
     res.set({
         'Cache-Control': 'no-store, no-cache, must-revalidate, private',
-        'Content-Security-Policy': "default-src 'none'; img-src data:; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'",
+        'Content-Security-Policy': "default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'",
         'Referrer-Policy': 'no-referrer',
         'X-Content-Type-Options': 'nosniff'
     });
-    if (!currentQrImage) {
-        return res.status(503).send('WhatsApp no está solicitando un QR. Revisa los logs de conexión del servidor.');
-    }
+
+    const qrSectionHtml = currentQrImage
+        ? `
+            <p>Con el teléfono del número de Yuki, abre <strong>WhatsApp &gt; Dispositivos vinculados &gt; Vincular un dispositivo</strong> y escanea este código.</p>
+            <img src="${currentQrImage}" alt="Código QR para vincular el número de Yuki con WhatsApp">
+            <p class="note">Este QR vincula el número de Yuki al bot; no es un QR de contacto ni debe escanearse desde otros números.</p>
+            <p class="note">WhatsApp puede hacer caducar el código. Si ocurre, recarga esta página para consultar el nuevo código solicitado por WhatsApp.</p>
+        `
+        : `
+            <p class="note">No hay un código QR activo en este momento. Puedes intentar vincular usando un <strong>código de 8 caracteres</strong> aquí abajo o revisar los logs del servidor.</p>
+        `;
+
+    const initialCodeHtml = lastPairingCode
+        ? `<div id="pairResult" class="code-box">Código (${lastPairingPhone || ''}): <strong>${lastPairingCode}</strong></div>`
+        : `<div id="pairResult" class="code-box" style="display:none;"></div>`;
+
     res.type('html').send(`<!doctype html>
 <html lang="es">
 <head>
@@ -129,19 +189,71 @@ app.get('/qr', async (req, res) => {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vincular el número de Yuki</title>
 <style>
-body{font-family:system-ui,sans-serif;text-align:center;margin:2rem auto;padding:0 1rem;max-width:28rem}
-img{width:min(100%,360px);height:auto}
+body{font-family:system-ui,sans-serif;text-align:center;margin:2rem auto;padding:0 1rem;max-width:30rem;line-height:1.45}
+img{width:min(100%,360px);height:auto;border-radius:8px}
+.note{color:#555;font-size:0.92rem}
+.box{margin-top:2rem;padding-top:1.5rem;border-top:1px solid #ddd}
+.row{display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;margin-top:0.75rem}
+input{padding:0.6rem 0.75rem;border:1px solid #aaa;border-radius:6px;font-size:1rem;min-width:13rem}
+button{padding:0.6rem 1rem;border:0;border-radius:6px;background:#111827;color:#fff;font-size:1rem;cursor:pointer}
+button:disabled{opacity:0.6;cursor:not-allowed}
+.code-box{margin-top:1rem;padding:0.9rem;border-radius:8px;background:#f3f4f6;font-size:1.25rem;letter-spacing:0.12em}
+.err{color:#b91c1c;margin-top:0.75rem;font-size:0.95rem}
 </style>
 </head>
 <body>
 <h1>Vincular el número de Yuki</h1>
-<p>Con el teléfono del número de Yuki, abre WhatsApp &gt; Dispositivos vinculados &gt; Vincular un dispositivo y escanea este código.</p>
-<img src="${currentQrImage}" alt="Código QR para vincular el número de Yuki con WhatsApp">
-<p>Este QR vincula el número de Yuki al bot; no es un QR de contacto ni debe escanearse desde otros números.</p>
-<p>WhatsApp puede hacer caducar el código. Si ocurre, recarga esta página para consultar el nuevo código solicitado por WhatsApp.</p>
+${qrSectionHtml}
+
+<div class="box">
+<h2>Vincular con código de 8 caracteres</h2>
+<p class="note">Escribe el número completo con código de país (sin + ni espacios). Luego ve a WhatsApp &gt; Dispositivos vinculados &gt; Vincular con el número de teléfono.</p>
+<form id="pairForm" class="row">
+<input id="phoneInput" name="phone" type="tel" inputmode="numeric" placeholder="Ej. 573001234567" required>
+<button id="pairBtn" type="submit">Generar código</button>
+</form>
+<div id="pairError" class="err"></div>
+${initialCodeHtml}
+</div>
+
+<script>
+const form = document.getElementById('pairForm');
+const phoneInput = document.getElementById('phoneInput');
+const pairBtn = document.getElementById('pairBtn');
+const pairError = document.getElementById('pairError');
+const pairResult = document.getElementById('pairResult');
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  pairError.textContent = '';
+  pairBtn.disabled = true;
+  pairBtn.textContent = 'Generando...';
+
+  try {
+    const response = await fetch('/qr/pair', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: phoneInput.value })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      pairError.textContent = data.error || 'No se pudo generar el código.';
+    } else {
+      pairResult.style.display = 'block';
+      pairResult.innerHTML = 'Código (' + data.phone + '): <strong>' + data.code + '</strong>';
+    }
+  } catch (err) {
+    pairError.textContent = 'Error de red al solicitar el código.';
+  } finally {
+    pairBtn.disabled = false;
+    pairBtn.textContent = 'Generar código';
+  }
+});
+</script>
 </body>
 </html>`);
 });
+
 app.listen(port, () => {
     console.log(`Servidor de Yuki escuchando en el puerto ${port}`);
 });
@@ -293,6 +405,8 @@ async function startYuki() {
         browser: ['YukiBot', 'Chrome', '120.0.0'],
         syncFullHistory: false
     });
+    activeSock = sock;
+
     const contactNames = new Map();
     const cacheContacts = (contacts) => {
         for (const contact of contacts || []) {
@@ -337,6 +451,7 @@ async function startYuki() {
         if (connection === 'close') {
             currentQr = null;
             currentQrImage = null;
+            activeSock = null;
             const statusCode = lastDisconnect?.error?.output?.statusCode;
             if (statusCode === DisconnectReason.loggedOut) {
                 console.warn('⚠️ WhatsApp revocó la sesión guardada. Limpiando solo la autenticación para solicitar un QR nuevo...');
@@ -356,6 +471,8 @@ async function startYuki() {
             }
             currentQr = null;
             currentQrImage = null;
+            lastPairingCode = null;
+            lastPairingPhone = null;
             console.log(`\n⚡ ¡YUKI ESTÁ ONLINE Y CONECTADA! Prefijo activo: ${PREFIX}\n`);
         }
     });
@@ -417,7 +534,6 @@ async function startYuki() {
             return;
         }
 
-        // Botones de !play: busca el id en cualquier nivel del mensaje
         function buscarBoton(obj) {
             if (!obj || typeof obj !== 'object') return '';
             if (obj.selectedButtonId) return obj.selectedButtonId;
@@ -473,7 +589,7 @@ async function startYuki() {
         const msgContent = getMessageContent(m.message);
         const messageType = Object.keys(msgContent)[0];
         let body = messageType === 'conversation' ? msgContent.conversation :
-                     messageType === 'extendedTextMessage' ? msgContent.extendedTextMessage.text : 
+                     messageType === 'extendedTextMessage' ? msgContent.extendedTextMessage.text :
                      messageType === 'imageMessage' ? msgContent.imageMessage.caption :
                      messageType === 'videoMessage' ? msgContent.videoMessage.caption : '';
         if (buttonId) {
@@ -513,8 +629,7 @@ async function startYuki() {
         const usedPrefix = PREFIX;
         const args = body.slice(usedPrefix.length).trim().split(/ +/);
         const command = args.shift().toLowerCase();
-        
-        // CORRECCIÓN: Permitir que tus propios comandos (fromMe) no sufran bloqueos de cooldown
+
         if (!m.key.fromMe && onCooldown(sender)) return;
 
         console.log(`📥 [Comando recibido]: ${command} de @${sender.split('@')[0]}`);
