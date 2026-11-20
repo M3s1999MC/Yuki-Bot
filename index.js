@@ -1,7 +1,7 @@
 require('./utils/loadEnv')();
 
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = 
-await import('@whiskeysockets/baileys');
+require('@whiskeysockets/baileys');
 const pino = require('pino');
 const path = require('path');
 const fs = require('fs/promises');
