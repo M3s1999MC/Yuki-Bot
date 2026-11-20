@@ -1,7 +1,5 @@
 require('./utils/loadEnv')();
 
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = 
-require('@whiskeysockets/baileys');
 const pino = require('pino');
 const path = require('path');
 const fs = require('fs/promises');
@@ -309,6 +307,7 @@ async function loadAuthState() {
         authStatePromise = (async () => {
             if (!process.env.DATABASE_URL) {
                 console.warn('⚠️ DATABASE_URL no está configurada; la sesión se guardará en el disco local y puede perderse al reiniciar el servidor.');
+                const { useMultiFileAuthState } = await import('@whiskeysockets/baileys');
                 const sessionPath = path.join(dataDir, 'sessions', 'main');
                 const authState = await useMultiFileAuthState(sessionPath);
                 return {
@@ -394,6 +393,7 @@ async function startYuki() {
     }
     await gachaDatabaseReady;
     const { state, saveCreds } = await loadAuthState();
+    const { default: makeWASocket, DisconnectReason } = await import('@whiskeysockets/baileys');
     const hasRegisteredSession = Boolean(state.creds.registered && state.creds.me?.id);
     if (hasRegisteredSession) {
         console.log('✅ Se encontró una sesión de WhatsApp previamente vinculada.');
