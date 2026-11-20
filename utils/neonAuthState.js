@@ -1,5 +1,4 @@
 const { createCipheriv, createDecipheriv, randomBytes } = require('crypto');
-const { BufferJSON, initAuthCreds, proto } = require('@whiskeysockets/baileys');
 
 const TABLE_NAME = 'yuki_whatsapp_auth';
 
@@ -11,7 +10,7 @@ function parseEncryptionKey(value) {
     return Buffer.from(value, 'hex');
 }
 
-function encryptValue(value, key) {
+function encryptValue(value, key, BufferJSON) {
     const iv = randomBytes(12);
     const cipher = createCipheriv('aes-256-gcm', key, iv);
     const plaintext = JSON.stringify(value, BufferJSON.replacer);
@@ -24,7 +23,7 @@ function encryptValue(value, key) {
     ].join('.');
 }
 
-function decryptValue(encryptedValue, key) {
+function decryptValue(encryptedValue, key, BufferJSON) {
     const [encodedIv, encodedTag, encodedCiphertext, ...extraParts] = encryptedValue.split('.');
     if (!encodedIv || !encodedTag || !encodedCiphertext || extraParts.length > 0) {
         throw new Error('Stored WhatsApp auth data has an invalid encrypted format.');
@@ -41,6 +40,7 @@ function decryptValue(encryptedValue, key) {
 }
 
 async function createNeonAuthState(pool, encryptionKey) {
+    const { BufferJSON, initAuthCreds, proto } = await import('@whiskeysockets/baileys');
     const key = parseEncryptionKey(encryptionKey);
     await pool.query(`
         CREATE TABLE IF NOT EXISTS ${TABLE_NAME} (
@@ -55,11 +55,11 @@ async function createNeonAuthState(pool, encryptionKey) {
             `SELECT encrypted_value FROM ${TABLE_NAME} WHERE auth_key = $1`,
             [authKey]
         );
-        return rows.length ? decryptValue(rows[0].encrypted_value, key) : null;
+        return rows.length ? decryptValue(rows[0].encrypted_value, key, BufferJSON) : null;
     };
 
     const writeData = async (authKey, value) => {
-        const encryptedValue = encryptValue(value, key);
+        const encryptedValue = encryptValue(value, key, BufferJSON);
         await pool.query(
             `INSERT INTO ${TABLE_NAME} (auth_key, encrypted_value)
              VALUES ($1, $2)
