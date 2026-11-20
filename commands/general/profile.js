@@ -1,5 +1,6 @@
 const db = require('../../database/db');
 const { getMessageSenderJid } = require('../../utils/messageSender');
+const fs = require('fs');
 
 module.exports = {
     name: 'profile',
@@ -63,7 +64,6 @@ module.exports = {
             } catch (photoErr) {
                 if (data.profile_image) {
                     try {
-                        const fs = require('fs');
                         const image = await fs.promises.readFile(data.profile_image);
                         return await sock.sendMessage(jid, { image, caption: text, mentions }, { quoted: m });
                     } catch (fileErr) {
