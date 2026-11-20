@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "engines": {
-    "node": ">=20.18.1"
+    "node": "20.18.1"
   },
   "dependencies": {
     "@distube/ytdl-core": "^5.2.1",
@@ -197,7 +197,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "UNLICENSED",
   "type": "commonjs",
   "allowScripts": {
     "@whiskeysockets/baileys@7.0.0-rc14": true,
