@@ -12,810 +12,427 @@ module.exports = {
     m.isProcessed = true;
 
     const jid = m.key.remoteJid;
-
     const mentionJid = m.key.participant || m.key.remoteJid;
+    const userTag = mentionJid.split('@')[0];
 
-    const menuHeader = `╭─── 🌸 *YUKI* 🌸 ───╮
-│ Hola @${mentionJid.split('@')[0]} 👋
-│ Aquí tienes mis comandos
-│ ✿ Comandos: 342
-╰──────────────────╯
+    const menuHeader = `🌸 ˚୨୧⋆｡˚ ⋆ YUKI ⋆ ˚｡⋆୨୧˚ 🌸
+¿Holaaa? ¿Eres tú, @${userTag}? ¡Qué alegría verte!
 
-✿ *Desarrollado por:* InKra Studios
-✿ *Canal Oficial:* https://whatsapp.com/channel/0029Vb9AOpk9WtC12RHEEj0Y
-✿ *Patrocinado por:* Duvalin 🌸
-✿ *Canal Patrocinado:* https://whatsapp.com/channel/0029Vb92LdaCnA7rdqUbdw38
+Soy Orihime, y este es mi cuadernito de
+comandos. Si te pierdes, dime y yo te ayudo,
+¿sí? No me dejes solita, ¿vale?
 
-──────────────────\n`;
+✿ Hecha con amor por: InKra Studios
+✿ Mi casita: Yuki
+✿ Comandos: 342
+✿ Patrocinamos con amor a: Duvalin 🌸
 
-        const menuBody = `» ˚୨•(🌸)• ⊹ Perfil ⊹
-✧ !profile | !perfil
-> Muestra tu perfil o el de un usuario
-✧ !level | !lvl
-> Muestra tu nivel y experiencia actual
-✧ !lboard | !lb | !xptop
-> Top de usuarios con más experiencia
-✧ !marry | !casar @usuario
-> Proponle matrimonio a alguien (debe aceptar con !aceptar)
-✧ !divorciar | !divorce | !divorcio
-> Divorciarte de tu pareja
-✧ !aceptar | !accept
-> Acepta una propuesta de matrimonio o un duelo
-✧ !rechazar | !reject
-> Rechaza una propuesta de matrimonio o un duelo
-✧ !aceptar | !accept
-> Acepta una propuesta de matrimonio o un duelo
-✧ !rechazar | !reject
-> Rechaza una propuesta de matrimonio o un duelo
-✧ !setbirth
-> Establece tu fecha de cumpleaños
-✧ !delbirth
-> Borra tu fecha de cumpleaños
-✧ !setdesc | !setdescription
-> Establece tu descripción de perfil
-✧ !deldesc | !deldescription
-> Elimina tu descripción de perfil
-✧ !sethobby | !setpasatiempo
-> Establece tu pasatiempo
-✧ !delhobby | !delpasatiempo | !removehobby
-> Elimina tu pasatiempo del perfil
-✧ !setgenre
-> Establece tu género
-✧ !delgenre
-> Elimina tu género del perfil
-✧ !boda | !bodas
-> Muestra los detalles y tiempo de tu matrimonio actual
-✧ !intereses | !gustos
-> Establece una lista de gustos en tu perfil
-✧ !delintereses | !quitargustos
-> Elimina los intereses de tu perfil
-✧ !titulo | !settitle
-> Establece un título personalizado arriba de tu nombre
-✧ !deltitulo | !deltitle
-> Elimina tu título personalizado de perfil
-✧ !setbio | !setbiografia
-> Establecer tu biografía en el perfil
-✧ !setgame | !setjuego
-> Establecer tu juego favorito en el perfil
-✧ !setmusica | !setcancion | !setmusic
-> Establecer tu música o canción favorita en el perfil
-✧ !setpfp
-> Cambiar tu foto de perfil personalizada
+🍡 Mi canal oficial:
+https://whatsapp.com/channel/0029Vb9AOpk9WtC12RHEEj0Y
+🍡 Canal que patrocinamos con amor:
+https://whatsapp.com/channel/0029Vb92LdaCnA7rdqUbdw38
 
-» ˚୨•(🌸)• ⊹ Random ⊹
-✧ !8ball | !pregunta | !duda
-> Consulta a la bola mágica una pregunta de Sí/No
-✧ !chiste | !joke
-> Envía un chiste aleatorio para romper el hielo en el grupo
-✧ !frase | !consejo
-> Muestra un pensamiento aleatorio o un consejo
-✧ !ruletarusa | !shot
-> Prueba tu suerte con un castigo ficticio e inofensivo (con GIF)
-✧ !hack | !hackear
-> Simula de forma cómica y falsa el hackeo de un usuario mencionado
-✧ !dado
-> Lanza un dado; puedes indicar entre 2 y 100 caras
-✧ !f
-> Envía un respetuoso mensaje rindiendo homenaje (con GIF)
-✧ !taza | !café | !mate
-> Invita una bebida caliente a otro usuario (con GIF)
-✧ !confesion | !confesar
-> Genera una confesión absurda o vergonzosa al azar
-✧ !funar | !funa
-> Inventa una razón cómica para funar a un usuario (con GIF)
-✧ !maldicion | !hex
-> Lanza una maldición inofensiva y chistosa a alguien del grupo (con GIF)
-✧ !sueldo | !salario
-> Revela tu sueldo imaginario basado en tu comportamiento en el chat
-✧ !iq | !cerebro
-> Mide tu IQ del día con un comentario sarcástico
-✧ !futuro | !destino
-> Predice tu vida en 10 años de forma absurda
-✧ !compatibilidad | !shipbot
-> Mide qué tan compatible eres hoy con Yuki
-✧ !cantar | !letra
-> Lanza una frase o verso aleatorio de una canción (con GIF)
-✧ !ship
-> Calcula la compatibilidad entre dos personas
+━━━━━━━━━━ 🌸 ━━━━━━━━━━\n`;
 
-» ˚୨•(🌸)• ⊹ Grupo ⊹
-✧ !promote | !promover | !admin
-> Asciende a un usuario como administrador del grupo (mencionalo o responde su mensaje)
-✧ !demote | !degradar
-> Desciende a un usuario de administrador del grupo (mencionalo o responde su mensaje)
-✧ !yuki on | !yuki off
-> Activa o desactiva al bot en este grupo.
-✧ !clear
-> Limpia las claims (waifus) de usuarios inactivos en el grupo.
-✧ !close | !cerrar
-> Cierra el grupo para que solo los administradores puedan enviar mensajes.
-✧ !open | !abrir
-> Abre el grupo para que todos puedan enviar mensajes.
-✧ !link | !enlace | !invite
-> Obtiene el enlace de invitación del grupo.
-✧ !count | !mensajes | !messages | !msgcount
-> Obtiene el conteo de mensajes de un usuario en este grupo.
-✧ !topcount | !topmensajes | !topmsgcount | !topmessages
-> Ver el top de usuarios con más mensajes en el grupo.
-✧ !groupinfo | !gp | !infogrupo | !infogc
-> Muestra información del grupo.
-✧ !kick | !ban | !bang | !expulsar
-> Expulsa a un usuario del grupo. Admite modos especiales: num, listnum, all, inactive, listinactive.
-✧ !hidetag | !tag | !etiquetar
-> Envía un mensaje o multimedia mencionando en silencio a todos los usuarios del grupo.
-✧ !tagall | !todos | !invocar
-> Envía un mensaje mencionando a todos los usuarios del grupo.
-✧ !warn | !advertir
-> Advierte a un usuario del grupo (mencionalo o responde su mensaje). Expulsa automáticamente al llegar al límite.
-✧ !delwarn | !eliminaradvertencia
-> Elimina una advertencia de un miembro del grupo (o todas con "all").
-✧ !listwarn | !warnings | !advertencias
-> Muestra las advertencias registradas de un usuario del grupo.
-✧ !setwarnlimit | !warnlimit | !limiteadvertencias
-> Configura cuántas advertencias tolera el grupo antes de expulsar automáticamente.
-✧ !welcome | !bienvenida
-> Activa o desactiva el mensaje de bienvenida para nuevos miembros.
-✧ !setwelcome | .setbienvenida
-> Establece un mensaje de bienvenida personalizado para el grupo.
-✧ !setwelcomeimg | !setbienvenidaimg | !welcomeimg | !setwelcomegif
-> Establece una imagen o gif personalizado para la bienvenida del grupo.
-✧ !testwelcome | !probarbienvenida | !previewwelcome
-> Muestra un ejemplo de cómo se ve la bienvenida actual del grupo.
-✧ !goodbye | !despedida | !bye
-> Activa o desactiva el mensaje de despedida cuando alguien sale del grupo.
-✧ !setgoodbye | !setdespedida
-> Establece un mensaje de despedida personalizado para el grupo.
-✧ !setgpdesc | !descripciongrupo | !setdescripciongrupo
-> Cambia la descripción del grupo.
-✧ !setgpname | !nombregrupo | !setnombregrupo
-> Cambia el nombre del grupo.
-✧ !setgpbanner | !setgpimage | !fotogrupo | !setfotogrupo
-> Cambia la foto de perfil del grupo.
-✧ !antilink | !antienlace | !antilinks
-> Activa o desactiva la eliminación automática de enlaces de otros grupos o canales.
-✧ !adminonly | !soloadmin | !onlyadmin | !modoadmin
-> Activa o desactiva el modo Solo Admins: solo los administradores del grupo podrán usar el bot.
-✧ !inactivos | !listainactivos
-> Muestra la lista de miembros inactivos según los días elegidos
-✧ !topactivos | !topmensajessemana
-> Muestra el top de miembros más activos de la semana
-✧ !mute | !silenciar
-> Silencia a un usuario para que no pueda usar comandos de Yuki
-✧ !unmute | !desilenciar
-> Le devuelve los permisos de uso de comandos a un usuario
-✧ !add | !agregar
-> Añadir a un usuario al grupo
-✧ !banbot | !bloquearbot
-> Impide que un usuario use el bot en este grupo
-✧ !baneados | !silenciados
-> Ver los usuarios silenciados y los que no pueden usar el bot
-✧ !del | !eliminar
-> Elimina el mensaje al que respondes
-✧ !fotogp | !photogp
-> Cambiar la foto del grupo
-✧ !gprefix | !setgprefix | !addgprefix | !delgprefix | !resetgprefix
-> Administra los prefijos propios del grupo (uno solo o varios)
-✧ !groupcontrol
-> Abre o cierra el grupo para mensajes
-✧ !namegp | !nombregp
-> Cambiar el nombre del grupo
-✧ !setbye
-> Edita el mensaje de despedida del grupo con broches ({usuario}, {grupo}, {miembros})
-✧ !testbye
-> Prueba el mensaje de despedida personalizado del grupo
-✧ !unbanbot | !desbloquearbot
-> Devuelve el acceso al bot a un usuario en este grupo
-✧ !unvetar | !perdonar
-> Quita el veto: el usuario ya puede volver a entrar al grupo
-✧ !vetar | !banpermanente
-> Expulsa a un usuario y lo saca de nuevo si intenta volver a entrar
+        const menuBody = 🍡 *Si quieres conocerme mejor - Perfil*
+> !profile / !perfil - Mira tu perfil, ¡yo lo hice con amor!
+> !level / !lvl - ¿Qué tan fuerte te has vuelto conmigo?
+> !lboard / !lb / !xptop - Los que más me visitan
+> !marry / !casar @usuario - ¿Te quieres casar? ¡Yo seré la madrina!
+> !divorciar / !divorce / !divorcio - ¿Te vas a separar? ¡Me pones triste!
+> !aceptar / !accept - Si te proponen algo, dime que sí, ¿sí?
+> !rechazar / !reject - Si no quieres, dile que no, yo te apoyo
+> !boda / !bodas - ¿Ya te casaste? ¡Cuéntame el chisme!
+> !setbirth / !delbirth - Tu cumple, ¡para celebrarte!
+> !setdesc / !deldesc - Tu descripción, ponla bonita
+> !sethobby / !delhobby - ¿Qué te gusta hacer?
+> !setgenre / !delgenre - Tu género
+> !intereses / !delintereses - Tus gustitos
+> !titulo / !deltitulo - Tu titulito arriba de tu nombre
+> !setbio / !setbiografia - Tu biografía
+> !setgame / !setjuego - Tu juego favorito
+> !setmusica / !setcancion / !setmusic - Tu cancioncita
+> !setpfp - Tu fotito de perfil
 
-» ˚୨•(🌸)• ⊹ Economía ⊹
-✧ !afk
-> Activar o desactivar el modo AFK
-✧ !balance | !bal | !saldo
-> Muestra tu saldo (billetera y banco)
-✧ !alltop / !tops
-> Ver los primeros puestos de todos los rankings en un solo mensaje
-✧ !banco / !bal / !bank [@usuario | responder a un mensaje
-> Consultar tu saldo o el de otro usuario (etiquetándolo o respondiendo a su mensaje)
-✧ !cofre | !chest
-> Abre un cofre misterioso (cada 24 horas)
-✧ !daily
-> Reclama tu recompensa diaria
-✧ !apostar <cantidad> | !ruleta <cantidad> | !bet <cantidad>
-> Juega contra el bot: 50 % de ganar el doble o perder lo apostado
-✧ !apostar @usuario <cantidad>
-> Reta a otro jugador; debe aceptar el duelo
-✧ !duelo @usuario <cantidad>
-> Desafía a un usuario; debe responder al reto con !aceptar o !rechazar
-✧ !weekly
-> Reclama tu recompensa semanal
-✧ !monthly
-> Reclama tu recompensa mensual
-✧ !work | !trabajar
-> Trabaja para ganar dinero
-✧ !crime | !crimen
-> Comete un crimen para ganar dinero (con riesgo)
-✧ !rob | !robar
-> Intenta robarle a otro usuario (mencionalo o responde su mensaje)
-✧ !deposit | !depositar | !dep
-> Deposita dinero de tu billetera al banco
-✧ !withdraw | !retirar | !wd
-> Retira dinero del banco a tu billetera
-✧ !transfer | !transferir | !pay | !dar
-> Transfiere dinero a otro usuario (mencionalo o responde su mensaje)
-✧ !leaderboard | !top | !ranking
-> Muestra a los usuarios más ricos
-✧ !tienda | !shop
-> Compra objetos como tickets de captura
-✧ !banco | !bank
-> Revisa el estado detallado e intereses de tu cuenta bancaria
-✧ !invertir | !inversion
-> Arriesga parte de tu saldo en un fondo de inversión simulado
-✧ !negocios | !shopnegocios | !tiendanegocios
-> Ver la tienda de negocios disponibles para comprar
-✧ !negocio | !ngyukicomprar | !compraryukisnegocio <número>
-> Comprar un negocio de la tienda
-✧ !minegocios | !misnegocios | !yukingmis | !miempresa
-> Ver el estado de tus negocios
-✧ !yukicobrar | !yukiclaim | !reclamarnegocios | !cobrarnegocios | !ygc
-> Cobrar el dinero acumulado de tus negocios (hasta 24 h)
-✧ !yukipagar | !pagarnegocios | !pagarmantenimiento | !ygp [número|todos]
-> Pagar el mantenimiento semanal de tus negocios
-✧ !emisiones | !misioneseconomia | !tareas [cobrar]
-> Misiones diarias de economía con recompensas
-✧ !prestamo | !prestar
-> Solicita un préstamo al banco del Yuki; el límite sube con tu nivel hasta 500k y se paga en un máximo de 6 días
-✧ !pagardeuda | !pagarprestamo
-> Paga las cuotas o salda la deuda de tu préstamo
-✧ !cofre | !chest
-> Abre un cofre misterioso (cada 24 horas)
-✧ !trivia
-> Responde una pregunta de cultura general y gana monedas y experiencia: !trivia, luego !trivia a|b|c|d
-✧ !alltop | !tops
-> Ver los primeros puestos de todos los rankings en un solo mensaje
-✧ !hitos | !elogros | !metas [@usuario]
-> Insignias por llegar a ciertas cantidades de dinero
-✧ !esperas | !cooldowns | !espera [@usuario]
-> Ver el tiempo de espera de todos los comandos de economía
-✧ !allw | !todostrabajos
-> Reclamar todos los trabajos disponibles (respeta cada espera)
-✧ !espiar | !espia
-> Espionaje, riesgo de ser descubierto (cada 1 hora)
-✧ !explorar | !investigar
-> Exploración, ganancia media-alta (cada 1 hora y 30 minutos)
-✧ !influencer | !tiktoker
-> Contenido viral, buena ganancia con riesgo de fracaso (cada 2 horas)
-✧ !mazmorra | !castillo
-> Máximo riesgo, máxima recompensa (cada 2 horas)
-✧ !migajear | !limosna | !ayudas
-> Pedir ayudas, ganancia mínima pero rápida (cada 30 minutos)
-✧ !niñero | !ninero | !cuidador
-> Cuidado de niños, pago alto con riesgo de descuido (cada 1 hora)
-✧ !superalbañil | !superalbanil | !albañil | !albanil
-> Construcción pesada, la mejor paga (cada 3 horas)
-✧ !uber | !conductor
-> Conducción de viajes, riesgo de choques y multas (cada 45 minutos)
-✧ !vendedor | !ambulante
-> Ventas ambulantes, ganancia pequeña pero segura (cada 30 minutos)
-✧ !youtuber | !cc
-> Contenido en YouTube, buena ganancia (cada 2 horas)
-✧ !bombardear | !bomb [país]
-> Lanza una lluvia de confeti sobre un país (hay 193): puedes ganar dinero o perder y pagar los daños (cada 30 minutos)
-✧ !coinflip | !flip | !cf <cantidad|all> <cara|cruz>
-> Apuesta monedas a cara o cruz
-✧ !ppt <piedra|papel|tijera>
-> Piedra, papel o tijera contra el bot: ganas o pierdes 200 monedas
-✧ !math | !mates [facil|medio|dificil|imposible]
-> Juego de matemáticas: responde con !math <resultado> y gana monedas
-✧ !aventura | !adventure
-> Ve de aventura para ganar monedas; gasta vida (cada 45 minutos)
-✧ !curar | !heal
-> Cura tu salud para salir de aventuras (10 monedas por punto)
-✧ !cazar | !hunt
-> Caza animales para ganar monedas, con riesgo de que escapen (cada 1 hora)
-✧ !pescar | !fish
-> Gana monedas pescando (cada 40 minutos)
-✧ !economyboard | !eboard | !baltop [página]
-> Ranking de usuarios con más monedas
-✧ !economyinfo | !einfo [@usuario]
-> Tu información de economía: saldo, puesto, nivel y vida
-✧ !economy
-> Sistema completo de economía y transacciones monetarias seguras
+🍡 *Para reírnos un ratito - Random*
+> !8ball / !pregunta / !duda - Pregúntame sí o no
+> !chiste / !joke - Te cuento un chiste para que sonrías
+> !frase / !consejo - Un consejito de Orihime
+> !ruletarusa / !shot - ¿Jugamos a la suerte?
+> !hack / !hackear - Te hackeo de mentira, ¡no te asustes!
+> !dado - Lanza un dado de 2 a 100 caritas
+> !f - Un respetito con GIF
+> !taza / !café / !mate - ¿Te invito un cafecito?
+> !confesion / !confesar - Una confesión chistosa
+> !funar / !funa - Funamos a alguien de broma
+> !maldicion / !hex - Te echo una maldición de mentira
+> !sueldo / !salario - Te digo tu sueldito imaginario
+> !iq / !cerebro - ¿Qué tan listo estás hoy?
+> !futuro / !destino - Te invento tu futuro bonito
+> !compatibilidad / !shipbot - ¿Qué tan compatible eres conmigo? ¡Ojalá mucho!
+> !cantar / !letra - Te canto un versito
+> !ship - ¿Hacen buena pareja? Yo los shipeo
 
-» ˚୨•(🌸)• ⊹ Gacha ⊹
-✧ !roll | !rw | !rollwaifu | !waifu
-> Tira un personaje de la lista seleccionada con la imagen que configuró el dueño
-✧ !rollcatalog | !catalogoroll
-> Muestra los personajes seleccionados que todavía necesitan imagen
-✧ !genchar | !generar | !genrandom
-> Genera un personaje original con IA o añade uno al catálogo
-✧ !claim | !c | !reclamar
-> Reclama el personaje de un roll citado
-✧ !harem | !waifus | !claims
-> Muestra los personajes reclamados de un usuario
-✧ !principal | !setmain | !waifuprincipal | !setfav | !setfavourite
-> Marca uno de tus personajes reclamados como tu principal
-✧ !waifusboard | !waifustop | !topwaifus | !wtop
-> Muestra el top de personajes con mayor valor
-✧ !vote | !votar
-> Vota por un personaje para subir su valor
-✧ !trade | !intercambiar
-> Intercambia un personaje reclamado con otro usuario del chat
-✧ !setclaimmsg | !setclaim
-> Modifica el mensaje que se envía al reclamar un personaje
-✧ !serielist | !slist | !animelist
-> Lista las series disponibles en el gacha
-✧ !serieinfo | !ainfo | !animeinfo
-> Muestra información y personajes de una serie
-✧ !charimage | !waifuimage | !cimage | !wimage
-> Muestra una imagen aleatoria de un personaje del catálogo
-✧ !sell | !vender
-> Pone en venta un personaje reclamado para que otros lo compren
-✧ !buychar | !buyc | !buycharacter | !comprar
-> Compra un personaje puesto en venta en el chat
-✧ !wshop | !haremshop | !tiendawaifus
-> Muestra los personajes puestos en venta en el chat
-✧ !removesale | !removerventa
-> Elimina un personaje que pusiste en venta
-✧ !gachainfo | !ginfo | !infogacha
-> Muestra tu información y cooldowns de gacha
-✧ !givechar | !givewaifu | !regalar
-> Regala un personaje reclamado a otro usuario
-✧ !giveallharem
-> Regala todos tus personajes reclamados a otro usuario
-✧ !deletewaifu | !delchar | !delwaifu
-> Elimina un personaje reclamado de tu harem
-✧ !deletefav | !delfav
-> Quita tu personaje favorito/principal
-✧ !charinfo | !winfo | !waifuinfo
-> Muestra información detallada de un personaje
-✧ !favboard | !favtop | !favoritetop
-> Muestra el top de personajes favoritos del chat
-✧ !delclaimmsg | !resetclaimmsg
-> Restablece el mensaje al reclamar un personaje
-✧ !atrapar | !catch | !usarticket
-> Usa un ticket para intentar atrapar un personaje libre por su ID
-✧ !serie | !series | !catalogo | !idlist | !personajes
-> Lista las series o los personajes (con ID) de una serie
-✧ !ascender | !ascension | !estrella
-> Asciende un personaje en nivel máximo para extender su nivel
-✧ !banner | !destacados | !semanal_gacha
-> Muestra los personajes destacados de la semana y tu garantía
-✧ !buscarpj | !buscarpersonaje | !pj
-> Busca un personaje por nombre en cualquier categoría del gacha
-✧ !callofduty | !cod
-> Genera un ítem de COD al azar para reclamar con .equipar
-✧ !equipo | !team | !miequipo
-> Arma o muestra tu equipo de batalla por categoría
-✧ !gacha
-> Sistema de gacha para invocar, reclamar y gestionar personajes y waifus
-✧ !gachadiag | !diagnosticogacha
-> Prueba la conexión que usa el gacha para descargar imágenes (solo owners)
-✧ !logros | !achievements
-> Tu panel de logros y misiones especiales
-✧ !misiones | !misionesgacha | !quests
-> Muestra tus misiones diarias del gacha y cobra recompensas
-✧ !pase | !pases | !reclamarpase
-> Reclama un pase de gacha con su código secreto
-✧ !perfilgacha | !gachaperfil | !micolecciongacha
-> Muestra el perfil de coleccionista de un usuario
-✧ !poderes | !powers | !habilidades
-> Muestra los poderes y estadísticas de un personaje
-✧ !regalartodo | !regalarharem | !regalarcoleccion
-> Regala toda tu colección de una categoría a otro usuario
-✧ !rwinfo | !gachacd | !cooldownsgacha
-> Muestra el tiempo de espera de las tiradas de todos los gachas
-✧ !mispokemon
-> Muestra tu Pokédex con tus Pokémon y su nivel
-✧ !pokecomida
-> Muestra la tienda de comida Pokémon con sus precios y niveles
-✧ !pokedar | !pokealimentar
-> Da de comer a un Pokémon para subirlo de nivel
-✧ !pokefood | !pokecomprar
-> Compra comida Pokémon por su número
-✧ !pokemon
-> Genera un Pokémon al azar para reclamar con .atrapar (cada 20 minutos)
-✧ !pokemonpvp
-> Desafía a otro usuario con tu Pokémon en combate por rondas
-✧ !poketop | !pokemontop
-> Muestra a las personas con más Pokémon en todo el bot
-✧ !ticketpoke | !ticketpokemon
-> Usa un ticket para obtener un Pokémon eligiendo su ID
-✧ !brawlstars | !brawl
-> Genera un Brawler al azar para reclamar con .drop
-✧ !brawlstarspvp | !brawlpvp
-> Desafía a otro usuario con tu Brawler en combate por rondas
-✧ !comprarcubitos | !cubitoscomprar
-> Compra cubitos de fuerza para Brawlers
-✧ !cubitos | !cubitosdefuerza
-> Muestra la tienda de cubitos de fuerza para Brawlers
-✧ !drop
-> Reclama el brawler generado con .brawlstars
-✧ !misbrawlers
-> Muestra tus Brawlers con su nivel
-✧ !subirbrawler
-> Gasta cubitos de fuerza para subir de nivel a un Brawler
-✧ !ticketbs | !ticketbrawl
-> Usa un ticket para obtener un Brawler por su ID
-✧ !adoptar
-> Adopta el gusanito generado con .snake
-✧ !darorbe | !usarorbe
-> Usa un orbe en uno de tus Snakes para subirlo de nivel
-✧ !missnakes | !misgusanitos
-> Muestra tus Snakes con su nivel
-✧ !orbe | !comprarorbe
-> Compra orbes por su número
-✧ !orbes | !snakeorbes
-> Muestra la tienda de orbes para alimentar Snakes
-✧ !snake | !gusanito
-> Genera un gusanito (skin de Snake) al azar para adoptar con .adoptar
-✧ !ticketsnake
-> Usa un ticket para obtener un Snake por su ID
-✧ !clashcomprar
-> Compra artículos de la tienda de Clash Royale
-✧ !clashmejorar
-> Usa un artículo en una carta para subirla de nivel
-✧ !clashroyale | !cr
-> Genera una carta al azar para reclamar con .desbloquear
-✧ !clashtienda
-> Muestra la tienda de artículos para Clash Royale
-✧ !desbloquear
-> Reclama el personaje que apareció en la última tirada de Clash Royale
-✧ !miscartas
-> Muestra tus cartas de Clash Royale con su nivel
-✧ !ticketcr
-> Usa un ticket para obtener una carta por su ID
-✧ !codcomprar
-> Compra artículos de la tienda de Call of Duty
-✧ !codmejorar
-> Usa un artículo en tu ítem de COD para subirlo de nivel
-✧ !codtienda
-> Muestra la tienda de artículos para Call of Duty
-✧ !equipar
-> Reclama el ítem de COD que apareció en la última tirada
-✧ !miscod
-> Muestra tus ítems de Call of Duty con su nivel
-✧ !ticketcod
-> Usa un ticket para obtener un ítem de COD por su ID
-✧ !criar
-> Reclama el dragón que apareció en la última tirada
-✧ !dragon | !dragonmania
-> Genera un dragón al azar para reclamar con .criar
-✧ !dragoncomprar
-> Compra comida para dragones
-✧ !dragondar
-> Alimenta a un dragón para subirlo de nivel
-✧ !dragonfood
-> Muestra la tienda de comida para dragones
-✧ !misdragones
-> Muestra tus dragones con su nivel
-✧ !ticketdragon
-> Usa un ticket para obtener un dragón por su ID
+🍡 *Para cuidar tu grupito - Grupo*
+> !promote / !promover / !admin - Te ayudo a poner admins
+> !demote / !degradar - Le quito el admin
+> !yuki on / !yuki off - Si me apagas me pongo triste, ¿eh?
+> !clear - Limpio los claims de inactivos
+> !close / !cerrar - Cierro tu grupo
+> !open / !abrir - Abro tu grupo
+> !link / !enlace / !invite - Te doy el link del grupo
+> !count / !mensajes / !messages / !msgcount - ¿Cuánto hablaste?
+> !topcount / !topmensajes - Los que más hablan
+> !groupinfo / !gp / !infogrupo - Info de tu grupo
+> !kick / !ban / !expulsar - Si se porta mal, yo lo saco
+> !hidetag / !tag / !etiquetar - Llamo a todos en silencio
+> !tagall / !todos / !invocar - Llamo a todos con ruido
+> !warn / !advertir - Les doy un jalón de orejas
+> !delwarn / !eliminaradvertencia - Le quito su warn
+> !listwarn / !warnings / !advertencias - Sus warns
+> !setwarnlimit / !limiteadvertencias - ¿Cuántos warns aguantamos?
+> !welcome / !bienvenida - Prendo o apago mi bienvenida
+> !setwelcome / !setbienvenida - Mi mensajito de bienvenida
+> !setwelcomeimg / !welcomeimg - Mi fotito de bienvenida
+> !testwelcome / !probarbienvenida - ¿Quieres ver cómo quedó?
+> !goodbye / !despedida / !bye - Mi despedida
+> !setgoodbye / !setdespedida - Mi mensajito de despedida
+> !setgpdesc / !setdescripciongrupo - La descripción del grupo
+> !setgpname / !nombregrupo - El nombre del grupo
+> !setgpbanner / !setgpimage / !fotogrupo - La fotito del grupo
+> !antilink / !antienlace - Yo borro links de otros grupos
+> !adminonly / !soloadmin - Solo admins pueden usarme
+> !inactivos / !listainactivos - ¿Quién no ha venido?
+> !topactivos / !topmensajessemana - Los más activos de la semana
+> !mute / !silenciar - Lo silencio para que no me use
+> !unmute / !desilenciar - Ya puede usarme otra vez
+> !add / !agregar - Añado a alguien al grupo
+> !banbot / !bloquearbot - No lo dejo usarme
+> !baneados / !silenciados - ¿A quién silencié?
+> !del / !eliminar - Borro el mensaje que me digas
+> !fotogp / !photogp - Cambio la foto del grupo
+> !gprefix / !setgprefix / !addgprefix / !delgprefix / !resetgprefix - Los prefijos del grupo
+> !groupcontrol - Abro o cierro el grupo
+> !namegp / !nombregp - Cambio el nombre del grupo
+> !setbye - Edito mi despedida con broches
+> !testbye - Pruebo mi despedida
+> !unbanbot / !desbloquearbot - Ya puede usarme
+> !unvetar / !perdonar - Ya puede volver
+> !vetar / !banpermanente - Lo saco y no lo dejo volver
 
- ˚୨•(🌸)• ⊹ NSWF ⊹
-✧ !neko | !nsfwneko
-> Envía contenido de la categoría neko 
-✧ !waifu | !nsfwwaifu
-> Envía contenido de la categoría waifu 
-✧ !kitsune | !nsfwkitsune
-> Envía contenido de la categoría kitsune
+🍡 *Mis moneditas - Economía*
+> !afk / !ausente - ¿Te vas? ¡Te extrañaré!
+> !balance / !bal / !saldo - ¿Cuánto tienes?
+> !alltop / !tops - Todos los tops en uno
+> !banco / !bank - Tu banquito con intereses
+> !cofre / !chest - Te escondí un cofrecito, ¡ábrelo cada 24h!
+> !daily - Tu regalito diario, ¡ven todos los días!
+> !apostar / !ruleta / !bet - ¿Apostamos contra mí?
+> !apostar @usuario - Reta a tu amigo
+> !duelo @usuario - Desafíalo, ¡que acepte!
+> !weekly - Tu regalito semanal
+> !monthly - Tu regalito mensual
+> !work / !trabajar - Trabaja conmigo y te pago
+> !crime / !crimen - ¿Te atreves a un crimen?
+> !rob / !robar - ¿Le vas a robar a alguien? ¡Qué malo!
+> !deposit / !depositar / !dep - Guarda tu dinerito
+> !withdraw / !retirar / !wd - Saca tu dinerito
+> !transfer / !transferir / !pay / !dar - Mándale dinero a tu amigo
+> !leaderboard / !top / !ranking - Los más ricos
+> !tienda / !shop - Compra tickets y cositas
+> !invertir / !inversion - Invierte, ¿ganamos o perdemos?
+> !negocios / !shopnegocios / !tiendanegocios - Mi tiendita de negocios
+> !negocio / !compraryukisnegocio - Compra tu negocito
+> !minegocios / !misnegocios / !miempresa - Tus negocitos
+> !yukicobrar / !reclamarnegocios / !ygc - Cobra lo de tus negocios
+> !yukipagar / !pagarnegocios / !ygp - Paga el mantenimiento
+> !emisiones / !misioneseconomia / !tareas - Tus misioncitas diarias
+> !prestamo / !prestar - Si te falta, yo te presto
+> !pagardeuda / !pagarprestamo - Paga lo que me debes
+> !trivia - ¿Sabes mucho? ¡Gana moneditas!
+> !hitos / !elogros / !metas - Tus insignias de rico
+> !esperas / !cooldowns - ¿Cuánto falta para volver a usar?
+> !allw / !todostrabajos - Todos tus trabajitos de una
+> !espiar / !espia - Espía, ¡que no te descubran!
+> !explorar / !investigar - Ve a explorar conmigo
+> !influencer / !tiktoker - Hazte viral conmigo
+> !mazmorra / !castillo - Mucho riesgo, mucha recompensa
+> !migajear / !limosna / !ayudas - Pide ayudita
+> !niñero / !cuidador - Cuida niños conmigo
+> !superalbañil / !albañil - ¡La mejor paga, pero pesa!
+> !uber / !conductor - Maneja conmigo
+> !vendedor / !ambulante - Vende conmigo
+> !youtuber / !cc - Haz videos conmigo
+> !bombardear / !bomb - ¡Confeti para un país!
+> !coinflip / !flip / !cf - ¿Cara o cruz?
+> !ppt - Piedra, papel o tijera contra mí
+> !math / !mates - ¿Eres bueno en mates? ¡Demuéstralo!
+> !aventura / !adventure - Vámonos de aventura, ¡gastas vidita!
+> !curar / !heal - Te curo tu vidita
+> !cazar / !hunt - Vamos a cazar
+> !pescar / !fish - Vamos a pescar
+> !economyboard / !eboard / !baltop - Ranking de ricos
+> !economyinfo / !einfo - Tu info de economía
+> !economy - Todo mi sistema de economía
 
- ˚୨•(🌸)• ⊹ Descargas ⊹
-✧ !pinterest | !pin | !pinsearch
-> Busca y envía una imagen de Pinterest con la búsqueda pública
-✧ !tiktoksearch | !ttsearch | !ttbuscar
-> Busca un video de TikTok por texto (requiere TIKTOK_SEARCH_API_URL)
-✧ !ytsearch | !ytbuscar | !yts
-> Busca videos en YouTube por texto
-✧ !facebook | !fb | !facebookdl | !fbdl
-> Descarga un video de Facebook
-✧ !instagram | !ig | !igdl | !instadl
-> Descarga fotos o videos de Instagram
-✧ !play | !yta | !ytmp3 | !playdoc | !play2 | !ytv | !ytmp4 | !play2doc | !playaudio | !mp4
-> Busca y descarga audio o video de YouTube
-✧ !tiktok | !tt | !tiktokdl | !ttdl
-> Descarga un video de TikTok desde un enlace
-✧ !tiktokmp3 | !ttmp3 | !tiktokaudio
-> Descarga el audio de un video de TikTok en formato mp3
-✧ !twitter | !x | !xdl | !dlx | !twdl | !tw | !twt
-> Descarga un video o imagen de Twitter/X
+🍡 *Mi colección, mi tesoro - Gacha*
+> !roll / !rw / !rollwaifu / !waifu - ¡Tira! ¡Ojalá te salga yo!
+> !rollcatalog / !catalogoroll - ¿Qué personajes faltan?
+> !genchar / !generar / !genrandom - Crea un personaje con IA
+> !claim / !c / !reclamar - ¡Reclámalo rápido!
+> !harem / !waifus / !claims - Tus reclamados
+> !principal / !setmain / !waifuprincipal - Tu favorito
+> !waifusboard / !waifustop / !wtop - Top de personajes
+> !vote / !votar - Vota por tu personaje
+> !trade / !intercambiar - Intercambia con tu amigo
+> !setclaimmsg / !setclaim - Tu mensajito al reclamar
+> !serielist / !slist / !animelist - Series disponibles
+> !serieinfo / !ainfo / !animeinfo - Info de una serie
+> !charimage / !waifuimage - Fotito de un personaje
+> !sell / !vender - Pon en venta tu personaje
+> !buychar / !buyc / !comprar - Compra uno en venta
+> !wshop / !haremshop / !tiendawaifus - Tiendita de waifus
+> !removesale / !removerventa - Quita tu venta
+> !gachainfo / !ginfo / !infogacha - Tu info y esperas de gacha
+> !givechar / !givewaifu / !regalar - Regala un personaje
+> !giveallharem - Regala todo tu harem
+> !deletewaifu / !delchar / !delwaifu - Borra un personaje
+> !deletefav / !delfav - Quita tu favorito
+> !charinfo / !winfo / !waifuinfo - Info de un personaje
+> !favboard / !favtop - Top de favoritos
+> !delclaimmsg / !resetclaimmsg - Resetea tu mensaje
+> !atrapar / !catch / !usarticket - Atrapa con ticket por ID
+> !serie / !series / !catalogo / !personajes - Lista de series y personajes
+> !ascender / !ascension / !estrella - ¡Hazlo más fuerte!
+> !banner / !destacados - Personajes destacados de la semana
+> !buscarpj / !buscarpersonaje / !pj - Busca un personaje
+> !equipo / !team / !miequipo - Tu equipito de batalla
+> !gacha - Mi sistema de gacha
+> !gachadiag / !diagnosticogacha - ¿Mi gacha está bien?
+> !logros / !achievements - Tus logros
+> !misiones / !misionesgacha / !quests - Tus misioncitas de gacha
+> !pase / !pases / !reclamarpase - Reclama tu pasecito
+> !perfilgacha / !gachaperfil - Tu perfil de coleccionista
+> !poderes / !powers / !habilidades - Poderes de un personaje
+> !regalartodo / !regalarharem - Regala toda tu colección
+> !rwinfo / !gachacd / !cooldownsgacha - Esperas de tiradas
+> !mispokemon - Tu Pokédex
+> !pokecomida - Tiendita de comida Pokémon
+> !pokedar / !pokealimentar - Dale de comer a tu Pokémon
+> !pokefood / !pokecomprar - Compra comidita Pokémon
+> !pokemon - ¡Genera un Pokémon!
+> !pokemonpvp - Pelea con tu Pokémon
+> !poketop / !pokemontop - Top de Pokémon
+> !ticketpoke / !ticketpokemon - Usa ticket Pokémon
+> !brawlstars / !brawl - ¡Genera un Brawler!
+> !brawlstarspvp / !brawlpvp - Pelea con tu Brawler
+> !comprarcubitos / !cubitoscomprar - Compra cubitos
+> !cubitos / !cubitosdefuerza - Tiendita de cubitos
+> !drop - Reclama tu Brawler
+> !misbrawlers - Tus Brawlers
+> !subirbrawler - Sube a tu Brawler
+> !ticketbs / !ticketbrawl - Ticket Brawler
+> !adoptar - Adopta tu gusanito
+> !darorbe / !usarorbe - Usa un orbe en tu Snake
+> !missnakes / !misgusanitos - Tus Snakes
+> !orbe / !comprarorbe - Compra orbes
+> !orbes / !snakeorbes - Tiendita de orbes
+> !snake / !gusanito - ¡Genera un gusanito!
+> !ticketsnake - Ticket Snake
+> !clashcomprar - Compra para Clash
+> !clashmejorar - Mejora tu carta
+> !clashroyale / !cr - ¡Genera una carta!
+> !clashtienda - Tiendita de Clash
+> !desbloquear - Reclama tu carta
+> !miscartas - Tus cartitas
+> !ticketcr - Ticket Clash
+> !codcomprar - Compra para COD
+> !codmejorar - Mejora tu ítem COD
+> !codtienda - Tiendita de COD
+> !callofduty / !cod - ¡Genera un ítem COD!
+> !equipar - Reclama tu ítem COD
+> !miscod - Tus ítems COD
+> !ticketcod - Ticket COD
+> !criar - Reclama tu dragón
+> !dragon / !dragonmania - ¡Genera un dragón!
+> !dragoncomprar - Compra comida de dragón
+> !dragondar - Alimenta a tu dragón
+> !dragonfood - Tiendita de dragones
+> !misdragones - Tus dragoncitos
+> !ticketdragon - Ticket Dragón
 
-» ˚୨•(🌸)• ⊹ Stickers ⊹
-✧ !setmeta | !setstickermeta
-> Establece el pack y autor por defecto para tus stickers
-✧ !delmeta | !delstickermeta
-> Restablece el pack y autor por defecto para tus stickers
-✧ !brat
-> Crea un sticker estilo brat con texto
-✧ !bratv
-> Crea un video-sticker estilo brat
-✧ !wm | !take
-> Cambia el nombre del pack y autor de un sticker citado
-✧ !emojimix | !mix
-> Fusiona dos emojis en un nuevo sticker
-✧ !qc | !quote
-> Transforma un texto citado en una tarjeta de sticker tipo frase
-✧ !circle | !redondo
-> Convierte una imagen en un sticker circular
+🍡 *Para bajar cositas - Descargas*
+> !pinterest / !pin / !pinsearch - Busca en Pinterest
+> !tiktoksearch / !ttsearch - Busca en TikTok
+> !ytsearch / !ytbuscar / !yts - Busca en YouTube
+> !facebook / !fb / !facebookdl - Descarga de Facebook
+> !instagram / !ig / !igdl - Descarga de Instagram
+> !play / !yta / !ytmp3 / !play2 / !ytv / !ytmp4 - Descarga de YouTube
+> !tiktok / !tt / !tiktokdl - Descarga de TikTok
+> !tiktokmp3 / !ttmp3 / !tiktokaudio - Audio de TikTok
+> !twitter / !x / !xdl - Descarga de X
 
-» ˚୨•(🌸)• ⊹ Utilidades ⊹
-✧ !chatgpt | !ia
-> Realiza peticiones a ChatGPT
-✧ !getpic | !pfp
-> Ver la foto de perfil de un usuario
-✧ !hd | !enhance | !remini
-> Mejora la calidad de una imagen
-✧ !toimg | !toimage
-> Convierte un sticker en imagen o video
-✧ !say | !decir
-> Repite un mensaje o multimedia como el bot
-✧ !rizz | !comorespondo | !respuesta | !sugerencia
-> Sugiere 3 respuestas para un mensaje, captura o texto que citás/pegás, en el tono que elijas
-✧ !opener | !abridor | !apertura
-> Genera 3 mensajes de apertura para iniciar una conversación, según la bio o descripción que le des
-✧ !practicar | !practice | !entrenar
-> Inicia una conversación de práctica con una IA que actúa como un match, para entrenar tu forma de ligar
-✧ !guardar | !guardarfrase
-> Guarda una de las últimas sugerencias de !rizz u !opener en tu biblioteca
-✧ !biblioteca | !misfrases | !library
-> Muestra tus frases guardadas, o borra una con !biblioteca borrar <número>
-✧ !clima | !weather
-> Consulta el estado del tiempo en cualquier ciudad
-✧ !traducir | !tr
-> Traduce un texto o mensaje citado a otro idioma
-✧ !calc | !calcular
-> Realiza cálculos y operaciones matemáticas rápidas
-✧ !encuesta | !poll
-> Genera una encuesta rápida para que el grupo vote
+🍡 *Para hacer stickers bonitos - Stickers*
+> !sticker / !s - Haz tu sticker
+> !setmeta / !setstickermeta - Tu pack y autor
+> !delmeta / !delstickermeta - Borra tu pack
+> !brat - Sticker brat
+> !bratv - Brat animado
+> !wm / !take - Roba el pack de un sticker
+> !emojimix / !mix - Mezcla dos emojis
+> !qc / !quote - Sticker de cita
+> !circle / !redondo - Sticker redondito
+> !setmeta / !meta - Cambia pack y autor
+> !smeme / !meme - Sticker meme
+> !spack / !stickers - Paquetito de stickers
+> !sprem / !premium - Sticker premium
+> !take / !robar - Cambia pack y autor de otro
+> !toimg / !aimagen / !tovideo - Sticker a imagen
 
-» ˚୨•(🌸)• ⊹ Sub-Bot ⊹
-✧ !serbot | !jadibot | !subbot | !code
-> Vincula tu propio sub-bot (gratis, sin token)
-✧ !misubbot | !mivinculo | !mibot
-> Muestra el estado de tu sub-bot
-✧ !desvincular | !unlink | !delsub
-> Desvincula tu sub-bot y borra su sesión
-✧ !subbots | !listarbots | !listbots
-> Lista todos los sub-bots vinculados
-✧ !bots | !sockets
-> Ver el número de bots activos
-✧ !numdebug | !jiddebug | !debugnum
-> Muestra los campos crudos del JID del remitente (para depurar detección de números)
-✧ !join | !unir
-> Une al bot a un grupo mediante un enlace de invitación
-✧ !leave | !salir
-> Hace que el bot salga de un grupo
-✧ !logout
-> Cierra la sesión del Sub-Bot actual y borra sus datos
-✧ !reload
-> Reinicia la conexión de tu Sub-Bot
-✧ !self
-> Hace privado o público al bot (modo Self)
-✧ !setbanner | !setbotbanner
-> Cambia el banner del menú
-✧ !setcurrency | !setbotcurrency
-> Cambia el nombre de la moneda del bot
-✧ !seticon | !setboticon
-> Cambia el ícono (foto de perfil) del bot
-✧ !setname | !setbotname
-> Cambia el nombre del bot
-✧ !setprefix | !setbotprefix
-> Cambia el prefijo del bot
-✧ !setusername
-> Cambia el nombre de usuario de WhatsApp del bot
-✧ !setstatus
-> Cambia el estado (about) de WhatsApp del bot
+🍡 *Mis ayuditas - Utilidades*
+> !chatgpt / !ia - Pregúntame lo que sea
+> !getpic / !pfp - Ve la fotito de alguien
+> !hd / !enhance / !remini - Te pongo tu foto en HD
+> !toimg / !toimage - Sticker a imagen
+> !say / !decir - Digo lo que me digas
+> !rizz / !comorespondo - Te ayudo a ligar
+> !opener / !abridor - Te ayudo a empezar una charla
+> !practicar / !practice - Practica ligar conmigo
+> !guardar / !guardarfrase - Guardo tu frasecita
+> !biblioteca / !misfrases / !library - Tus frases guardadas
+> !clima / !weather - ¿Cómo está el clíma?
+> !traducir / !tr - Te traduzco
+> !calc / !calcular - Calculo por ti
+> !encuesta / !poll - Hago una encuestita
 
-» ˚୨•(🌸)• ⊹ General ⊹
-✧ !afk | !ausente
-> Activa el modo ausente (AFK)
-✧ !ping | !p
-> Muestra la latencia del bot
-✧ !yukimenu | !yukihelp
-> Muestra la lista de comandos de Yuki
-✧ !baileys
-> Muestra la librería Baileys que usa Yuki
-✧ !info | !about
-> Información sobre el bot
-✧ !infobot | !botinfo
-> Obtener información del bot
-✧ !status | !estado
-> Ver el estado del bot
-✧ !suggest | !sug | !report | !reporte
-> Envía una sugerencia o reporte a los owners del bot
-✧ !pruebacolor
-> Prueba los estilos de formato de texto
+🍡 *Si quieres tu propio Yuki - Sub-Bot*
+> !serbot / !jadibot / !subbot / !code - ¡Llévame contigo!
+> !misubbot / !mivinculo / !mibot - ¿Cómo está tu sub-bot?
+> !desvincular / !unlink / !delsub - Desvincula tu sub-bot
+> !subbots / !listarbots - Todos los sub-bots
+> !bots / !sockets - ¿Cuántos bots activos hay?
+> !numdebug / !jiddebug - Debug de tu número
+> !join / !unir - Úneme a un grupo con link
+> !leave / !salir - Me salgo del grupo
+> !logout - Cierro mi sesión
+> !reload - Reinicio mi conexión
+> !self - Me hago privada o pública
+> !setbanner / !setbotbanner - Cambia mi banner
+> !setcurrency / !setbotcurrency - Cambia mi monedita
+> !seticon / !setboticon - Cambia mi iconito
+> !setname / !setbotname - Cambia mi nombrecito
+> !setprefix / !setbotprefix - Cambia mi prefijo
+> !setusername - Cambia mi usuario
+> !setstatus - Cambia mi estado
 
-» ˚୨•(🌸)• ⊹ Otros ⊹
-✧ !autolearn | !autoaprendizaje
-> Ver el estado del proceso automático de generación de conocimiento
-✧ !cmdtoggle | !togglecmd
-> Activa o desactiva un comando del bot
-✧ !gitpull | !gitsync | !updatetoken
-> Actualiza el token de GitHub en el remoto y descarga los últimos cambios del repositorio
-✧ !botones | !btn | !buttons
-> Muestra un ejemplo de menú con botones interactivos
-✧ !setprimary | !botprincipal | !setbot
-> Designa qué instancia de bot responde en este grupo
-✧ !delprimary | !unsetprimary | !quitarprimary | !delbotprincipal
-> Quita el bot primario asignado en este grupo
-✧ !resetsession | !fixsession | !resyncsession
-> Borra la sesión de Signal con un contacto para forzar un handshake nuevo
-✧ !revoke | !restablecer
-> Restablece el enlace de invitación del grupo.
-✧ !apistatus | !apis | !checkapis | !tiktokapis | !ytapis
-> Verifica el estado de las APIs de TikTok y YouTube (descarga/búsqueda)
-✧ !dlp | !dlpa | !dlpv | !ytdlp | !apidl
-> Prueba la descarga de la API con yt-dlp por link o buscando por nombre (audio o video)
-✧ !minar | !mine | !mina
-> Baja a la mina y consigue minerales (¡con suerte, raros!)
-✧ !minerales | !mochila | !inventario | !ores
-> Muestra los minerales que tienes o el catálogo con probabilidades
-✧ !venderminerales | !vendermin | !vendertodo | !sellores
-> Vende todos tus minerales (o solo uno si lo indicas)
-✧ !suerte | !luck | !gachaluck
-> Revisa el historial de tiradas de un usuario y decide si el bot interviene dándole un personaje (owner/mods)
-✧ !sticker | !s
-> Convierte una imagen, video, gif, sticker o URL en sticker, con formas y efectos opcionales
-✧ !mistralstatus | !mistral | !iamistral | !testmistral
-> Verifica si la API de Mistral AI responde (señal, latencia y errores)
-✧ !iastatus | !apisia | !checkia | !iaapis | !estadoia
-> Prueba todas las APIs de IA (Gemini, Mistral, Groq, OpenRouter y respaldo) y muestra cuáles responden
-✧ !setpic | !setavatar | !setperfilpic
-> Establece la imagen o gif de tu perfil
-✧ !delpic | !delavatar
-> Borra la imagen o gif de tu perfil
+🍡 *General*
+> !afk / !ausente - Me dices que te vas
+> !ping / !p - ¿Estoy lenta?
+> !yukimenu / !yukihelp - Mi cuadernito
+> !baileys - Mi librería
+> !info / !about / !infobot / !botinfo - Info de mí
+> !status / !estado - ¿Cómo estoy?
+> !suggest / !sug / !report - Mándale un mensajito a mis dueños
+> !pruebacolor - Prueba mis colorcitos
 
-» ˚୨•(🌸)• ⊹ Reacciones ⊹
-> Menciona o responde a alguien (ej: !hug @usuario). Casi todas envían un GIF animado.
+🍡 *Otros secretitos*
+> !autolearn / !autoaprendizaje - Mi aprendizaje automático
+> !cmdtoggle / !togglecmd - Prende o apaga un comando
+> !gitpull / !gitsync - Actualiza mi código
+> !botones / !btn - Ejemplito de botones
+> !setprimary / !botprincipal - ¿Qué bot responde?
+> !delprimary / !quitarprimary - Quita el bot principal
+> !resetsession / !fixsession - Arreglo mi sesión
+> !revoke / !restablecer - Restablezco el link del grupo
+> !apistatus / !apis - ¿Mis APIs están bien?
+> !dlp / !ytdlp / !apidl - Prueba de descarga
+> !minar / !mine / !mina - ¡Vamos a la mina!
+> !minerales / !mochila / !inventario - Tus mineralitos
+> !venderminerales / !vendermin - Vende tus minerales
+> !suerte / !luck / !gachaluck - ¿Tienes suerte hoy?
+> !mistralstatus / !mistral - ¿Mistral está bien?
+> !iastatus / !apisia - ¿Mis IAs están bien?
+> !setpic / !setavatar - Pon tu fotito
+> !delpic / !delavatar - Borra tu fotito
 
-*💞 Cariño y afecto*
-✧ !cookie | !galleta
-> Comparte una galleta
-✧ !cuddle | !acurrucar
-> Acurrúcate junto a alguien
-✧ !feed | !alimentar
-> Dale de comer a alguien
-✧ !handhold | !tomar-mano
-> Toma de la mano a alguien
-✧ !highfive | !chocar
-> Choca los cinco con alguien
-✧ !hug | !abrazar
-> Abraza a alguien
-✧ !kiss | !besar
-> Besa a alguien
-✧ !love | !amor
-> Muestra que estás enamorado/a
-✧ !pat | !darpalmada | !caricia | !acariciar
-> Acaricia la cabeza de alguien
-✧ !peck | !piquito
-> Dale un piquito a alguien
-✧ !tea | !te | !té
-> Toma té con alguien
+🍡 *Para abrazarnos - Reacciones*
+> !cookie / !galleta - Te doy una galletita
+> !cuddle / !acurrucar - Nos acurrucamos
+> !feed / !alimentar - Te doy de comer
+> !handhold / !tomar-mano - Te tomo de la manito
+> !highfive / !chocar - ¡Chócalas!
+> !hug / !abrazar - ¡Ven, te abrazo fuerte!
+> !kiss / !besar - ¿Te doy un besito?
+> !love / !amor - ¡Te quiero!
+> !pat / !acariciar - Te acaricio tu cabecita
+> !peck / !piquito - Un piquito
+> !tea / !te / !té - ¿Tomamos un tecito?
+> !celebrate / !celebrar - ¡Celebremos!
+> !clap / !aplaudir - ¡Bravo!
+> !dance / !bailar - ¡Bailemos!
+> !happy / !feliz - ¡Estoy feliz contigo!
+> !jump / !saltar - ¡Salto de alegría!
+> !laugh / !reir - ¡Jajaja!
+> !nod / !asentir - Sí, sí, tienes razón
+> !smile / !sonreir - Te sonrío
+> !thumbsup / !aprobar - ¡Aprobado!
+> !wave / !saludar - ¡Holaaa!
+> !wink / !guiñar - Te guiño el ojito
+> !angry / !enojado - ¡Estoy enojada!
+> !cringe / !grima - ¡Qué cringe!
+> !cry / !llorar - ¡No llores, ven!
+> !dramatic / !drama - ¡Qué drama!
+> !facepalm / !decepcion - ¡Ay, qué decepción!
+> !pout / !pucheros - Hago pucheritos
+> !sad / !triste - ¿Estás triste? Yo te abrazo
+> !scared / !asustado - ¡Tengo miedito!
+> !scream / !gritar - ¡Ahhh!
+> !sigh / !suspirar - Ay, suspiro por ti
+> !bleh / !lengua - Te saco la lengüita
+> !blush / !sonrojar - ¡Me sonrojas!
+> !lurk / !acechar - Te espío en silencio
+> !shy / !timido - ¡Me da penita!
+> !smug / !engreido - Cara de superioridad
+> !stare / !mirar - Te miro fijamente
+> !surprised / !sorprendido - ¡Sorprendida!
+> !baka / !tonto - ¡Baka!
+> !bite / !morder - ¡Te muerdo!
+> !bonk / !golpe - ¡Bonk!
+> !kill / !matar - ¡Te mato de broma!
+> !killall / !matartodos - ¡A todos!
+> !lick / !lamer - ¡Te lamo!
+> !patear / !patada - ¡Te pateo! ¡Mentira!
+> !poke / !picar - Te pico con el dedito
+> !psycho / !psicopata - Me hago la psicópata
+> !punch / !puñetazo - ¡Te pego!
+> !push / !empujar - Te empujo
+> !shoot / !disparar - ¡Pew pew!
+> !slap / !bofetada - ¡Cachetada!
+> !step / !pisar - Te piso
+> !tickle / !cosquillas - ¡Cosquillitas!
+> !bored / !aburrido - Estoy aburrida, ¿jugamos?
+> !drunk / !borracho - ¡Estoy borrachita!
+> !eat / !comida - ¡Ñam ñam!
+> !heat / !calor - ¡Qué calor!
+> !nom / !comer - ¡Ñam!
+> !nope / !negar - ¡No!
+> !run / !correr - ¡Me voy corriendo!
+> !shrug / !encogerse - No sé
+> !sleep / !dormir - Me voy a dormir, ¡buenas noches!
+> !think / !pensar - Déjame pensar en ti
+> !yawn / !bostezar - Tengo sueñito
 
-*😄 Alegría y saludos*
-✧ !celebrate | !celebrar
-> Celebra con todos
-✧ !clap | !aplaudir
-> Aplaude
-✧ !dance | !bailar
-> Ponte a bailar
-✧ !happy | !feliz
-> Muestra lo feliz que estás
-✧ !jump | !saltar
-> Salta de la emoción
-✧ !laugh | !reir
-> Ríete de algo o de alguien
-✧ !nod | !asentir
-> Asiente con la cabeza
-✧ !smile | !sonreir
-> Sonríe
-✧ !thumbsup | !aprobar
-> Aprueba con el pulgar arriba
-✧ !wave | !saludar
-> Saluda con la mano
-✧ !wink | !guiñar
-> Guiña un ojo a alguien
+━━━━━━━━━━ 🌸 ━━━━━━━━━━
+Gracias por estar aquí conmigo...
+No te vayas, ¿sí? Te quiero mucho, de verdad.
+- Orihime 🌸
 
-*😢 Tristeza, enojo y miedo*
-✧ !angry | !enojado
-> Muestra que estás enojado/a
-✧ !cringe | !grima
-> Siente cringe
-✧ !cry | !llorar
-> Llora
-✧ !dramatic | !drama
-> Haz un drama
-✧ !facepalm | !decepcion
-> Llévate la mano a la cara por decepción
-✧ !pout | !pucheros
-> Haz pucheros
-✧ !sad | !triste
-> Muestra que estás triste
-✧ !scared | !asustado
-> Muestra que estás asustado/a
-✧ !scream | !gritar
-> Grita
-✧ !sigh | !suspirar
-> Suspira
-
-*😳 Timidez y miradas*
-✧ !bleh | !lengua
-> Saca la lengua
-✧ !blush | !sonrojar
-> Sonrójate
-✧ !lurk | !acechar
-> Acecha en silencio desde las sombras
-✧ !shy | !timido | !tímido
-> Muestra tu timidez
-✧ !smug | !engreido
-> Pon cara de superioridad
-✧ !stare | !mirar
-> Mira fijamente a alguien
-✧ !surprised | !sorprendido
-> Muestra sorpresa
-
-*👊 Golpes y bromas*
-✧ !baka | !tonto
-> Dile «baka» (tonto) a alguien
-✧ !bite | !morder
-> Muerde a alguien
-✧ !bonk | !golpe
-> Dale un bonk a alguien
-✧ !kill | !matar | !asesinar
-> Elimina a alguien de forma dramática (en broma)
-✧ !killall | !matartodos
-> Ejecuta un killall contra alguien (en broma)
-✧ !lick | !lamer
-> Lame a alguien
-✧ !patear | !patada
-> Dale una patada a alguien
-✧ !poke | !picar
-> Pica a alguien con el dedo
-✧ !psycho | !psicopata | !psicópata
-> Hazte el/la psicópata
-✧ !punch | !puñetazo
-> Dale un puñetazo a alguien
-✧ !push | !empujar
-> Empuja a alguien
-✧ !shoot | !disparar
-> Dispara con el dedo a alguien
-✧ !slap | !bofetada | !golpear
-> Dale una bofetada a alguien
-✧ !step | !pisar
-> Pisa a alguien
-✧ !tickle | !cosquillas
-> Hazle cosquillas a alguien
-
-*🌸 Del día a día*
-✧ !bored | !aburrido
-> Muestra que estás aburrido/a
-✧ !drunk | !borracho
-> Anda pasado/a de copas
-✧ !eat | !comida
-> Come algo delicioso
-✧ !heat | !calor
-> Muestra que tienes mucho calor
-✧ !nom | !comer
-> Haz «ñam» mordiendo algo
-✧ !nope | !negar
-> Di que no
-✧ !run | !correr
-> Sal corriendo
-✧ !shrug | !encogerse
-> Encógete de hombros
-✧ !sleep | !dormir
-> Quédate dormido/a
-✧ !think | !pensar
-> Ponte a pensar
-✧ !yawn | !bostezar
-> Bosteza
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━`;
-
-        const fullMenuText = menuHeader + menuBody;
+🍡 Mi canal oficial:
+https://whatsapp.com/channel/0029Vb9AOpk9WtC12RHEEj0Y
+🍡 Canal que Yuki patrocina - Duvalin:
+https://whatsapp.com/channel/0029Vb92LdaCnA7rdqUbdw38
+        
+const fullMenuText = menuHeader + menuBody;
 
         try {
             // 1. Enviar el menú con imagen (Asegúrate de tener la imagen en media/menu.jpg o cámbiale el nombre)
