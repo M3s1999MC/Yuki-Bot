@@ -11,7 +11,6 @@ module.exports = {
         const jid = m.key.remoteJid;
         const sender = getMessageSenderJid(m, sock);
         
-        // Si no escriben nada, selecciona un objetivo caótico por defecto
         const defaultTargets = ['la base secreta de la nasa', 'el Imperio Romano', 'la tostadora de la esquina', 'un servidor de Aternos', 'la matrix'];
         const objetivo = args.length > 0 ? args.join(' ') : defaultTargets[Math.floor(Math.random() * defaultTargets.length)];
         
@@ -19,7 +18,17 @@ module.exports = {
 
         db.getSafeUser(sender, async (err, user) => {
             if (err || !user) {
-                return sock.sendMessage(jid, { text: '₊˚ˑ༄ [!] No se pudo verificar tu estatus militar en la red. 🥀' }, { quoted: m });
+                return sock.sendMessage(jid, {
+                    text: [
+                        '🌸 ˚୨୧⋆｡˚ ⋆ *¡UPS!* ⋆ ˚｡⋆୨୧˚ 🌸',
+                        '🍡 _¡Ay, se me perdieron los radaritos y no pude revisar tu ficha!_ 💦',
+                        '',
+                        '✦ *Estado:* Error al consultar tu cuenta ♡',
+                        '',
+                        '━━━━━━━━━━ 🌸 ━━━━━━━━━━',
+                        '_Inténtalo de nuevo en un ratito, ¿sí? - Orihime 🌸_'
+                    ].join('\n')
+                }, { quoted: m });
             }
 
             if (victoria) {
@@ -32,11 +41,16 @@ module.exports = {
                     }
                     
                     await sock.sendMessage(jid, {
-                        text: `₊˚ˑ༄ 𝖄𝖚𝖐𝖎 // ATAQUE AÉREO EXITOSO 🚀✨\n\n` +
-                              `❀ ❟ Destruiste y saqueaste con éxito a: **${objetivo}**.\n` +
-                              `❀ 💰 *Botín obtenido:* \`+$${botin.toLocaleString('es-CO')} Bolívares\` 💵\n` +
-                              `───────────────────\n` +
-                              `❀ ¡Pura hiperinflación para las arcas enemigas! 🌸`,
+                        text: [
+                            '🌸 ˚୨୧⋆｡˚ ⋆ *¡BOOM! ¡ACERTAMOS!* ⋆ ˚｡⋆୨୧˚ 🌸',
+                            `🍡 _¡Whoa, le diste directo a *${objetivo}* y llenamos la canasta!_ ✨`,
+                            '',
+                            `✦ *Objetivo:* ${objetivo}`,
+                            `✦ *Botín obtenido:* \`+$${botin.toLocaleString('es-CO')} Bolívares\` 💵`,
+                            '━━━━━━━━━━ 🌸 ━━━━━━━━━━',
+                            '♡ _¡Qué puntería tan traviesa tienes! Ven a presumirme tus moneditas~_ 🍡',
+                            '_Con emoción, Orihime 🌸_'
+                        ].join('\n'),
                         mentions: [sender]
                     }, { quoted: m });
                 });
@@ -52,11 +66,16 @@ module.exports = {
                     }
 
                     await sock.sendMessage(jid, {
-                        text: `₊˚ˑ༄ 𝖄𝖚𝖐𝖎 // DEFENSAS ACTIVADAS 🛡️💥\n\n` +
-                              `❀ ❟ Las contramedidas de **${objetivo}** repelieron tu ataque catastróficamente.\n` +
-                              `❀ 💸 *Pagaste por daños de guerra:* \`-$${multaReal.toLocaleString('es-CO')} Bolívares\` 📉\n` +
-                              `───────────────────\n` +
-                              `❀ ¡Te arruinó el operativo el objetivo, tonto! 🥀`,
+                        text: [
+                            '🌸 ˚୨୧⋆｡˚ ⋆ *¡AY, NOOO!* ⋆ ˚｡⋆୨୧˚ 🌸',
+                            `🍡 _¡Las defensas de *${objetivo}* nos devolvieron el susto!_ 💦`,
+                            '',
+                            `✦ *Objetivo:* ${objetivo}`,
+                            `✦ *Daños pagados:* \`-$${multaReal.toLocaleString('es-CO')} Bolívares\` 📉`,
+                            '━━━━━━━━━━ 🌸 ━━━━━━━━━━',
+                            '♡ _¡Ay, qué travesura tan cara! No te desanimes, ¿sí? Yo te cuido~_ 🌸',
+                            '_Aún te quiero, Orihime ♡_'
+                        ].join('\n'),
                         mentions: [sender]
                     }, { quoted: m });
                 });
