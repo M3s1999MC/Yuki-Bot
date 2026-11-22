@@ -13,19 +13,39 @@ module.exports = {
 
         db.getSafeUser(sender, async (err, user) => {
             if (err || !user) {
-                return sock.sendMessage(remoteJid, { 
-                    text: '₊˚ˑ༄ [!] No pude acceder a los registros del banco central. 🥀' 
+                return sock.sendMessage(remoteJid, {
+                    text: [
+                        '🌸 ˚୨୧⋆｡˚ ⋆ *¡UPS!* ⋆ ˚｡⋆୨୧˚ 🌸',
+                        '🍡 _¡Ay, se trabó la ventanilla del banquito y no pude abrir tu libretita!_ 💦',
+                        '',
+                        '✦ *Estado:* Error al consultar el banco ♡',
+                        '',
+                        '━━━━━━━━━━ 🌸 ━━━━━━━━━━',
+                        '_Inténtalo de nuevo en un segundito, ¿sí? - Orihime 🌸_'
+                    ].join('\n')
                 }, { quoted: m });
             }
 
             const banco = Number(user.bank) || 0;
             const interesEstimado = Math.floor(banco * 0.02);
 
-            const text = `₊˚ˑ༄ 𝖄𝖚𝖐𝖎 // BANCO CENTRAL 🏦✨\n\n` +
-                         `❀ 💳 *Saldo en Banco:* \`$${banco.toLocaleString('es-CO')} Bolívares\`\n` +
-                         `❀ 📈 *Interés Diario (2%):* \`+$${interesEstimado.toLocaleString('es-CO')} Bolívares\`\n` +
-                         `───────────────────\n` +
-                         `❀ _¡Guarda tu dinero seguro en la red de Yuki antes de que sufra hiperinflación!_ 🔒🌸`;
+            let notaOrihime = '¡Tu ahorrito está súper seguro conmigo! Nadie te lo puede robar aquí adentro~ 🔒♡';
+            if (banco === 0) {
+                notaOrihime = '¡Tu alcancía está vaciíta! Usa *!deposit* para guardar tus moneditas antes de que te las roben~ 🍡';
+            } else if (interesEstimado >= 5000) {
+                notaOrihime = '¡Mira cuánto crece tu dinerito solito cada día! ¡Eres un genio del ahorro! ✨';
+            }
+
+            const text = [
+                '🌸 ˚୨୧⋆｡˚ ⋆ *BANQUITO DE YUKI* ⋆ ˚｡⋆୨୧˚ 🌸',
+                '🍡 _¡Mira cómo van creciendo tus ahorritos en mi bóveda secreta~_',
+                '',
+                `✦ *Saldo en Banco:* \`$${banco.toLocaleString('es-CO')} Bolívares\` 🏦`,
+                `✦ *Interés Diario (2%):* \`+$${interesEstimado.toLocaleString('es-CO')} Bolívares\` 📈`,
+                '━━━━━━━━━━ 🌸 ━━━━━━━━━━',
+                `♡ _${notaOrihime}_`,
+                '_Cuido tus ahorros con amor, Orihime 🌸_'
+            ].join('\n');
 
             await sock.sendMessage(remoteJid, { text }, { quoted: m });
         });
