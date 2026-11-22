@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🌸 Yuki-Bot MD 🤖✨
+# 🌸 Yuki-Bot MD 🌸✨
 
 *Un bot de WhatsApp multifuncional, modular y con estilo, desarrollado en Node.js.*
 
