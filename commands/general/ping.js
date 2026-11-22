@@ -18,9 +18,9 @@ module.exports = {
 
         const latency = Date.now() - start;
 
-        // 2. Manda el texto con la identidad de Yuki
+        // 2. Manda el texto con el estilo dulce de Yuki / Orihime
         await sock.sendMessage(jid, {
-            text: `⋆ . .̷ ׅ⏜ׅ ⌢\n「✿」 Ping de Yuki:\n\n⭐ Latencia: *${latency}ms*`
+            text: `🌸 ˚୨୧⋆｡˚ ⋆ YUKI ⋆ ˚｡⋆୨୧˚ 🌸\n🍡 ¿Estoy lenta, o voy bien?\n\n✦ Latencia: *${latency}ms* ♡\n- Orihime 🌸`
         }, { quoted: m });
     }
 };
