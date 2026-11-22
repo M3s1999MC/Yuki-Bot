@@ -34,7 +34,7 @@ https://whatsapp.com/channel/0029Vb92LdaCnA7rdqUbdw38
 
 ━━━━━━━━━━ 🌸 ━━━━━━━━━━\n`;
 
-        const menuBody = 🍡 *Si quieres conocerme mejor - Perfil*
+        const menuBody = `🍡 *Si quieres conocerme mejor - Perfil*
 > !profile / !perfil - Mira tu perfil, ¡yo lo hice con amor!
 > !level / !lvl - ¿Qué tan fuerte te has vuelto conmigo?
 > !lboard / !lb / !xptop - Los que más me visitan
@@ -430,7 +430,7 @@ No te vayas, ¿sí? Te quiero mucho, de verdad.
 🍡 Mi canal oficial:
 https://whatsapp.com/channel/0029Vb9AOpk9WtC12RHEEj0Y
 🍡 Canal que Yuki patrocina - Duvalin:
-https://whatsapp.com/channel/0029Vb92LdaCnA7rdqUbdw38
+https://whatsapp.com/channel/0029Vb92LdaCnA7rdqUbdw38`;
         
 const fullMenuText = menuHeader + menuBody;
 
