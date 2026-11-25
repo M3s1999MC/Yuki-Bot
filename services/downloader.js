@@ -3,7 +3,13 @@ const path = require('path');
 const os = require('os');
 const { execFile } = require('child_process');
 const { promisify } = require('util');
+const ytdlp = require('yt-dlp-exec');
 const yts = require('yt-search');
+
+let ytdl = null;
+try {
+    ytdl = require('@distube/ytdl-core');
+} catch (_) {}
 
 const execFileAsync = promisify(execFile);
 const TMP_DIR = os.tmpdir();
@@ -29,6 +35,16 @@ function isValidUrl(url) {
     }
 }
 
+function isYouTubeUrl(url) {
+    if (!isValidUrl(url)) return false;
+    try {
+        const host = new URL(url).hostname.replace(/^www\./, '').toLowerCase();
+        return host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtu.be';
+    } catch (_) {
+        return false;
+    }
+}
+
 function formatCaption(title, lines = []) {
     return [
         `🌸 ˚୨୧⋆｡˚ ⋆ *${title}* ⋆ ˚｡⋆୨୧˚ 🌸`,
@@ -48,33 +64,75 @@ async function searchYouTube(query, limit = 5) {
     }));
 }
 
+async function downloadYouTubeFallback(url, mode, finalOut) {
+    if (!ytdl || !isYouTubeUrl(url)) {
+        throw new Error('Fallback de YouTube no disponible.');
+    }
+
+    const rawOut = makeTempPath('ytdl_raw', mode === 'mp3' ? '.m4a' : '.mp4');
+    try {
+        await new Promise((resolve, reject) => {
+            const stream = ytdl(url, {
+                quality: mode === 'mp3' ? 'highestaudio' : 'highest',
+                filter: mode === 'mp3' ? 'audioonly' : 'audioandvideo'
+            });
+
+            const writer = fs.createWriteStream(rawOut);
+            stream.on('error', reject);
+            writer.on('error', reject);
+            writer.on('finish', resolve);
+            stream.pipe(writer);
+        });
+
+        if (mode === 'mp3') {
+            await execFileAsync('ffmpeg', [
+                '-y',
+                '-i', rawOut,
+                '-vn',
+                '-c:a', 'libmp3lame',
+                '-b:a', '128k',
+                finalOut
+            ], { timeout: 60000 });
+            safeUnlink(rawOut);
+        } else {
+            fs.renameSync(rawOut, finalOut);
+        }
+
+        if (!fs.existsSync(finalOut)) {
+            throw new Error('No se pudo generar el archivo con el fallback.');
+        }
+    } catch (err) {
+        safeUnlink(rawOut);
+        throw err;
+    }
+}
+
 async function downloadWithYtDlp(url, { mode = 'mp4', maxDurationSec = 600 } = {}) {
     if (!isValidUrl(url)) throw new Error('URL inválida.');
 
     const rawOut = makeTempPath('raw', mode === 'mp3' ? '.m4a' : '.mp4');
     const finalOut = makeTempPath('out', mode === 'mp3' ? '.mp3' : '.mp4');
+    const targetOut = mode === 'mp3' ? rawOut : finalOut;
 
     try {
-        const ytArgs = mode === 'mp3'
-            ? [
-                '--no-playlist',
-                '--no-warnings',
-                '--match-filter', `duration <= ${maxDurationSec}`,
-                '-f', 'bestaudio[ext=m4a]/bestaudio/best',
-                '-o', rawOut,
-                url
-            ]
-            : [
-                '--no-playlist',
-                '--no-warnings',
-                '--match-filter', `duration <= ${maxDurationSec}`,
-                '-f', 'bestvideo[ext=mp4][height<=720]+bestaudio[ext=m4a]/best[ext=mp4][height<=720]/best',
-                '--merge-output-format', 'mp4',
-                '-o', finalOut,
-                url
-            ];
+        const flags = mode === 'mp3'
+            ? {
+                noPlaylist: true,
+                noWarnings: true,
+                matchFilter: `duration <= ${maxDurationSec}`,
+                format: 'bestaudio[ext=m4a]/bestaudio/best',
+                output: targetOut
+            }
+            : {
+                noPlaylist: true,
+                noWarnings: true,
+                matchFilter: `duration <= ${maxDurationSec}`,
+                format: 'bestvideo[ext=mp4][height<=720]+bestaudio[ext=m4a]/best[ext=mp4][height<=720]/best',
+                mergeOutputFormat: 'mp4',
+                output: targetOut
+            };
 
-        await execFileAsync('yt-dlp', ytArgs, { timeout: 90000 });
+        await ytdlp(url, flags);
 
         if (mode === 'mp3') {
             await execFileAsync('ffmpeg', [
@@ -88,13 +146,25 @@ async function downloadWithYtDlp(url, { mode = 'mp4', maxDurationSec = 600 } = {
             safeUnlink(rawOut);
         }
 
-        if (!fs.existsSync(finalOut)) throw new Error('Archivo no generado.');
+        if (!fs.existsSync(finalOut)) {
+            throw new Error('Archivo no generado.');
+        }
 
         const buffer = fs.readFileSync(finalOut);
         safeUnlink(finalOut);
         return buffer;
     } catch (err) {
         safeUnlink(rawOut);
+
+        if (!fs.existsSync(finalOut) && isYouTubeUrl(url)) {
+            try {
+                await downloadYouTubeFallback(url, mode, finalOut);
+                const buffer = fs.readFileSync(finalOut);
+                safeUnlink(finalOut);
+                return buffer;
+            } catch (_) {}
+        }
+
         safeUnlink(finalOut);
         throw err;
     }
