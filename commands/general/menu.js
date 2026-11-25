@@ -800,7 +800,7 @@ const fullMenuText = menuHeader + menuBody;
 
         try {
             // 1. Enviar el menú con imagen (Asegúrate de tener la imagen en media/menu.jpg o cámbiale el nombre)
-            const imagePath = path.join(process.cwd(), 'media', 'banner.jpg'); // Cambia por tu imagen del menú
+            const imagePath = path.join(process.cwd(), 'media', 'banner.png'); // Cambia por tu imagen del menú
 
             if (fs.existsSync(imagePath)) {
                 const imageBuffer = await fs.promises.readFile(imagePath);
