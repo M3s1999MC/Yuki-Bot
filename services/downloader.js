@@ -14,6 +14,9 @@ try {
 const execFileAsync = promisify(execFile);
 const TMP_DIR = os.tmpdir();
 
+const DOWNLOAD_API_URL = String(process.env.DOWNLOAD_API_URL || '').trim().replace(/\/+$/, '');
+const DOWNLOAD_API_KEY = String(process.env.DOWNLOAD_API_KEY || '').trim();
+
 function makeTempPath(prefix, ext) {
     const id = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     return path.join(TMP_DIR, `yuki_${prefix}_${id}${ext}`);
@@ -62,6 +65,66 @@ function formatCount(val, fallback = 'No disponible') {
         return val.trim();
     }
     return fallback;
+}
+
+async function convertToMp3IfNeeded(inputPath, outputPath) {
+    await execFileAsync('ffmpeg', [
+        '-y',
+        '-i', inputPath,
+        '-vn',
+        '-c:a', 'libmp3lame',
+        '-b:a', '128k',
+        outputPath
+    ], { timeout: 60000 });
+}
+
+async function downloadFromApiKey(url, mode = 'mp4') {
+    if (!DOWNLOAD_API_URL || !DOWNLOAD_API_KEY) {
+        return null;
+    }
+
+    const endpoint = `${DOWNLOAD_API_URL}/download?url=${encodeURIComponent(url)}&format=${encodeURIComponent(mode)}`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 30000);
+
+    try {
+        const res = await fetch(endpoint, {
+            method: 'GET',
+            signal: controller.signal,
+            headers: {
+                'Authorization': `Bearer ${DOWNLOAD_API_KEY}`,
+                'x-api-key': DOWNLOAD_API_KEY,
+                'Accept': '*/*'
+            }
+        });
+
+        if (!res.ok) {
+            throw new Error(`API de descarga respondió HTTP ${res.status}`);
+        }
+
+        const contentType = String(res.headers.get('content-type') || '').toLowerCase();
+        if (contentType.includes('application/json')) {
+            const data = await res.json();
+            const directUrl = data?.downloadUrl || data?.url || data?.data?.url || data?.result?.url;
+            if (!directUrl || !isValidUrl(directUrl)) {
+                throw new Error('La API no devolvió un enlace directo válido.');
+            }
+            const fileRes = await fetch(directUrl);
+            if (!fileRes.ok) {
+                throw new Error(`Error descargando archivo desde API (${fileRes.status})`);
+            }
+            return Buffer.from(await fileRes.arrayBuffer());
+        }
+
+        const arrayBuf = await res.arrayBuffer();
+        const buf = Buffer.from(arrayBuf);
+        if (!buf.length) {
+            throw new Error('La API devolvió un archivo vacío.');
+        }
+        return buf;
+    } finally {
+        clearTimeout(timer);
+    }
 }
 
 async function searchYouTube(query, limit = 5) {
@@ -172,14 +235,7 @@ async function downloadYouTubeFallback(url, mode, finalOut) {
         });
 
         if (mode === 'mp3') {
-            await execFileAsync('ffmpeg', [
-                '-y',
-                '-i', rawOut,
-                '-vn',
-                '-c:a', 'libmp3lame',
-                '-b:a', '128k',
-                finalOut
-            ], { timeout: 60000 });
+            await convertToMp3IfNeeded(rawOut, finalOut);
             safeUnlink(rawOut);
         } else {
             fs.renameSync(rawOut, finalOut);
@@ -219,6 +275,35 @@ async function runYtDlpAttempt(url, mode, targetOut, playerClient) {
 async function downloadWithYtDlp(url, { mode = 'mp4' } = {}) {
     if (!isValidUrl(url)) throw new Error('URL inválida.');
 
+    // 1. Intento directo por API Key si está configurada
+    if (DOWNLOAD_API_URL && DOWNLOAD_API_KEY) {
+        try {
+            const apiBuffer = await downloadFromApiKey(url, mode);
+            if (apiBuffer && apiBuffer.length) {
+                if (mode === 'mp3') {
+                    const rawApi = makeTempPath('api_raw', '.bin');
+                    const outMp3 = makeTempPath('api_out', '.mp3');
+                    try {
+                        fs.writeFileSync(rawApi, apiBuffer);
+                        await convertToMp3IfNeeded(rawApi, outMp3);
+                        const converted = fs.readFileSync(outMp3);
+                        safeUnlink(rawApi);
+                        safeUnlink(outMp3);
+                        return converted;
+                    } catch (_) {
+                        safeUnlink(rawApi);
+                        safeUnlink(outMp3);
+                        return apiBuffer;
+                    }
+                }
+                return apiBuffer;
+            }
+        } catch (apiErr) {
+            console.error('[download api]', apiErr?.message || apiErr);
+        }
+    }
+
+    // 2. Respaldo local con yt-dlp / ytdl-core / ffmpeg
     const rawOut = makeTempPath('raw', mode === 'mp3' ? '.m4a' : '.mp4');
     const finalOut = makeTempPath('out', mode === 'mp3' ? '.mp3' : '.mp4');
     const targetOut = mode === 'mp3' ? rawOut : finalOut;
@@ -269,14 +354,7 @@ async function downloadWithYtDlp(url, { mode = 'mp4' } = {}) {
         }
 
         if (mode === 'mp3' && fs.existsSync(rawOut) && !fs.existsSync(finalOut)) {
-            await execFileAsync('ffmpeg', [
-                '-y',
-                '-i', rawOut,
-                '-vn',
-                '-c:a', 'libmp3lame',
-                '-b:a', '128k',
-                finalOut
-            ], { timeout: 60000 });
+            await convertToMp3IfNeeded(rawOut, finalOut);
             safeUnlink(rawOut);
         }
 
@@ -294,6 +372,52 @@ async function downloadWithYtDlp(url, { mode = 'mp4' } = {}) {
     }
 }
 
+async function searchPinterestHtmlFallback(query, limit = 25) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
+    const searchUrl = `https://www.pinterest.com/search/pins/?q=${encodeURIComponent(query)}`;
+
+    try {
+        const res = await fetch(searchUrl, {
+            signal: controller.signal,
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8'
+            }
+        });
+        if (!res.ok) return [];
+        const html = await res.text();
+
+        const matches = html.match(/https:\/\/i\.pinimg\.com\/(?:originals|[0-9]+x)\/[^\s"'<>\\]+/g) || [];
+        const uniqueImgs = [];
+        const seen = new Set();
+
+        for (const raw of matches) {
+            const clean = raw.replace(/\\u002F/g, '/').replace(/\\/g, '');
+            const key = clean.split('/').pop();
+            if (!key || seen.has(key)) continue;
+            seen.add(key);
+            uniqueImgs.push(clean);
+            if (uniqueImgs.length >= limit) break;
+        }
+
+        return uniqueImgs.map((img, idx) => ({
+            title: `Pin ${idx + 1}`,
+            author: 'Desconocido',
+            username: 'No disponible',
+            followers: 'No disponible',
+            likes: 'No disponible',
+            imageUrl: img,
+            pinUrl: searchUrl
+        }));
+    } catch (_) {
+        return [];
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
 async function searchPinterest(query, limit = 25) {
     const endpoint = `https://www.pinterest.com/resource/BaseSearchResource/get/?data=${encodeURIComponent(JSON.stringify({
         options: { query, scope: 'pins', page_size: limit }
@@ -306,48 +430,54 @@ async function searchPinterest(query, limit = 25) {
         const response = await fetch(endpoint, {
             signal: controller.signal,
             headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
                 'Accept': 'application/json, text/javascript, */*; q=0.01',
-                'X-Requested-With': 'XMLHttpRequest'
+                'X-Requested-With': 'XMLHttpRequest',
+                'Referer': `https://www.pinterest.com/search/pins/?q=${encodeURIComponent(query)}`
             }
         });
-        if (!response.ok) return [];
-        const data = await response.json();
-        const results = Array.isArray(data?.resource_response?.data?.results)
-            ? data.resource_response.data.results
-            : [];
 
-        return results
-            .map((pin) => {
-                const img = pin?.images?.orig?.url || pin?.images?.['736x']?.url || pin?.images?.['474x']?.url;
-                if (!img) return null;
+        if (response.ok) {
+            const data = await response.json();
+            const results = Array.isArray(data?.resource_response?.data?.results)
+                ? data.resource_response.data.results
+                : [];
 
-                const owner = pin?.native_creator || pin?.pinner || {};
-                const author = owner?.full_name || pin?.domain || 'Desconocido';
-                const username = owner?.username || 'No disponible';
-                const followers = formatCount(owner?.follower_count ?? pin?.pinner?.follower_count);
-                const likes = formatCount(
-                    pin?.reaction_counts?.['1'] ??
-                    pin?.repin_count ??
-                    pin?.aggregated_pin_data?.aggregated_stats?.saves
-                );
+            const parsed = results
+                .map((pin) => {
+                    const img = pin?.images?.orig?.url || pin?.images?.['736x']?.url || pin?.images?.['474x']?.url;
+                    if (!img) return null;
 
-                return {
-                    title: pin?.grid_title || pin?.title || pin?.auto_alt_text || 'Pin de Pinterest',
-                    author,
-                    username,
-                    followers,
-                    likes,
-                    imageUrl: img,
-                    pinUrl: pin?.id ? `https://www.pinterest.com/pin/${pin.id}/` : null
-                };
-            })
-            .filter(Boolean);
-    } catch (_) {
-        return [];
-    } finally {
+                    const owner = pin?.native_creator || pin?.pinner || {};
+                    const author = owner?.full_name || pin?.domain || 'Desconocido';
+                    const username = owner?.username || 'No disponible';
+                    const followers = formatCount(owner?.follower_count ?? pin?.pinner?.follower_count);
+                    const likes = formatCount(
+                        pin?.reaction_counts?.['1'] ??
+                        pin?.repin_count ??
+                        pin?.aggregated_pin_data?.aggregated_stats?.saves
+                    );
+
+                    return {
+                        title: pin?.grid_title || pin?.title || pin?.auto_alt_text || 'Pin de Pinterest',
+                        author,
+                        username,
+                        followers,
+                        likes,
+                        imageUrl: img,
+                        pinUrl: pin?.id ? `https://www.pinterest.com/pin/${pin.id}/` : null
+                    };
+                })
+                .filter(Boolean);
+
+            if (parsed.length) return parsed;
+        }
+    } catch (_) {}
+    finally {
         clearTimeout(timer);
     }
+
+    return searchPinterestHtmlFallback(query, limit);
 }
 
 module.exports = {
