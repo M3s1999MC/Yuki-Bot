@@ -11,9 +11,8 @@
   <a href="https://whatsapp.com/channel/0029Vb9AOpk9WtC12RHEEj0Y" target="_blank">
     <img src="https://img.shields.io/badge/WhatsApp-Canal%20Oficial-25D366?style=for-the-badge&logo=whatsapp&logoColor=white" alt="Canal de WhatsApp" />
   </a>
-</p>
   <a href="https://chat.whatsapp.com/KWa1MN4qwIxAA6p8f6P76R" target="_blank">
-    <img src="https://img.shields.io/badge/Comunidad-Soporte-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Comunidad" />
+    <img src="https://img.shields.io/badge/WhatsApp-Comunidad-128C7E?style=for-the-badge&logo=whatsapp&logoColor=white" alt="Comunidad de WhatsApp" />
   </a>
   <a href="#comandos">
     <img src="https://img.shields.io/badge/Gu%C3%ADa-Comandos-FF69B4?style=for-the-badge&logo=markdown&logoColor=white" alt="Comandos" />
