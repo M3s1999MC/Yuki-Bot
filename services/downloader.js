@@ -54,6 +54,16 @@ function formatCaption(title, lines = []) {
     ].join('\n');
 }
 
+function formatCount(val, fallback = 'No disponible') {
+    if (typeof val === 'number' && Number.isFinite(val)) {
+        return val.toLocaleString('es-ES');
+    }
+    if (typeof val === 'string' && val.trim()) {
+        return val.trim();
+    }
+    return fallback;
+}
+
 async function searchYouTube(query, limit = 5) {
     const res = await yts(query);
     return (res?.videos || []).slice(0, limit).map((v) => ({
@@ -86,9 +96,7 @@ async function getYouTubeVideoDetails(queryOrUrl) {
             title: info?.title || 'Sin título',
             description: (info?.description || 'Sin descripción disponible.').trim(),
             channel: info?.uploader || info?.channel || 'Desconocido',
-            likes: typeof info?.like_count === 'number'
-                ? info.like_count.toLocaleString('es-ES')
-                : 'No disponible',
+            likes: formatCount(info?.like_count),
             thumbnail: info?.thumbnail || (Array.isArray(info?.thumbnails) && info.thumbnails.length
                 ? info.thumbnails[info.thumbnails.length - 1].url
                 : null),
@@ -132,9 +140,7 @@ async function searchTikTokVideos(query) {
             title: entry.title || 'Video de TikTok',
             description: (entry.description || 'Sin descripción disponible.').trim(),
             channel: entry.uploader || entry.creator || entry.channel || 'Creador de TikTok',
-            likes: typeof entry.like_count === 'number'
-                ? entry.like_count.toLocaleString('es-ES')
-                : 'No disponible',
+            likes: formatCount(entry.like_count),
             thumbnail: entry.thumbnail || (Array.isArray(entry.thumbnails) && entry.thumbnails.length
                 ? entry.thumbnails[entry.thumbnails.length - 1].url
                 : null),
@@ -288,13 +294,13 @@ async function downloadWithYtDlp(url, { mode = 'mp4' } = {}) {
     }
 }
 
-async function searchPinterest(query, limit = 4) {
+async function searchPinterest(query, limit = 25) {
     const endpoint = `https://www.pinterest.com/resource/BaseSearchResource/get/?data=${encodeURIComponent(JSON.stringify({
         options: { query, scope: 'pins', page_size: limit }
     }))}`;
 
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 12000);
+    const timer = setTimeout(() => controller.abort(), 15000);
 
     try {
         const response = await fetch(endpoint, {
@@ -307,18 +313,36 @@ async function searchPinterest(query, limit = 4) {
         });
         if (!response.ok) return [];
         const data = await response.json();
-        const results = data?.resource_response?.data?.results || [];
+        const results = Array.isArray(data?.resource_response?.data?.results)
+            ? data.resource_response.data.results
+            : [];
+
         return results
             .map((pin) => {
                 const img = pin?.images?.orig?.url || pin?.images?.['736x']?.url || pin?.images?.['474x']?.url;
-                return img ? {
-                    title: pin?.grid_title || pin?.title || 'Pin de Pinterest',
+                if (!img) return null;
+
+                const owner = pin?.native_creator || pin?.pinner || {};
+                const author = owner?.full_name || pin?.domain || 'Desconocido';
+                const username = owner?.username || 'No disponible';
+                const followers = formatCount(owner?.follower_count ?? pin?.pinner?.follower_count);
+                const likes = formatCount(
+                    pin?.reaction_counts?.['1'] ??
+                    pin?.repin_count ??
+                    pin?.aggregated_pin_data?.aggregated_stats?.saves
+                );
+
+                return {
+                    title: pin?.grid_title || pin?.title || pin?.auto_alt_text || 'Pin de Pinterest',
+                    author,
+                    username,
+                    followers,
+                    likes,
                     imageUrl: img,
                     pinUrl: pin?.id ? `https://www.pinterest.com/pin/${pin.id}/` : null
-                } : null;
+                };
             })
-            .filter(Boolean)
-            .slice(0, limit);
+            .filter(Boolean);
     } catch (_) {
         return [];
     } finally {
