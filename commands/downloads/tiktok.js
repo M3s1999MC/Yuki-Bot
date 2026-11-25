@@ -1,33 +1,43 @@
-const { isValidUrl, downloadWithYtDlp, formatCaption } = require('../../services/downloader');
+const { isValidUrl, formatCaption, downloadWithYtDlp } = require('../../services/downloader');
+
+function extractUrl(text) {
+    const match = String(text || '').match(/https?:\/\/[^\s]+/i);
+    return match ? match[0] : null;
+}
 
 module.exports = {
     name: 'tiktok',
-    aliases: ['tt', 'tiktokdl'],
+    aliases: ['tt', 'ttdl'],
     category: 'downloads',
-    description: 'Descarga videos de TikTok sin marca de agua.',
+    description: 'Descarga un video de TikTok en formato MP4.',
 
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
-        const url = args.join(' ').trim();
-        if (!isValidUrl(url)) {
+        const url = extractUrl(args.join(' ').trim());
+
+        if (!url || !isValidUrl(url)) {
             return sock.sendMessage(jid, {
-                text: formatCaption('TIKTOK', ['✦ Uso: `!tiktok <enlace>`'])
+                text: formatCaption('TIKTOK VIDEO', ['✦ Uso: `!tiktok <enlace de TikTok>`'])
             }, { quoted: m });
         }
 
-        await sock.sendMessage(jid, { react: { text: '⬇️', key: m.key } });
+        await sock.sendMessage(jid, { react: { text: '🎵', key: m.key } });
 
         try {
-            const buffer = await downloadWithYtDlp(url, { mode: 'mp4', maxDurationSec: 300 });
+            const videoBuffer = await downloadWithYtDlp(url, { mode: 'mp4' });
+
             await sock.sendMessage(jid, {
-                video: buffer,
+                video: videoBuffer,
                 mimetype: 'video/mp4',
-                caption: formatCaption('TIKTOK', ['✦ _Video descargado sin marca de agua_'])
+                caption: formatCaption('TIKTOK VIDEO', ['🍡 _Video descargado con éxito._'])
             }, { quoted: m });
         } catch (err) {
-            console.error('[tiktok]', err?.message || err);
+            console.error('[tiktok]', err?.stderr || err?.message || err);
             await sock.sendMessage(jid, {
-                text: formatCaption('TIKTOK', ['🍡 _No pude descargar ese TikTok._'])
+                text: formatCaption('TIKTOK VIDEO', [
+                    '🍡 _No pude descargar el video de TikTok._',
+                    '✦ _Verifica que el enlace sea público y esté disponible._'
+                ])
             }, { quoted: m });
         }
     }
