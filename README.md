@@ -25,12 +25,12 @@
 
 ### 🌸 Yuki-Bot • Orihime
 
-Bot multifunción en **Node.js** pensado para descargas multimedia, búsqueda rápida y herramientas en WhatsApp, optimizado para mantener un consumo ligero y estable en el servidor.
+Bot multifunción en **Node.js** diseñado para darle vida a grupos y chats en WhatsApp con economía, minijuegos, gacha, perfil, reacciones y herramientas rápidas, cuidando un consumo ligero y estable en el servidor.
 
 ### ✨ Funciones principales
-* **Descargas y búsquedas:** audio y video de YouTube, TikTok, Instagram, Facebook, X/Twitter y búsquedas en Pinterest.
-* **Stickers y multimedia:** creación de clips/stickers con audio y herramientas rápidas para chats y grupos.
-* **Soporte y novedades:** avisos por el canal oficial y ayuda directa desde la comunidad.
+* **Economía, minijuegos y gacha:** monedas, negocios, trabajos, duelos, misiones, colección de personajes y minijuegos para pasar el rato.
+* **Comunidad, perfil y reacciones:** perfiles personalizables, niveles, moderación de grupos y comandos de reacciones.
+* **Stickers y utilidades:** creación de stickers/clips, encuestas, traducción, cálculo y herramientas prácticas para el chat.
 
 ## Comandos
 
