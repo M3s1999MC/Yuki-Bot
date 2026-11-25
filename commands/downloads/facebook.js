@@ -1,33 +1,43 @@
-const { isValidUrl, downloadWithYtDlp, formatCaption } = require('../../services/downloader');
+const { isValidUrl, formatCaption, downloadWithYtDlp } = require('../../services/downloader');
+
+function extractUrl(text) {
+    const match = String(text || '').match(/https?:\/\/[^\s]+/i);
+    return match ? match[0] : null;
+}
 
 module.exports = {
     name: 'facebook',
-    aliases: ['fb', 'facebookdl'],
+    aliases: ['fb', 'fbdl'],
     category: 'downloads',
-    description: 'Descarga videos o reels públicos de Facebook.',
+    description: 'Descarga un video público de Facebook en MP4.',
 
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
-        const url = args.join(' ').trim();
-        if (!isValidUrl(url)) {
+        const url = extractUrl(args.join(' ').trim());
+
+        if (!url || !isValidUrl(url)) {
             return sock.sendMessage(jid, {
-                text: formatCaption('FACEBOOK', ['✦ Uso: `!facebook <enlace>`'])
+                text: formatCaption('FACEBOOK VIDEO', ['✦ Uso: `!facebook <enlace de Facebook>`'])
             }, { quoted: m });
         }
 
-        await sock.sendMessage(jid, { react: { text: '⬇️', key: m.key } });
+        await sock.sendMessage(jid, { react: { text: '📘', key: m.key } });
 
         try {
-            const buffer = await downloadWithYtDlp(url, { mode: 'mp4', maxDurationSec: 300 });
+            const videoBuffer = await downloadWithYtDlp(url, { mode: 'mp4' });
+
             await sock.sendMessage(jid, {
-                video: buffer,
+                video: videoBuffer,
                 mimetype: 'video/mp4',
-                caption: formatCaption('FACEBOOK', ['✦ _Video de Facebook listo_'])
+                caption: formatCaption('FACEBOOK VIDEO', ['🍡 _Video descargado con éxito._'])
             }, { quoted: m });
         } catch (err) {
-            console.error('[facebook]', err?.message || err);
+            console.error('[facebook]', err?.stderr || err?.message || err);
             await sock.sendMessage(jid, {
-                text: formatCaption('FACEBOOK', ['🍡 _No pude descargar ese video (revisa que sea público)._'])
+                text: formatCaption('FACEBOOK VIDEO', [
+                    '🍡 _No pude descargar el video de Facebook._',
+                    '✦ _Asegúrate de que el video sea público._'
+                ])
             }, { quoted: m });
         }
     }
