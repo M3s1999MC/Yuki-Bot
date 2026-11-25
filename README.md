@@ -7,6 +7,11 @@
 <p align="center">
   <img alt="01icon" src="https://github.com/user-attachments/assets/d3955758-289c-4a72-915c-0d832e372818" width="280" />
 </p>
+<p align="center">
+  <a href="https://whatsapp.com/channel/0029Vb9AOpk9WtC12RHEEj0Y" target="_blank">
+    <img src="https://img.shields.io/badge/WhatsApp-Canal%20Oficial-25D366?style=for-the-badge&logo=whatsapp&logoColor=white" alt="Canal de WhatsApp" />
+  </a>
+</p>
 
 </div>
 
