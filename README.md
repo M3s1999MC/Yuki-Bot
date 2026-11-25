@@ -30,7 +30,7 @@ Bot multifunción en **Node.js** diseñado para darle vida a grupos y chats en W
 ### ✨ Funciones principales
 * **Economía, minijuegos y gacha:** monedas, negocios, trabajos, duelos, misiones, colección de personajes y minijuegos para pasar el rato.
 * **Comunidad, perfil y reacciones:** perfiles personalizables, niveles, moderación de grupos y comandos de reacciones.
-* **Stickers y utilidades:** creación de stickers/clips, encuestas, traducción, cálculo y herramientas prácticas para el chat.
+* **Stickers y utilidades:** creación de stickers/clips/brat/brats video.
 
 ## Comandos
 
