@@ -29,23 +29,27 @@ function isValidUrl(url) {
     }
 }
 
+function formatCaption(title, lines = []) {
+    return [
+        `🌸 ˚୨୧⋆｡˚ ⋆ *${title}* ⋆ ˚｡⋆୨୧˚ 🌸`,
+        ...lines.filter(Boolean),
+        '━━━━━━━━━━ 🌸 ━━━━━━━━━━',
+        '_Yuki\'s MD • Orihime 🌸_'
+    ].join('\n');
+}
+
 async function searchYouTube(query, limit = 5) {
     const res = await yts(query);
-    const videos = (res?.videos || []).slice(0, limit).map((v) => ({
+    return (res?.videos || []).slice(0, limit).map((v) => ({
         title: v.title,
         url: v.url,
         duration: v.timestamp || 'N/A',
-        views: v.views || 0,
-        author: v.author?.name || 'Desconocido',
-        thumbnail: v.thumbnail || null
+        author: v.author?.name || 'Desconocido'
     }));
-    return videos;
 }
 
 async function downloadWithYtDlp(url, { mode = 'mp4', maxDurationSec = 600 } = {}) {
-    if (!isValidUrl(url)) {
-        throw new Error('URL inválida.');
-    }
+    if (!isValidUrl(url)) throw new Error('URL inválida.');
 
     const rawOut = makeTempPath('raw', mode === 'mp3' ? '.m4a' : '.mp4');
     const finalOut = makeTempPath('out', mode === 'mp3' ? '.mp3' : '.mp4');
@@ -84,9 +88,7 @@ async function downloadWithYtDlp(url, { mode = 'mp4', maxDurationSec = 600 } = {
             safeUnlink(rawOut);
         }
 
-        if (!fs.existsSync(finalOut)) {
-            throw new Error('No se pudo generar el archivo de salida.');
-        }
+        if (!fs.existsSync(finalOut)) throw new Error('Archivo no generado.');
 
         const buffer = fs.readFileSync(finalOut);
         safeUnlink(finalOut);
@@ -98,30 +100,7 @@ async function downloadWithYtDlp(url, { mode = 'mp4', maxDurationSec = 600 } = {
     }
 }
 
-async function searchTikTok(query, limit = 5) {
-    // Usa yt-dlp ytsearch sobre TikTok si está disponible o devuelve fallback limpio
-    const outJson = makeTempPath('ttsearch', '.json');
-    try {
-        await execFileAsync('yt-dlp', [
-            '--flat-playlist',
-            '--dump-single-json',
-            '--no-warnings',
-            `ytsearch${limit}:${query} tiktok`,
-        ], { timeout: 30000 });
-    } catch (_) {}
-    safeUnlink(outJson);
-
-    // Búsqueda vía yt-search filtrando menciones a TikTok como respaldo rápido sin depender de scrapers rotos
-    const res = await yts(`${query} tiktok`);
-    return (res?.videos || []).slice(0, limit).map((item) => ({
-        title: item.title,
-        url: item.url,
-        duration: item.timestamp || 'N/A',
-        author: item.author?.name || 'TikTok'
-    }));
-}
-
-async function searchPinterest(query, limit = 5) {
+async function searchPinterest(query, limit = 4) {
     const endpoint = `https://www.pinterest.com/resource/BaseSearchResource/get/?data=${encodeURIComponent(JSON.stringify({
         options: { query, scope: 'pins', page_size: limit }
     }))}`;
@@ -133,7 +112,7 @@ async function searchPinterest(query, limit = 5) {
         const response = await fetch(endpoint, {
             signal: controller.signal,
             headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
                 'Accept': 'application/json, text/javascript, */*; q=0.01',
                 'X-Requested-With': 'XMLHttpRequest'
             }
@@ -161,8 +140,8 @@ async function searchPinterest(query, limit = 5) {
 
 module.exports = {
     isValidUrl,
+    formatCaption,
     searchYouTube,
     downloadWithYtDlp,
-    searchTikTok,
     searchPinterest
 };
