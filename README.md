@@ -4,7 +4,9 @@
 
 *Un bot de WhatsApp multifuncional, modular y con estilo, desarrollado en Node.js.*
 
-<img width="4096" height="4096" alt="01icon" src="https://github.com/user-attachments/assets/d3955758-289c-4a72-915c-0d832e372818" />
+<p align="center">
+  <img alt="01icon" src="https://github.com/user-attachments/assets/d3955758-289c-4a72-915c-0d832e372818" width="280" />
+</p>
 
 </div>
 
