@@ -49,7 +49,7 @@ module.exports = {
     name: 'stickeraudio',
     aliases: ['saudio', 'sconaudio', 'vaudio', 'gifaudio'],
     category: 'stickers',
-    description: 'Genera un clip animado en bucle con audio a partir de un video.',
+    description: 'Genera un clip animado en bucle con audio a partir de un video sin límite de duración.',
 
     async execute(sock, m, args) {
         const jid = m.key.remoteJid;
@@ -79,11 +79,10 @@ module.exports = {
 
             fs.writeFileSync(inputPath, videoBuffer);
 
-            // Recorta a 8s, ajusta tamaño cuadrado/ligero y conserva el audio en AAC
+            // Duración completa sin recorte, conservando pista de audio AAC
             await execFileAsync('ffmpeg', [
                 '-y',
                 '-i', inputPath,
-                '-t', '8',
                 '-vf', 'fps=15,scale=512:512:force_original_aspect_ratio=decrease,pad=512:512:(ow-iw)/2:(oh-ih)/2:black,setsar=1',
                 '-c:v', 'libx264',
                 '-pix_fmt', 'yuv420p',
@@ -93,7 +92,7 @@ module.exports = {
                 '-b:a', '128k',
                 '-movflags', '+faststart',
                 outVideoPath
-            ], { timeout: 60000 });
+            ], { timeout: 180000 });
 
             if (!fs.existsSync(outVideoPath)) {
                 throw new Error('No se pudo generar el video con audio.');
@@ -112,7 +111,7 @@ module.exports = {
             await sock.sendMessage(jid, {
                 text: formatCaption('STICKER CON AUDIO', [
                     '🍡 _No pude generar el clip animado con audio._',
-                    '✦ _Verifica que el video tenga audio y no sea demasiado pesado._'
+                    '✦ _Verifica que el video tenga audio y no sea demasiado pesado para el servidor._'
                 ])
             }, { quoted: m });
         } finally {
