@@ -1,8 +1,13 @@
+const fs = require('fs');
+const path = require('path');
+
 const chatHistory = new Map();
 const lastReplyAt = new Map();
 const botSentMessageIds = new Set();
 const reactedMessageIds = new Set();
 const COOLDOWN_MS = 4500;
+
+const STICKERS_ROOT = path.join(__dirname, '..', 'assets', 'stickers', 'orihime');
 
 let cachedModel = null;
 let cachedModelExpiresAt = 0;
@@ -71,6 +76,56 @@ function trackBotReaction(targetKey) {
             const first = reactedMessageIds.values().next().value;
             reactedMessageIds.delete(first);
         }
+    }
+}
+
+function pickRandomWebp(dirPath) {
+    try {
+        if (!fs.existsSync(dirPath)) return null;
+        const files = fs
+            .readdirSync(dirPath)
+            .filter(f => f.toLowerCase().endsWith('.webp'));
+        if (!files.length) return null;
+        const chosen = files[Math.floor(Math.random() * files.length)];
+        return path.join(dirPath, chosen);
+    } catch {
+        return null;
+    }
+}
+
+function detectStickerContext(replyText, isProposal) {
+    if (isProposal) return 'reject';
+    const t = String(replyText || '').toLowerCase();
+    if (/\b(pan|pancito|comida|hambre|antojo|comer|pastel|dulce|merienda)\b|🍞|🧁/.test(t)) {
+        return 'food';
+    }
+    if (/\b(apoyo|ánimo|animo|cansad|triste|respiro|cuid|abrazo|tranquil|pesad|mal)\b|🤍|🌷|🤗|❀/.test(t)) {
+        return 'support';
+    }
+    if (/\b(no entiendo|duda|raro|cómo|como|qué|que|distra|pensando|random|ni idea)\b|🤔|👀|🙈/.test(t)) {
+        return 'confused';
+    }
+    return 'happy';
+}
+
+async function sendContextSticker(sock, chatId, quotedMsg, replyText, isProposal) {
+    const context = detectStickerContext(replyText, isProposal);
+    const contextDir = path.join(STICKERS_ROOT, context);
+    const fallbackDir = path.join(STICKERS_ROOT, 'happy');
+
+    const stickerPath = pickRandomWebp(contextDir) || pickRandomWebp(fallbackDir);
+    if (!stickerPath) return;
+
+    try {
+        const stickerBuffer = fs.readFileSync(stickerPath);
+        const sentSticker = await sock.sendMessage(
+            chatId,
+            { sticker: stickerBuffer },
+            { quoted: quotedMsg }
+        );
+        trackBotSentMessage(sentSticker?.key);
+    } catch (err) {
+        console.error('Error enviando sticker de contexto:', err.message || err);
     }
 }
 
@@ -185,7 +240,8 @@ async function handleConversationalAI(sock, m, body, safeReply) {
     }
 
     try {
-        const extraHint = isProposalOrDatingRequest(trimmed)
+        const isProposal = isProposalOrDatingRequest(trimmed);
+        const extraHint = isProposal
             ? '\n[Nota de situación: te están pidiendo matrimonio o ser pareja; responde SIEMPRE que no, con dulzura y ocurrencia al estilo Orihime, en 1 o 2 frases cortas.]'
             : '';
 
@@ -208,6 +264,8 @@ async function handleConversationalAI(sock, m, body, safeReply) {
 
         const sentMsg = await safeReply(sock, chatId, { text: reply }, { quoted: m });
         trackBotSentMessage(sentMsg?.key);
+
+        await sendContextSticker(sock, chatId, sentMsg, reply, isProposal);
         return true;
     } catch (err) {
         console.error('Error en handleConversationalAI:', err.message || err);
