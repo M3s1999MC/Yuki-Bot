@@ -1,13 +1,10 @@
-const fs = require('fs');
-const path = require('path');
-
 const chatHistory = new Map();
 const lastReplyAt = new Map();
 const botSentMessageIds = new Set();
 const reactedMessageIds = new Set();
+const usedStickerKeys = new Set();
+const mutedChats = new Set();
 const COOLDOWN_MS = 4500;
-
-const STICKERS_ROOT = path.join(__dirname, '..', 'assets', 'stickers', 'orihime');
 
 let cachedModel = null;
 let cachedModelExpiresAt = 0;
@@ -15,6 +12,14 @@ const failedModels = new Set();
 
 // JID o número de "ella" (ej: '573001234567@s.whatsapp.net' o '123456789@lid')
 const HER_JID = (process.env.HER_JID || '').trim();
+
+const SIGSTICK_PACK_URL = 'https://www.sigstick.com/pack/4mXpH4vfNxi5xg7G27tF-orihime';
+
+// Puedes rellenar aquí las URLs directas de los stickers del pack (opcional si el scrapeo automático no devuelve todas)
+// o dejar que intente extraerlas automáticamente desde la página del pack.
+const MANUAL_STICKER_URLS = [
+    // 'https://...',
+];
 
 const YUKI_ORIHIME_PERSONA = `
 Eres Yuki, una chica inspirada en Orihime Inoue que participa en chats de WhatsApp en español.
@@ -55,6 +60,56 @@ function isFromHer(m) {
     return sender === target || remote === target;
 }
 
+function isChatMuted(chatId) {
+    return mutedChats.has(normalizeJid(chatId));
+}
+
+function muteChat(chatId) {
+    const id = normalizeJid(chatId);
+    if (!id) return false;
+    mutedChats.add(id);
+    return true;
+}
+
+function unmuteChat(chatId) {
+    const id = normalizeJid(chatId);
+    if (!id) return false;
+    return mutedChats.delete(id);
+}
+
+async function handleAiMuteCommand(sock, m, body, safeReply) {
+    if (!body || typeof body !== 'string') return false;
+    const cmd = body.trim().toLowerCase();
+    const chatId = m.key?.remoteJid;
+    if (!chatId) return false;
+
+    if (/^[!/.](yukicallar|callaryuki|silenciayuki|muteai)\b/i.test(cmd)) {
+        muteChat(chatId);
+        const sentMsg = await safeReply(
+            sock,
+            chatId,
+            { text: '˚₊· Entendido, me quedo calladita por aquí un ratito 🙈🍞' },
+            { quoted: m }
+        );
+        trackBotSentMessage(sentMsg?.key);
+        return true;
+    }
+
+    if (/^[!/.](yukihablar|hablaryuki|desmutear|unmuteai)\b/i.test(cmd)) {
+        unmuteChat(chatId);
+        const sentMsg = await safeReply(
+            sock,
+            chatId,
+            { text: '✧ ¡Volví! ¿De qué estábamos hablando? ✨😄' },
+            { quoted: m }
+        );
+        trackBotSentMessage(sentMsg?.key);
+        return true;
+    }
+
+    return false;
+}
+
 function isProposalOrDatingRequest(text = '') {
     return /\b(c[aá]sate conmigo|quieres casarte|te casas conmigo|matrimonio|boda|s[eé] mi (novia|pareja|amor)|quieres ser mi (novia|pareja)|andamos|hacemos pareja)\b/i.test(text);
 }
@@ -79,53 +134,88 @@ function trackBotReaction(targetKey) {
     }
 }
 
-function pickRandomWebp(dirPath) {
+function rememberSticker(key) {
+    if (!key) return;
+    if (usedStickerKeys.size >= 9) {
+        usedStickerKeys.clear();
+    }
+    usedStickerKeys.add(key);
+}
+
+async function fetchSigstickPackUrls() {
+    if (MANUAL_STICKER_URLS.length > 0) {
+        return MANUAL_STICKER_URLS.filter(u => typeof u === 'string' && u.trim());
+    }
+
     try {
-        if (!fs.existsSync(dirPath)) return null;
-        const files = fs
-            .readdirSync(dirPath)
-            .filter(f => f.toLowerCase().endsWith('.webp'));
-        if (!files.length) return null;
-        const chosen = files[Math.floor(Math.random() * files.length)];
-        return path.join(dirPath, chosen);
+        const res = await fetch(SIGSTICK_PACK_URL, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+        });
+        if (!res.ok) return [];
+        const html = await res.text();
+
+        const found = new Set();
+        const regex = /https?:\/\/[^"'\\\s<>]+?(?:\.webp|\.png|\.jpg|\.jpeg|\.gif)(?:\?[^"'\\\s<>]*)?/gi;
+        let match;
+        while ((match = regex.exec(html)) !== null) {
+            const url = match[0];
+            if (/sigstick|sticker|pack|4mXpH4vfNxi5xg7G27tF/i.test(url)) {
+                found.add(url);
+            }
+        }
+        return Array.from(found);
     } catch {
-        return null;
+        return [];
     }
 }
 
-function detectStickerContext(replyText, isProposal) {
-    if (isProposal) return 'reject';
+function pickNonRepeatingUrl(urls, replyText, isProposal) {
+    if (!urls.length) return null;
+
+    const unused = urls.filter(u => !usedStickerKeys.has(u));
+    const pool = unused.length > 0 ? unused : (usedStickerKeys.clear(), urls);
+
     const t = String(replyText || '').toLowerCase();
-    if (/\b(pan|pancito|comida|hambre|antojo|comer|pastel|dulce|merienda)\b|🍞|🧁/.test(t)) {
-        return 'food';
+    let preferred = pool;
+
+    if (isProposal) {
+        preferred = pool.filter(u => /no|reject|sigma|awkward|blank|confused/i.test(u));
+    } else if (/\b(cansad|sueño|agotad|pesad|triste)\b/.test(t)) {
+        preferred = pool.filter(u => /tired|sleep|sad|blank/i.test(u));
+    } else if (/\b(risa|jaja|meme|chiste|broma|sigma)\b/.test(t)) {
+        preferred = pool.filter(u => /sigma|laugh|happy|spin|shock/i.test(u));
+    } else if (/\b(sorpresa|qué|que|cómo|como|woah|locura)\b/.test(t)) {
+        preferred = pool.filter(u => /shock|spin|blank/i.test(u));
     }
-    if (/\b(apoyo|ánimo|animo|cansad|triste|respiro|cuid|abrazo|tranquil|pesad|mal)\b|🤍|🌷|🤗|❀/.test(t)) {
-        return 'support';
-    }
-    if (/\b(no entiendo|duda|raro|cómo|como|qué|que|distra|pensando|random|ni idea)\b|🤔|👀|🙈/.test(t)) {
-        return 'confused';
-    }
-    return 'happy';
+
+    const candidates = preferred.length > 0 ? preferred : pool;
+    const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+    rememberSticker(chosen);
+    return chosen;
 }
 
-async function sendContextSticker(sock, chatId, quotedMsg, replyText, isProposal) {
-    const context = detectStickerContext(replyText, isProposal);
-    const contextDir = path.join(STICKERS_ROOT, context);
-    const fallbackDir = path.join(STICKERS_ROOT, 'happy');
-
-    const stickerPath = pickRandomWebp(contextDir) || pickRandomWebp(fallbackDir);
-    if (!stickerPath) return;
-
+async function sendSigstickContextSticker(sock, chatId, quotedMsg, replyText, isProposal) {
     try {
-        const stickerBuffer = fs.readFileSync(stickerPath);
+        const urls = await fetchSigstickPackUrls();
+        const stickerUrl = pickNonRepeatingUrl(urls, replyText, isProposal);
+        if (!stickerUrl) return;
+
+        const imgRes = await fetch(stickerUrl);
+        if (!imgRes.ok) return;
+
+        const buffer = Buffer.from(await imgRes.arrayBuffer());
+        if (!buffer.length) return;
+
         const sentSticker = await sock.sendMessage(
             chatId,
-            { sticker: stickerBuffer },
+            { sticker: buffer },
             { quoted: quotedMsg }
         );
         trackBotSentMessage(sentSticker?.key);
     } catch (err) {
-        console.error('Error enviando sticker de contexto:', err.message || err);
+        console.error('Error enviando sticker de SigStick:', err.message || err);
     }
 }
 
@@ -222,6 +312,16 @@ async function askGeminiFlash(contents) {
 async function handleConversationalAI(sock, m, body, safeReply) {
     if (!process.env.GEMINI_API_KEY || !body || typeof body !== 'string') return false;
 
+    // Si es un comando de silenciar/activar en este chat, lo atiende y no genera respuesta de IA
+    if (await handleAiMuteCommand(sock, m, body, safeReply)) {
+        return true;
+    }
+
+    const chatId = m.key.remoteJid;
+    if (!chatId || isChatMuted(chatId)) {
+        return false;
+    }
+
     // Ignora los mensajes de ella
     if (isFromHer(m)) return false;
 
@@ -233,7 +333,6 @@ async function handleConversationalAI(sock, m, body, safeReply) {
     const trimmed = body.trim();
     if (!trimmed) return false;
 
-    const chatId = m.key.remoteJid;
     const now = Date.now();
     if (now - (lastReplyAt.get(chatId) || 0) < COOLDOWN_MS) {
         return false;
@@ -265,7 +364,7 @@ async function handleConversationalAI(sock, m, body, safeReply) {
         const sentMsg = await safeReply(sock, chatId, { text: reply }, { quoted: m });
         trackBotSentMessage(sentMsg?.key);
 
-        await sendContextSticker(sock, chatId, sentMsg, reply, isProposal);
+        await sendSigstickContextSticker(sock, chatId, sentMsg, reply, isProposal);
         return true;
     } catch (err) {
         console.error('Error en handleConversationalAI:', err.message || err);
@@ -276,5 +375,8 @@ async function handleConversationalAI(sock, m, body, safeReply) {
 module.exports = {
     handleConversationalAI,
     trackBotSentMessage,
-    trackBotReaction
+    trackBotReaction,
+    muteChat,
+    unmuteChat,
+    isChatMuted
 };
