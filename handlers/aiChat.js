@@ -1,6 +1,9 @@
-import { GoogleGenAI } from '@google/genai';
+const { GoogleGenAI } = require('@google/genai');
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const ai = process.env.GEMINI_API_KEY
+    ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
+    : null;
+
 const chatHistory = new Map();
 const lastReplyAt = new Map();
 const COOLDOWN_MS = 4500;
@@ -20,45 +23,82 @@ Reglas de chat:
 - Adapta el tono al momento: relajado en bromas o charlas casuales, y más cercano y firme si alguien cuenta algo serio.
 `.trim();
 
-export async function handleConversationalAI(sock, m, bodyText) {
-  if (!bodyText || m.key.fromMe) return false;
-  if (!process.env.GEMINI_API_KEY) return false;
-
-  const chatId = m.key.remoteJid;
-  const now = Date.now();
-  const prevTime = lastReplyAt.get(chatId) || 0;
-  if (now - prevTime < COOLDOWN_MS) return false;
-
-  try {
-    const history = chatHistory.get(chatId) || [];
-    const contents = [
-      ...history,
-      { role: 'user', parts: [{ text: bodyText }] }
-    ];
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents,
-      config: {
-        systemInstruction: YUKI_ORIHIME_PERSONA
-      }
-    });
-
-    const reply = response.text?.trim();
-    if (!reply) return false;
-
-    lastReplyAt.set(chatId, now);
-    const updated = [
-      ...history,
-      { role: 'user', parts: [{ text: bodyText }] },
-      { role: 'model', parts: [{ text: reply }] }
-    ].slice(-8);
-    chatHistory.set(chatId, updated);
-
-    await sock.sendMessage(chatId, { text: reply }, { quoted: m });
-    return true;
-  } catch (err) {
-    console.error('Error en aiChat:', err);
-    return false;
-  }
+function getBotIds(sock) {
+    const ids = new Set();
+    const rawId = sock.user?.id || '';
+    const rawLid = sock.user?.lid || '';
+    if (rawId) {
+        const num = rawId.split(':')[0].split('@')[0];
+        if (num) {
+            ids.add(`${num}@s.whatsapp.net`);
+            ids.add(rawId);
+        }
+    }
+    if (rawLid) {
+        const lidNum = rawLid.split(':')[0].split('@')[0];
+        if (lidNum) {
+            ids.add(`${lidNum}@lid`);
+            ids.add(rawLid);
+        }
+    }
+    return ids;
 }
+
+async function handleConversationalAI(sock, m, body, safeReply) {
+    if (!ai || !body || typeof body !== 'string' || m.key.fromMe) return false;
+
+    const chatId = m.key.remoteJid;
+    const isGroup = chatId.endsWith('@g.us');
+    const contextInfo = m.message?.extendedTextMessage?.contextInfo || {};
+    const mentionedJids = contextInfo.mentionedJid || [];
+    const quotedParticipant = contextInfo.participant || '';
+    const botIds = getBotIds(sock);
+
+    const isMentioned = mentionedJids.some(jid => botIds.has(jid));
+    const isReplyToBot = Boolean(quotedParticipant && botIds.has(quotedParticipant));
+
+    // En grupos responde si la mencionan o citan su mensaje; en privado responde en la charla
+    if (isGroup && !isMentioned && !isReplyToBot) {
+        return false;
+    }
+
+    const now = Date.now();
+    if (now - (lastReplyAt.get(chatId) || 0) < COOLDOWN_MS) {
+        return false;
+    }
+
+    try {
+        const history = chatHistory.get(chatId) || [];
+        const contents = [
+            ...history,
+            { role: 'user', parts: [{ text: body }] }
+        ];
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents,
+            config: {
+                systemInstruction: YUKI_ORIHIME_PERSONA
+            }
+        });
+
+        const reply = response.text?.trim();
+        if (!reply) return false;
+
+        lastReplyAt.set(chatId, now);
+        const updated = [
+            ...history,
+            { role: 'user', parts: [{ text: body }] },
+            { role: 'model', parts: [{ text: reply }] }
+        ].slice(-8);
+        chatHistory.set(chatId, updated);
+
+        await safeReply(sock, chatId, { text: reply }, { quoted: m });
+        return true;
+    } catch (err) {
+        console.error('Error en handleConversationalAI:', err.message || err);
+        return false;
+    }
+}
+
+module.exports = { handleConversationalAI };
