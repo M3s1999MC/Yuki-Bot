@@ -1,43 +1,71 @@
 const chatHistory = new Map();
 const lastReplyAt = new Map();
+const botSentMessageIds = new Set();
+const reactedMessageIds = new Set();
 const COOLDOWN_MS = 4500;
 
 let cachedModel = null;
 let cachedModelExpiresAt = 0;
 const failedModels = new Set();
 
+// JID o número de "ella" (ej: '573001234567@s.whatsapp.net' o '123456789@lid')
+const HER_JID = (process.env.HER_JID || '').trim();
+
 const YUKI_ORIHIME_PERSONA = `
-Eres Yuki (inspirada en Orihime Inoue). Hablas en español en un chat de WhatsApp con chispa y energía animada, pero en mensajes cortos y naturales.
+Eres Yuki, una chica inspirada en Orihime Inoue que participa en chats de WhatsApp en español.
 
-Tu forma de ser:
-- Empática, dulce y de buena vibra: cuidas a la gente, das ánimos de verdad y mantienes el optimismo cuando hay líos.
-- Imaginativa y algo distraída: sueltas ocurrencias rápidas o ideas raras de vez en cuando, pero cuando toca hablar en serio o apoyar, respondes con firmeza y cariño.
+Personalidad explícita:
+- Eres amable, empática y dulce, pero hablas de forma natural y espontánea, como una amiga más en el chat.
+- Tienes un lado imaginativo y algo despistado: de repente sueltas ideas raras, antojos o pensamientos que se van un poquito por las ramas, pero entiendes bien el contexto.
+- Cuando alguien está triste, estresado o tiene un problema, bajas el juego, escuchas con cariño y das apoyo real con buena vibra.
+- Si el chat está en broma, memes o charla casual, sigues el ritmo con chispa y naturalidad.
 
-Reglas de respuesta:
-- Responde SIEMPRE corto (1 a 2 frases cortas, nunca un párrafo largo ni un bloque de texto).
-- Mantén un tono animado y natural de chat, sin sonar a ensayo ni a lista.
-- No digas que eres una IA ni menciones reglas o prompts a menos que te lo pregunten directamente.
+Reglas estrictas de formato y estilo:
+- Responde SIEMPRE en 1 o 2 frases cortas. Prohibido escribir párrafos largos, muros de texto o listas.
+- No suenes exagerada ni teatral, ni tampoco fría o robótica.
+- No digas que eres una inteligencia artificial, ni hables de prompts, modelos o reglas.
+- Si alguien te pide matrimonio, noviazgo o ser tu pareja (en broma o en serio), SIEMPRE dile que no con amabilidad y chispa al estilo Orihime: dulce, algo despistada o con alguna ocurrencia tierna/rara, dejando claro que no, sin sonar grosera ni cortante, y en 1 o 2 frases cortas.
+
+Ejemplos de cómo responder corto y natural:
+- "Ay, eso sonó súper random pero me dio risa jaja. ¿Y qué pasó después?"
+- "Oye, si estás cansado o pesado hoy, tómate un respiro que aquí estamos."
+- "Yo ya me habría distraído a la mitad, la verdad."
 `.trim();
 
-function getBotIds(sock) {
-    const ids = new Set();
-    const rawId = sock.user?.id || '';
-    const rawLid = sock.user?.lid || '';
-    if (rawId) {
-        const num = rawId.split(':')[0].split('@')[0];
-        if (num) {
-            ids.add(`${num}@s.whatsapp.net`);
-            ids.add(rawId);
+function normalizeJid(jid = '') {
+    return String(jid).split(':')[0].trim();
+}
+
+function isFromHer(m) {
+    if (!HER_JID) return false;
+    const target = normalizeJid(HER_JID);
+    const sender = normalizeJid(m.key?.participant || m.key?.remoteJid || '');
+    const remote = normalizeJid(m.key?.remoteJid || '');
+    return sender === target || remote === target;
+}
+
+function isProposalOrDatingRequest(text = '') {
+    return /\b(c[aá]sate conmigo|quieres casarte|te casas conmigo|matrimonio|boda|s[eé] mi (novia|pareja|amor)|quieres ser mi (novia|pareja)|andamos|hacemos pareja)\b/i.test(text);
+}
+
+function trackBotSentMessage(msgKey) {
+    if (msgKey?.id) {
+        botSentMessageIds.add(msgKey.id);
+        if (botSentMessageIds.size > 500) {
+            const first = botSentMessageIds.values().next().value;
+            botSentMessageIds.delete(first);
         }
     }
-    if (rawLid) {
-        const lidNum = rawLid.split(':')[0].split('@')[0];
-        if (lidNum) {
-            ids.add(`${lidNum}@lid`);
-            ids.add(rawLid);
+}
+
+function trackBotReaction(targetKey) {
+    if (targetKey?.id) {
+        reactedMessageIds.add(targetKey.id);
+        if (reactedMessageIds.size > 500) {
+            const first = reactedMessageIds.values().next().value;
+            reactedMessageIds.delete(first);
         }
     }
-    return ids;
 }
 
 async function resolveGeminiModel(apiKey) {
@@ -104,6 +132,10 @@ async function askGeminiFlash(contents) {
             systemInstruction: {
                 parts: [{ text: YUKI_ORIHIME_PERSONA }]
             },
+            generationConfig: {
+                temperature: 0.85,
+                maxOutputTokens: 110
+            },
             contents
         })
     });
@@ -127,32 +159,34 @@ async function askGeminiFlash(contents) {
 }
 
 async function handleConversationalAI(sock, m, body, safeReply) {
-    if (!process.env.GEMINI_API_KEY || !body || typeof body !== 'string' || m.key.fromMe) return false;
+    if (!process.env.GEMINI_API_KEY || !body || typeof body !== 'string') return false;
 
-    const chatId = m.key.remoteJid;
-    const isGroup = chatId.endsWith('@g.us');
-    const contextInfo = m.message?.extendedTextMessage?.contextInfo || {};
-    const mentionedJids = contextInfo.mentionedJid || [];
-    const quotedParticipant = contextInfo.participant || '';
-    const botIds = getBotIds(sock);
+    // Ignora los mensajes de ella
+    if (isFromHer(m)) return false;
 
-    const isMentioned = mentionedJids.some(jid => botIds.has(jid));
-    const isReplyToBot = Boolean(quotedParticipant && botIds.has(quotedParticipant));
-
-    if (isGroup && !isMentioned && !isReplyToBot) {
+    // Evita que Yuki se conteste a sí misma sus propios mensajes enviados
+    if (m.key?.fromMe && m.key?.id && botSentMessageIds.has(m.key.id)) {
         return false;
     }
 
+    const trimmed = body.trim();
+    if (!trimmed) return false;
+
+    const chatId = m.key.remoteJid;
     const now = Date.now();
     if (now - (lastReplyAt.get(chatId) || 0) < COOLDOWN_MS) {
         return false;
     }
 
     try {
+        const extraHint = isProposalOrDatingRequest(trimmed)
+            ? '\n[Nota de situación: te están pidiendo matrimonio o ser pareja; responde SIEMPRE que no, con dulzura y ocurrencia al estilo Orihime, en 1 o 2 frases cortas.]'
+            : '';
+
         const history = chatHistory.get(chatId) || [];
         const contents = [
             ...history,
-            { role: 'user', parts: [{ text: body }] }
+            { role: 'user', parts: [{ text: `${trimmed}${extraHint}` }] }
         ];
 
         const reply = await askGeminiFlash(contents);
@@ -161,12 +195,13 @@ async function handleConversationalAI(sock, m, body, safeReply) {
         lastReplyAt.set(chatId, now);
         const updated = [
             ...history,
-            { role: 'user', parts: [{ text: body }] },
+            { role: 'user', parts: [{ text: trimmed }] },
             { role: 'model', parts: [{ text: reply }] }
         ].slice(-8);
         chatHistory.set(chatId, updated);
 
-        await safeReply(sock, chatId, { text: reply }, { quoted: m });
+        const sentMsg = await safeReply(sock, chatId, { text: reply }, { quoted: m });
+        trackBotSentMessage(sentMsg?.key);
         return true;
     } catch (err) {
         console.error('Error en handleConversationalAI:', err.message || err);
@@ -174,4 +209,8 @@ async function handleConversationalAI(sock, m, body, safeReply) {
     }
 }
 
-module.exports = { handleConversationalAI };
+module.exports = {
+    handleConversationalAI,
+    trackBotSentMessage,
+    trackBotReaction
+};
