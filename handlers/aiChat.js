@@ -15,11 +15,22 @@ const HER_JID = (process.env.HER_JID || '').trim();
 
 const SIGSTICK_PACK_URL = 'https://www.sigstick.com/pack/4mXpH4vfNxi5xg7G27tF-orihime';
 
-// Puedes rellenar aquí las URLs directas de los stickers del pack (opcional si el scrapeo automático no devuelve todas)
-// o dejar que intente extraerlas automáticamente desde la página del pack.
+// Opcional: pega aquí las URLs directas de los stickers del pack si el scrapeo HTML no las devuelve todas
 const MANUAL_STICKER_URLS = [
     // 'https://...',
 ];
+
+// Ajusta la ruta según dónde esté tu archivo de base de datos (ej. '../database/db' o '../db')
+let db = null;
+try {
+    db = require('../database/db');
+} catch {
+    try {
+        db = require('../db');
+    } catch {
+        db = null;
+    }
+}
 
 const YUKI_ORIHIME_PERSONA = `
 Eres Yuki, una chica inspirada en Orihime Inoue que participa en chats de WhatsApp en español.
@@ -60,55 +71,93 @@ function isFromHer(m) {
     return sender === target || remote === target;
 }
 
+function syncMutedChatsFromDb() {
+    if (!db) return;
+    try {
+        if (typeof db.all === 'function') {
+            db.all(
+                `SELECT group_jid FROM group_settings WHERE ai_muted = 1`,
+                [],
+                (err, rows = []) => {
+                    if (err) {
+                        if (!/no such column/i.test(err.message || '')) {
+                            console.error('Error cargando ai_muted desde SQLite:', err.message);
+                        }
+                        return;
+                    }
+                    for (const row of rows) {
+                        if (row?.group_jid) mutedChats.add(normalizeJid(row.group_jid));
+                    }
+                }
+            );
+        } else if (typeof db.query === 'function') {
+            db.query(`SELECT group_jid FROM group_settings WHERE ai_muted = 1`)
+                .then((res) => {
+                    for (const row of res?.rows || []) {
+                        if (row?.group_jid) mutedChats.add(normalizeJid(row.group_jid));
+                    }
+                })
+                .catch((err) => {
+                    console.error('Error cargando ai_muted desde Postgres:', err.message);
+                });
+        }
+    } catch (err) {
+        console.error('Error inicializando estados de mute de IA:', err.message || err);
+    }
+}
+
 function isChatMuted(chatId) {
+    if (!chatId) return false;
     return mutedChats.has(normalizeJid(chatId));
 }
 
-function muteChat(chatId) {
+function muteChat(chatId, callback) {
     const id = normalizeJid(chatId);
-    if (!id) return false;
+    if (!id) {
+        if (typeof callback === 'function') callback(false);
+        return false;
+    }
     mutedChats.add(id);
+
+    if (typeof db?.setGroupAiMuted === 'function') {
+        const maybePromise = db.setGroupAiMuted(id, true, (err) => {
+            if (typeof callback === 'function') callback(!err);
+        });
+        if (maybePromise && typeof maybePromise.then === 'function') {
+            maybePromise.then((ok) => {
+                if (typeof callback === 'function') callback(Boolean(ok));
+            });
+        }
+    } else if (typeof callback === 'function') {
+        callback(true);
+    }
     return true;
 }
 
-function unmuteChat(chatId) {
+function unmuteChat(chatId, callback) {
     const id = normalizeJid(chatId);
-    if (!id) return false;
-    return mutedChats.delete(id);
+    if (!id) {
+        if (typeof callback === 'function') callback(false);
+        return false;
+    }
+    const existed = mutedChats.delete(id);
+
+    if (typeof db?.setGroupAiMuted === 'function') {
+        const maybePromise = db.setGroupAiMuted(id, false, (err) => {
+            if (typeof callback === 'function') callback(!err);
+        });
+        if (maybePromise && typeof maybePromise.then === 'function') {
+            maybePromise.then((ok) => {
+                if (typeof callback === 'function') callback(Boolean(ok) || existed);
+            });
+        }
+    } else if (typeof callback === 'function') {
+        callback(existed);
+    }
+    return existed;
 }
 
-async function handleAiMuteCommand(sock, m, body, safeReply) {
-    if (!body || typeof body !== 'string') return false;
-    const cmd = body.trim().toLowerCase();
-    const chatId = m.key?.remoteJid;
-    if (!chatId) return false;
-
-    if (/^[!/.](yukicallar|callaryuki|silenciayuki|muteai)\b/i.test(cmd)) {
-        muteChat(chatId);
-        const sentMsg = await safeReply(
-            sock,
-            chatId,
-            { text: '˚₊· Entendido, me quedo calladita por aquí un ratito 🙈🍞' },
-            { quoted: m }
-        );
-        trackBotSentMessage(sentMsg?.key);
-        return true;
-    }
-
-    if (/^[!/.](yukihablar|hablaryuki|desmutear|unmuteai)\b/i.test(cmd)) {
-        unmuteChat(chatId);
-        const sentMsg = await safeReply(
-            sock,
-            chatId,
-            { text: '✧ ¡Volví! ¿De qué estábamos hablando? ✨😄' },
-            { quoted: m }
-        );
-        trackBotSentMessage(sentMsg?.key);
-        return true;
-    }
-
-    return false;
-}
+syncMutedChatsFromDb();
 
 function isProposalOrDatingRequest(text = '') {
     return /\b(c[aá]sate conmigo|quieres casarte|te casas conmigo|matrimonio|boda|s[eé] mi (novia|pareja|amor)|quieres ser mi (novia|pareja)|andamos|hacemos pareja)\b/i.test(text);
@@ -312,12 +361,7 @@ async function askGeminiFlash(contents) {
 async function handleConversationalAI(sock, m, body, safeReply) {
     if (!process.env.GEMINI_API_KEY || !body || typeof body !== 'string') return false;
 
-    // Si es un comando de silenciar/activar en este chat, lo atiende y no genera respuesta de IA
-    if (await handleAiMuteCommand(sock, m, body, safeReply)) {
-        return true;
-    }
-
-    const chatId = m.key.remoteJid;
+    const chatId = m?.key?.remoteJid;
     if (!chatId || isChatMuted(chatId)) {
         return false;
     }
