@@ -15,7 +15,14 @@ const HER_JID = (process.env.HER_JID || '').trim();
 
 const STICKER_PACK_URLS = [
     'https://www.sigstick.com/pack/4mXpH4vfNxi5xg7G27tF-orihime',
+    'https://stickers.wiki/es/whatsapp/bleach_achub/',
+    'https://stickers.wiki/es/whatsapp/anime153/',
+    'https://stickers.wiki/es/whatsapp/bleachquotes/',
+    'https://stickers.wiki/es/whatsapp/animeagebleachpack1_by_demybot/',
+    'https://stickers.wiki/es/whatsapp/ulquiorrabysps/',
+    'https://stickers.wiki/es/whatsapp/bleacchqw_by_fstikbot/',
     'https://stickers.wiki/es/whatsapp/inoueorihime/',
+    'https://sticker.fan/es/p/x83dt/',
     'https://stickers.wiki/es/whatsapp/inouebysps/'
 ];
 
