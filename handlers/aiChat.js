@@ -2,6 +2,9 @@ const chatHistory = new Map();
 const lastReplyAt = new Map();
 const COOLDOWN_MS = 4500;
 
+let cachedModel = null;
+let cachedModelExpiresAt = 0;
+
 const YUKI_ORIHIME_PERSONA = `
 Eres Yuki (inspirada en Orihime Inoue). Hablas en español de forma natural, cercana, amable y espontánea, como alguien más en la conversación del chat.
 
@@ -38,12 +41,60 @@ function getBotIds(sock) {
     return ids;
 }
 
+async function resolveGeminiModel(apiKey) {
+    if (process.env.GEMINI_MODEL) {
+        return process.env.GEMINI_MODEL.replace(/^models\//, '');
+    }
+
+    const now = Date.now();
+    if (cachedModel && now < cachedModelExpiresAt) {
+        return cachedModel;
+    }
+
+    const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`;
+    const res = await fetch(listUrl);
+    if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        throw new Error(`No se pudo listar modelos de Gemini (${res.status}): ${errText.slice(0, 200)}`);
+    }
+
+    const data = await res.json();
+    const models = Array.isArray(data?.models) ? data.models : [];
+
+    const candidates = models
+        .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
+        .map(m => String(m.name || '').replace(/^models\//, ''))
+        .filter(Boolean);
+
+    const preferredOrder = [
+        'gemini-2.5-flash-lite',
+        'gemini-2.5-flash',
+        'gemini-2.0-flash-lite',
+        'gemini-flash-latest'
+    ];
+
+    const chosen =
+        preferredOrder.find(p => candidates.includes(p)) ||
+        candidates.find(name => /flash/i.test(name)) ||
+        candidates[0];
+
+    if (!chosen) {
+        throw new Error('Tu API key no devolvió ningún modelo compatible con generateContent.');
+    }
+
+    cachedModel = chosen;
+    cachedModelExpiresAt = now + 60 * 60 * 1000;
+    console.log(`[aiChat] Modelo de Gemini seleccionado automáticamente: ${chosen}`);
+    return chosen;
+}
+
 async function askGeminiFlash(contents) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) return '';
 
-    const model = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+    const model = await resolveGeminiModel(apiKey);
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+
     const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -55,9 +106,14 @@ async function askGeminiFlash(contents) {
         })
     });
 
+    if (response.status === 404 && !process.env.GEMINI_MODEL) {
+        cachedModel = null;
+        cachedModelExpiresAt = 0;
+    }
+
     if (!response.ok) {
         const errText = await response.text().catch(() => '');
-        throw new Error(`Gemini HTTP ${response.status}: ${errText.slice(0, 200)}`);
+        throw new Error(`Gemini HTTP ${response.status} (${model}): ${errText.slice(0, 200)}`);
     }
 
     const data = await response.json();
