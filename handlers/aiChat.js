@@ -4,6 +4,7 @@ const COOLDOWN_MS = 4500;
 
 let cachedModel = null;
 let cachedModelExpiresAt = 0;
+const failedModels = new Set();
 
 const YUKI_ORIHIME_PERSONA = `
 Eres Yuki (inspirada en Orihime Inoue). Hablas en español de forma natural, cercana, amable y espontánea, como alguien más en la conversación del chat.
@@ -47,7 +48,7 @@ async function resolveGeminiModel(apiKey) {
     }
 
     const now = Date.now();
-    if (cachedModel && now < cachedModelExpiresAt) {
+    if (cachedModel && !failedModels.has(cachedModel) && now < cachedModelExpiresAt) {
         return cachedModel;
     }
 
@@ -64,17 +65,20 @@ async function resolveGeminiModel(apiKey) {
     const candidates = models
         .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
         .map(m => String(m.name || '').replace(/^models\//, ''))
-        .filter(Boolean);
+        .filter(name => name && !failedModels.has(name));
 
     const preferredOrder = [
+        'gemini-3.5-flash-lite',
+        'gemini-3.5-flash',
+        'gemini-flash-lite-latest',
+        'gemini-flash-latest',
         'gemini-2.5-flash-lite',
-        'gemini-2.5-flash',
-        'gemini-2.0-flash-lite',
-        'gemini-flash-latest'
+        'gemini-2.5-flash'
     ];
 
     const chosen =
         preferredOrder.find(p => candidates.includes(p)) ||
+        candidates.find(name => /3\.5.*flash|flash.*3\.5/i.test(name)) ||
         candidates.find(name => /flash/i.test(name)) ||
         candidates[0];
 
@@ -107,8 +111,11 @@ async function askGeminiFlash(contents) {
     });
 
     if (response.status === 404 && !process.env.GEMINI_MODEL) {
-        cachedModel = null;
-        cachedModelExpiresAt = 0;
+        failedModels.add(model);
+        if (cachedModel === model) {
+            cachedModel = null;
+            cachedModelExpiresAt = 0;
+        }
     }
 
     if (!response.ok) {
