@@ -35,9 +35,9 @@ const userColumns = {
     hobby: "TEXT DEFAULT 'Sin asignar'",
     gender: "TEXT DEFAULT 'Sin asignar'",
     bio: "TEXT DEFAULT 'Sin asignar'",
-    title: "TEXT DEFAULT 'Sin título'",       // <--- NUEVA COLUMNA TÍTULO
-    game_fav: "TEXT DEFAULT 'Sin asignar'",  // <--- NUEVA COLUMNA JUEGO FAV
-    music_fav: "TEXT DEFAULT 'Sin asignar'", // <--- NUEVA COLUMNA MÚSICA FAV
+    title: "TEXT DEFAULT 'Sin título'",
+    game_fav: "TEXT DEFAULT 'Sin asignar'",
+    music_fav: "TEXT DEFAULT 'Sin asignar'",
     main_waifu: 'TEXT',
     claim_message: 'TEXT',
     afk_reason: 'TEXT',
@@ -47,6 +47,20 @@ const userColumns = {
     lastDaily: 'INTEGER DEFAULT 0',
     lastWeekly: 'INTEGER DEFAULT 0',
     lastMonthly: 'INTEGER DEFAULT 0'
+};
+
+const groupColumns = {
+    warn_limit: 'INTEGER DEFAULT 3',
+    welcome_enabled: 'INTEGER DEFAULT 0',
+    welcome_text: "TEXT DEFAULT '¡Bienvenid@ al grupo! 🌸'",
+    welcome_image: 'TEXT',
+    goodbye_enabled: 'INTEGER DEFAULT 0',
+    goodbye_text: "TEXT DEFAULT 'Hasta luego... 👋'",
+    antilink: 'INTEGER DEFAULT 0',
+    admin_only: 'INTEGER DEFAULT 0',
+    bot_active: 'INTEGER DEFAULT 1',
+    primary_bot_jid: 'TEXT',
+    ai_muted: 'INTEGER DEFAULT 0'
 };
 
 function ensureColumns(table, columns) {
@@ -149,21 +163,11 @@ db.serialize(() => {
         antilink INTEGER DEFAULT 0,
         admin_only INTEGER DEFAULT 0,
         bot_active INTEGER DEFAULT 1,
-        primary_bot_jid TEXT
+        primary_bot_jid TEXT,
+        ai_muted INTEGER DEFAULT 0
     )`, (err) => {
         if (err) console.error('Error al crear group_settings:', err.message);
-        else ensureColumns('group_settings', {
-            warn_limit: 'INTEGER DEFAULT 3',
-            welcome_enabled: 'INTEGER DEFAULT 0',
-            welcome_text: "TEXT DEFAULT '¡Bienvenid@ al grupo! 🌸'",
-            welcome_image: 'TEXT',
-            goodbye_enabled: 'INTEGER DEFAULT 0',
-            goodbye_text: "TEXT DEFAULT 'Hasta luego... 👋'",
-            antilink: 'INTEGER DEFAULT 0',
-            admin_only: 'INTEGER DEFAULT 0',
-            bot_active: 'INTEGER DEFAULT 1',
-            primary_bot_jid: 'TEXT'
-        });
+        else ensureColumns('group_settings', groupColumns);
     });
     db.run(`CREATE TABLE IF NOT EXISTS message_counts (
         group_jid TEXT,
@@ -264,8 +268,8 @@ db.updateContactName = function(contact, callback) {
             `UPDATE users SET name = ? WHERE jid IN (${placeholders})`,
             [name.trim(), ...jids],
             (err) => {
-            if (err) console.error('Error al actualizar nombre desde contactos de WhatsApp:', err.message);
-            if (callback) callback(err || null);
+                if (err) console.error('Error al actualizar nombre desde contactos de WhatsApp:', err.message);
+                if (callback) callback(err || null);
             }
         );
     });
@@ -302,6 +306,47 @@ db.getSafeGroup = function(jid, callback) {
         if (insertErr) return callback(insertErr);
         this.get(`SELECT * FROM group_settings WHERE group_jid = ?`, [jid], callback);
     });
+};
+
+db.setGroupAiMuted = function(groupJid, muted, callback) {
+    if (!groupJid) {
+        if (typeof callback === 'function') callback(new Error('Se requiere groupJid'), false);
+        return;
+    }
+    const value = muted ? 1 : 0;
+    this.run(`INSERT OR IGNORE INTO group_settings (group_jid) VALUES (?)`, [groupJid], (insertErr) => {
+        if (insertErr) {
+            if (typeof callback === 'function') callback(insertErr, false);
+            return;
+        }
+        this.run(
+            `UPDATE group_settings SET ai_muted = ? WHERE group_jid = ?`,
+            [value, groupJid],
+            (err) => {
+                if (err) console.error('Error al actualizar ai_muted:', err.message);
+                if (typeof callback === 'function') callback(err || null, Boolean(value));
+            }
+        );
+    });
+};
+
+db.isGroupAiMuted = function(groupJid, callback) {
+    if (!groupJid) {
+        if (typeof callback === 'function') callback(null, false);
+        return;
+    }
+    this.get(
+        `SELECT ai_muted FROM group_settings WHERE group_jid = ?`,
+        [groupJid],
+        (err, row) => {
+            if (err) {
+                console.error('Error al consultar ai_muted:', err.message);
+                if (typeof callback === 'function') callback(err, false);
+                return;
+            }
+            if (typeof callback === 'function') callback(null, Boolean(row?.ai_muted));
+        }
+    );
 };
 
 db.updateUser = function(jid, data, callback) {
