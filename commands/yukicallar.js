@@ -1,48 +1,105 @@
-const { muteChat, unmuteChat, trackBotSentMessage } = require('../handlers/aiChat');
+const { muteChat, unmuteChat, isChatMuted, trackBotSentMessage } = require('../handlers/aiChat');
+
+const UNMUTE_WORDS = new Set([
+    'on',
+    'hablar',
+    'yukihablar',
+    'hablaryuki',
+    'desmutear',
+    'unmute',
+    'unmuteai',
+    'activar',
+    'encender'
+]);
+
+const MUTE_WORDS = new Set([
+    'off',
+    'callar',
+    'yukicallar',
+    'callaryuki',
+    'silenciar',
+    'silenciayuki',
+    'mutear',
+    'mute',
+    'muteai',
+    'apagar'
+]);
+
+function resolveAction(m, args = [], context = {}) {
+    const firstArg = String(args?.[0] || '').trim().toLowerCase();
+    if (UNMUTE_WORDS.has(firstArg)) return 'unmute';
+    if (MUTE_WORDS.has(firstArg)) return 'mute';
+
+    const invokedCmd = String(context.command || context.cmd || '').trim().toLowerCase();
+    if (UNMUTE_WORDS.has(invokedCmd)) return 'unmute';
+    if (MUTE_WORDS.has(invokedCmd)) return 'mute';
+
+    const rawText = String(
+        context.body ||
+        m?.message?.conversation ||
+        m?.message?.extendedTextMessage?.text ||
+        ''
+    )
+        .trim()
+        .toLowerCase();
+
+    const match = rawText.match(/^[!/.]?([a-z0-9_]+)/i);
+    const token = (match?.[1] || '').toLowerCase();
+    if (UNMUTE_WORDS.has(token)) return 'unmute';
+    if (MUTE_WORDS.has(token)) return 'mute';
+
+    return 'mute';
+}
 
 module.exports = {
     name: 'yukicallar',
-    aliases: ['callaryuki', 'silenciayuki', 'muteai', 'yukihablar', 'hablaryuki', 'desmutear', 'unmuteai'],
-    description: 'Silencia o reactiva solo la IA de Yuki en el chat o grupo actual',
+    aliases: [
+        'callaryuki',
+        'silenciayuki',
+        'muteai',
+        'yukihablar',
+        'hablaryuki',
+        'desmutear',
+        'unmuteai'
+    ],
+    category: 'ia',
+    description: 'Calla o vuelve a hacer hablar solo a la IA de Yuki en este chat',
 
-    async execute(sock, m, args, context = {}) {
-        const chatId = m.key?.remoteJid;
-        if (!chatId) return;
+    async execute(sock, m, args = [], context = {}) {
+        const chatId = m?.key?.remoteJid;
+        if (!chatId) return false;
 
         const safeReply =
-            context.safeReply ||
-            ((s, jid, content, opts) => s.sendMessage(jid, content, opts));
+            typeof context.safeReply === 'function'
+                ? context.safeReply
+                : (s, jid, content, opts) => s.sendMessage(jid, content, opts);
 
-        const rawText = (
-            context.body ||
-            m.message?.conversation ||
-            m.message?.extendedTextMessage?.text ||
-            ''
-        )
-            .trim()
-            .toLowerCase();
+        const action = resolveAction(m, args, context);
 
-        const isUnmute = /^[!/.]?(yukihablar|hablaryuki|desmutear|unmuteai)\b/i.test(rawText);
-
-        if (isUnmute) {
+        if (action === 'unmute') {
             unmuteChat(chatId);
             const sentMsg = await safeReply(
                 sock,
                 chatId,
-                { text: '✧ ¡Volví a charlar! ¿De qué estábamos hablando? ✨😄' },
+                { text: '✧ ¡Ya volví a charlar por aquí! ¿De qué estábamos hablando? ✨😄' },
                 { quoted: m }
             );
             trackBotSentMessage?.(sentMsg?.key);
-            return;
+            return true;
         }
 
         muteChat(chatId);
         const sentMsg = await safeReply(
             sock,
             chatId,
-            { text: '˚₊· Vale, me callo la IA por aquí un ratito, pero sigo atenta a comandos 🙈🍞' },
+            { text: '˚₊· Vale, me quedo calladita en la IA por aquí, pero sigo activa para comandos 🙈🍞' },
             { quoted: m }
         );
         trackBotSentMessage?.(sentMsg?.key);
-    }
+        return true;
+    },
+
+    isChatMuted,
+    muteChat,
+    unmuteChat
 };
