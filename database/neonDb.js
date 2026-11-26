@@ -57,7 +57,8 @@ const schema = [
         antilink INTEGER DEFAULT 0,
         admin_only INTEGER DEFAULT 0,
         bot_active INTEGER DEFAULT 1,
-        primary_bot_jid TEXT
+        primary_bot_jid TEXT,
+        ai_muted INTEGER DEFAULT 0
     )`,
     `CREATE TABLE IF NOT EXISTS message_counts (
         group_jid TEXT, user_jid TEXT, count INTEGER DEFAULT 0,
@@ -157,6 +158,7 @@ function createNeonDatabase(pool) {
         await pool.query(`ALTER TABLE users ALTER COLUMN lastdaily TYPE BIGINT`);
         await pool.query(`ALTER TABLE users ALTER COLUMN lastweekly TYPE BIGINT`);
         await pool.query(`ALTER TABLE users ALTER COLUMN lastmonthly TYPE BIGINT`);
+        await pool.query(`ALTER TABLE group_settings ADD COLUMN IF NOT EXISTS ai_muted INTEGER DEFAULT 0`);
         await pool.query(`ALTER TABLE message_counts ALTER COLUMN last_message_at TYPE BIGINT`);
         await pool.query(`ALTER TABLE characters ADD COLUMN IF NOT EXISTS is_curated INTEGER DEFAULT 0`);
     });
@@ -424,6 +426,49 @@ if (process.env.DATABASE_URL) db.getSafeGroup = function(jid, callback) {
         if (error) return callback(error);
         this.get('SELECT * FROM group_settings WHERE group_jid = ?', [jid], callback);
     });
+};
+
+if (process.env.DATABASE_URL) db.setGroupAiMuted = function(groupJid, muted, callback) {
+    if (!groupJid) {
+        if (typeof callback === 'function') callback(new Error('Se requiere groupJid'), false);
+        return this;
+    }
+    const value = muted ? 1 : 0;
+    this.run('INSERT INTO group_settings (group_jid) VALUES (?) ON CONFLICT DO NOTHING', [groupJid], insertErr => {
+        if (insertErr) {
+            if (typeof callback === 'function') callback(insertErr, false);
+            return;
+        }
+        this.run(
+            'UPDATE group_settings SET ai_muted = ? WHERE group_jid = ?',
+            [value, groupJid],
+            err => {
+                if (err) console.error('Error al actualizar ai_muted en Neon:', err.message);
+                if (typeof callback === 'function') callback(err || null, Boolean(value));
+            }
+        );
+    });
+    return this;
+};
+
+if (process.env.DATABASE_URL) db.isGroupAiMuted = function(groupJid, callback) {
+    if (!groupJid) {
+        if (typeof callback === 'function') callback(null, false);
+        return this;
+    }
+    this.get(
+        'SELECT ai_muted FROM group_settings WHERE group_jid = ?',
+        [groupJid],
+        (err, row) => {
+            if (err) {
+                console.error('Error al consultar ai_muted en Neon:', err.message);
+                if (typeof callback === 'function') callback(err, false);
+                return;
+            }
+            if (typeof callback === 'function') callback(null, Boolean(row?.ai_muted));
+        }
+    );
+    return this;
 };
 
 // === ESTO ES LO NUEVO, LO QUE TE FALTABA PARA QUE GUARDARA EN RENDER ===
