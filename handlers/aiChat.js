@@ -4,7 +4,7 @@ const botSentMessageIds = new Set();
 const reactedMessageIds = new Set();
 const usedStickerKeys = new Set();
 const mutedChats = new Set();
-const COOLDOWN_MS = 4500;
+const COOLDOWN_MS = 7500;
 
 let cachedModel = null;
 let cachedModelExpiresAt = 0;
@@ -126,7 +126,7 @@ function persistAiMuted(id, muted, callback) {
     };
 
     if (typeof db?.setGroupAiMuted !== 'function') {
-        done(true); // sin BD no hay nada que persistir
+        done(true);
         return;
     }
 
@@ -164,6 +164,15 @@ function unmuteChat(chatId, callback) {
 }
 
 syncMutedChatsFromDb();
+
+async function setTypingState(sock, chatId, isTyping) {
+    if (!sock || typeof sock.sendPresenceUpdate !== 'function' || !chatId) return;
+    try {
+        await sock.sendPresenceUpdate(isTyping ? 'composing' : 'paused', chatId);
+    } catch {
+        // Ignora si el socket no soporta presencia en algún momento
+    }
+}
 
 function isProposalOrDatingRequest(text = '') {
     return /\b(c[aá]sate conmigo|quieres casarte|te casas conmigo|matrimonio|boda|s[eé] mi (novia|pareja|amor)|quieres ser mi (novia|pareja)|andamos|hacemos pareja)\b/i.test(text);
@@ -390,6 +399,8 @@ async function handleConversationalAI(sock, m, body, safeReply) {
     }
 
     try {
+        await setTypingState(sock, chatId, true);
+
         const isProposal = isProposalOrDatingRequest(trimmed);
         const extraHint = isProposal
             ? '\n[Nota de situación: te están pidiendo matrimonio o ser pareja; responde SIEMPRE que no, con dulzura y ocurrencia al estilo Orihime, en 1 o 2 frases cortas.]'
@@ -404,7 +415,7 @@ async function handleConversationalAI(sock, m, body, safeReply) {
         const reply = await askGeminiFlash(contents);
         if (!reply) return false;
 
-        lastReplyAt.set(chatId, now);
+        lastReplyAt.set(chatId, Date.now());
         const updated = [
             ...history,
             { role: 'user', parts: [{ text: trimmed }] },
@@ -420,6 +431,8 @@ async function handleConversationalAI(sock, m, body, safeReply) {
     } catch (err) {
         console.error('Error en handleConversationalAI:', err.message || err);
         return false;
+    } finally {
+        await setTypingState(sock, chatId, false);
     }
 }
 
