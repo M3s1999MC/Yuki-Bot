@@ -51,6 +51,12 @@ function resolveAction(m, args = [], context = {}) {
     return 'mute';
 }
 
+function setMuteAsync(fn, chatId) {
+    return new Promise((resolve) => {
+        fn(chatId, (ok) => resolve(ok));
+    });
+}
+
 module.exports = {
     name: 'yukicallar',
     aliases: [
@@ -63,11 +69,13 @@ module.exports = {
         'unmuteai'
     ],
     category: 'ia',
-    description: 'Calla o vuelve a hacer hablar solo a la IA de Yuki en este chat',
+    description: 'Calla o vuelve a hacer hablar solo a la IA de Yuki en este chat (persistente en BD)',
 
     async execute(sock, m, args = [], context = {}) {
         const chatId = m?.key?.remoteJid;
         if (!chatId) return false;
+
+        console.log(`[yukicallar] Ejecutado en ${chatId}`);
 
         const safeReply =
             typeof context.safeReply === 'function'
@@ -77,7 +85,7 @@ module.exports = {
         const action = resolveAction(m, args, context);
 
         if (action === 'unmute') {
-            unmuteChat(chatId);
+            await setMuteAsync(unmuteChat, chatId);
             const sentMsg = await safeReply(
                 sock,
                 chatId,
@@ -88,7 +96,7 @@ module.exports = {
             return true;
         }
 
-        muteChat(chatId);
+        await setMuteAsync(muteChat, chatId);
         const sentMsg = await safeReply(
             sock,
             chatId,
