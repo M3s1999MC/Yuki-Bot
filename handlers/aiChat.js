@@ -253,7 +253,7 @@ function pickNonRepeatingUrl(urls, replyText, isProposal) {
     return chosen;
 }
 
-async function sendSigstickContextSticker(sock, chatId, quotedMsg, replyText, isProposal) {
+async function sendSigstickContextSticker(sock, chatId, _quotedMsg, replyText, isProposal) {
     try {
         const urls = await fetchStickerPackUrls();
         const stickerUrl = pickNonRepeatingUrl(urls, replyText, isProposal);
@@ -267,8 +267,7 @@ async function sendSigstickContextSticker(sock, chatId, quotedMsg, replyText, is
 
         const sentSticker = await sock.sendMessage(
             chatId,
-            { sticker: buffer },
-            { quoted: quotedMsg }
+            { sticker: buffer }
         );
         trackBotSentMessage(sentSticker?.key);
     } catch (err) {
