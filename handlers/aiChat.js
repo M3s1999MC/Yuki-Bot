@@ -115,6 +115,32 @@ function isChatMuted(chatId) {
     return mutedChats.has(normalizeJid(chatId));
 }
 
+// Guarda el estado en BD y avisa UNA sola vez por callback(ok). La memoria se actualiza siempre primero,
+// así que la IA se calla/reactiva al instante aunque la BD tarde o falle.
+function persistAiMuted(id, muted, callback) {
+    let finished = false;
+    const done = (ok) => {
+        if (finished) return;
+        finished = true;
+        if (typeof callback === 'function') callback(Boolean(ok));
+    };
+
+    if (typeof db?.setGroupAiMuted !== 'function') {
+        done(true); // sin BD no hay nada que persistir
+        return;
+    }
+
+    try {
+        const maybePromise = db.setGroupAiMuted(id, muted, (err) => done(!err));
+        if (maybePromise && typeof maybePromise.then === 'function') {
+            maybePromise.then((ok) => done(ok !== false), () => done(false));
+        }
+    } catch (err) {
+        console.error('Error guardando ai_muted:', err.message || err);
+        done(false);
+    }
+}
+
 function muteChat(chatId, callback) {
     const id = normalizeJid(chatId);
     if (!id) {
@@ -122,19 +148,7 @@ function muteChat(chatId, callback) {
         return false;
     }
     mutedChats.add(id);
-
-    if (typeof db?.setGroupAiMuted === 'function') {
-        const maybePromise = db.setGroupAiMuted(id, true, (err) => {
-            if (typeof callback === 'function') callback(!err);
-        });
-        if (maybePromise && typeof maybePromise.then === 'function') {
-            maybePromise.then((ok) => {
-                if (typeof callback === 'function') callback(Boolean(ok));
-            });
-        }
-    } else if (typeof callback === 'function') {
-        callback(true);
-    }
+    persistAiMuted(id, true, callback);
     return true;
 }
 
@@ -145,19 +159,7 @@ function unmuteChat(chatId, callback) {
         return false;
     }
     const existed = mutedChats.delete(id);
-
-    if (typeof db?.setGroupAiMuted === 'function') {
-        const maybePromise = db.setGroupAiMuted(id, false, (err) => {
-            if (typeof callback === 'function') callback(!err);
-        });
-        if (maybePromise && typeof maybePromise.then === 'function') {
-            maybePromise.then((ok) => {
-                if (typeof callback === 'function') callback(Boolean(ok) || existed);
-            });
-        }
-    } else if (typeof callback === 'function') {
-        callback(existed);
-    }
+    persistAiMuted(id, false, callback);
     return existed;
 }
 
