@@ -9,6 +9,7 @@ const QRCode = require('qrcode');
 const db = require('./database/db');
 const gachaDatabaseReady = require('./database/gacha_db');
 const CommandHandler = require('./handlers/commandHandler');
+const { handleConversationalAI } = require('./handlers/aiChat');
 const practiceSessions = require('./utils/practiceSessions');
 const { getMessageContent } = require('./utils/messageContent');
 const { getCanonicalMessageCountJid, getMessageSenderJid } = require('./utils/messageSender');
@@ -626,7 +627,10 @@ async function startYuki() {
             await safeReply(sock, m.key.remoteJid, { text: `「✿」 ${replyText}` }, { quoted: m });
             return;
         }
-        if (!body.startsWith(PREFIX)) return;
+        if (!body.startsWith(PREFIX)) {
+            await handleConversationalAI(sock, m, body, safeReply);
+            return;
+        }
         const usedPrefix = PREFIX;
         const args = body.slice(usedPrefix.length).trim().split(/ +/);
         const command = args.shift().toLowerCase();
