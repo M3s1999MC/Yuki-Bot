@@ -13,9 +13,13 @@ const failedModels = new Set();
 // JID o número de "ella" (ej: '573001234567@s.whatsapp.net' o '123456789@lid')
 const HER_JID = (process.env.HER_JID || '').trim();
 
-const SIGSTICK_PACK_URL = 'https://www.sigstick.com/pack/4mXpH4vfNxi5xg7G27tF-orihime';
+const STICKER_PACK_URLS = [
+    'https://www.sigstick.com/pack/4mXpH4vfNxi5xg7G27tF-orihime',
+    'https://stickers.wiki/es/whatsapp/inoueorihime/',
+    'https://stickers.wiki/es/whatsapp/inouebysps/'
+];
 
-// Opcional: pega aquí las URLs directas de los stickers del pack si el scrapeo HTML no las devuelve todas
+// Opcional: pega aquí URLs directas de stickers si algún sitio bloquea o no expone imágenes en HTML
 const MANUAL_STICKER_URLS = [
     // 'https://...',
 ];
@@ -185,39 +189,41 @@ function trackBotReaction(targetKey) {
 
 function rememberSticker(key) {
     if (!key) return;
-    if (usedStickerKeys.size >= 9) {
+    if (usedStickerKeys.size >= 15) {
         usedStickerKeys.clear();
     }
     usedStickerKeys.add(key);
 }
 
-async function fetchSigstickPackUrls() {
-    if (MANUAL_STICKER_URLS.length > 0) {
-        return MANUAL_STICKER_URLS.filter(u => typeof u === 'string' && u.trim());
-    }
+async function fetchStickerPackUrls() {
+    const manual = MANUAL_STICKER_URLS.filter(u => typeof u === 'string' && u.trim());
+    const found = new Set(manual);
 
-    try {
-        const res = await fetch(SIGSTICK_PACK_URL, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
-        });
-        if (!res.ok) return [];
-        const html = await res.text();
+    for (const packUrl of STICKER_PACK_URLS) {
+        if (!packUrl || typeof packUrl !== 'string' || !packUrl.trim()) continue;
+        try {
+            const res = await fetch(packUrl.trim(), {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                }
+            });
+            if (!res.ok) continue;
+            const html = await res.text();
 
-        const found = new Set();
-        const regex = /https?:\/\/[^"'\\\s<>]+?(?:\.webp|\.png|\.jpg|\.jpeg|\.gif)(?:\?[^"'\\\s<>]*)?/gi;
-        let match;
-        while ((match = regex.exec(html)) !== null) {
-            const url = match[0];
-            if (/sigstick|sticker|pack|4mXpH4vfNxi5xg7G27tF/i.test(url)) {
-                found.add(url);
+            const regex = /https?:\/\/[^"'\\\s<>]+?(?:\.webp|\.png|\.jpg|\.jpeg|\.gif)(?:\?[^"'\\\s<>]*)?/gi;
+            let match;
+            while ((match = regex.exec(html)) !== null) {
+                const url = match[0].replace(/&amp;/g, '&');
+                if (/sigstick|stickers\.wiki|sticker|pack|orihime|inoue|4mXpH4vfNxi5xg7G27tF/i.test(url)) {
+                    found.add(url);
+                }
             }
+        } catch {
+            // Si falla un paquete puntual, continúa con los demás
         }
-        return Array.from(found);
-    } catch {
-        return [];
     }
+
+    return Array.from(found);
 }
 
 function pickNonRepeatingUrl(urls, replyText, isProposal) {
@@ -247,7 +253,7 @@ function pickNonRepeatingUrl(urls, replyText, isProposal) {
 
 async function sendSigstickContextSticker(sock, chatId, quotedMsg, replyText, isProposal) {
     try {
-        const urls = await fetchSigstickPackUrls();
+        const urls = await fetchStickerPackUrls();
         const stickerUrl = pickNonRepeatingUrl(urls, replyText, isProposal);
         if (!stickerUrl) return;
 
@@ -264,7 +270,7 @@ async function sendSigstickContextSticker(sock, chatId, quotedMsg, replyText, is
         );
         trackBotSentMessage(sentSticker?.key);
     } catch (err) {
-        console.error('Error enviando sticker de SigStick:', err.message || err);
+        console.error('Error enviando sticker de paquete:', err.message || err);
     }
 }
 
