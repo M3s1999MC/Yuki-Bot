@@ -1,9 +1,3 @@
-const { GoogleGenAI } = require('@google/genai');
-
-const ai = process.env.GEMINI_API_KEY
-    ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
-    : null;
-
 const chatHistory = new Map();
 const lastReplyAt = new Map();
 const COOLDOWN_MS = 4500;
@@ -44,8 +38,34 @@ function getBotIds(sock) {
     return ids;
 }
 
+async function askGeminiFlash(contents) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) return '';
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            systemInstruction: {
+                parts: [{ text: YUKI_ORIHIME_PERSONA }]
+            },
+            contents
+        })
+    });
+
+    if (!response.ok) {
+        const errText = await response.text().catch(() => '');
+        throw new Error(`Gemini HTTP ${response.status}: ${errText.slice(0, 200)}`);
+    }
+
+    const data = await response.json();
+    const parts = data?.candidates?.[0]?.content?.parts || [];
+    return parts.map(p => p.text || '').join('').trim();
+}
+
 async function handleConversationalAI(sock, m, body, safeReply) {
-    if (!ai || !body || typeof body !== 'string' || m.key.fromMe) return false;
+    if (!process.env.GEMINI_API_KEY || !body || typeof body !== 'string' || m.key.fromMe) return false;
 
     const chatId = m.key.remoteJid;
     const isGroup = chatId.endsWith('@g.us');
@@ -57,7 +77,6 @@ async function handleConversationalAI(sock, m, body, safeReply) {
     const isMentioned = mentionedJids.some(jid => botIds.has(jid));
     const isReplyToBot = Boolean(quotedParticipant && botIds.has(quotedParticipant));
 
-    // En grupos responde si la mencionan o citan su mensaje; en privado responde en la charla
     if (isGroup && !isMentioned && !isReplyToBot) {
         return false;
     }
@@ -74,15 +93,7 @@ async function handleConversationalAI(sock, m, body, safeReply) {
             { role: 'user', parts: [{ text: body }] }
         ];
 
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents,
-            config: {
-                systemInstruction: YUKI_ORIHIME_PERSONA
-            }
-        });
-
-        const reply = response.text?.trim();
+        const reply = await askGeminiFlash(contents);
         if (!reply) return false;
 
         lastReplyAt.set(chatId, now);
