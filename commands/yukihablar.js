@@ -1,4 +1,4 @@
-const { unmuteChat, isChatMuted, trackBotSentMessage } = require('../handlers/aiChat');
+const { unmuteChat, trackBotSentMessage } = require('../handlers/aiChat');
 
 function setUnmuteAsync(chatId) {
     return new Promise((resolve) => {
@@ -10,31 +10,21 @@ module.exports = {
     name: 'yukihablar',
     aliases: ['hablaryuki', 'desmutear', 'unmuteai'],
     category: 'ia',
-    description: 'Vuelve a activar solo la IA de Yuki en este chat (persistente en BD)',
+    description: 'Vuelve a activar solo la IA de Yuki en este chat (persistente en BD).',
 
-    async execute(sock, m, args = [], context = {}) {
-        const chatId = m?.key?.remoteJid;
-        if (!chatId) return false;
+    async execute(sock, m, args = []) {
+        const jid = m?.key?.remoteJid;
+        if (!jid) return;
 
-        console.log(`[yukihablar] Ejecutado en ${chatId}`);
+        console.log('🔊 [yukihablar] Ejecutando en:', jid);
 
-        const safeReply =
-            typeof context.safeReply === 'function'
-                ? context.safeReply
-                : (s, jid, content, opts) => s.sendMessage(jid, content, opts);
+        await setUnmuteAsync(jid);
 
-        await setUnmuteAsync(chatId);
-
-        const sentMsg = await safeReply(
-            sock,
-            chatId,
+        const sentMsg = await sock.sendMessage(
+            jid,
             { text: '✧ ¡Ya volví a charlar por aquí! ¿De qué estábamos hablando? ✨😄' },
             { quoted: m }
         );
         trackBotSentMessage?.(sentMsg?.key);
-        return true;
-    },
-
-    isChatMuted,
-    unmuteChat
+    }
 };
