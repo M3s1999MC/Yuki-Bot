@@ -1,10 +1,12 @@
 const chatHistory = new Map();
+const recentChatMessages = new Map();
 const lastReplyAt = new Map();
 const botSentMessageIds = new Set();
 const reactedMessageIds = new Set();
 const usedStickerKeys = new Set();
 const mutedChats = new Set();
 const COOLDOWN_MS = 7500;
+const RECENT_MESSAGES_LIMIT = 25;
 
 let cachedModel = null;
 let cachedModelExpiresAt = 0;
@@ -46,9 +48,10 @@ try {
 const YUKI_ORIHIME_PERSONA = `
 Eres Yuki, una chica inspirada en Orihime Inoue que participa en chats de WhatsApp en español.
 
-Personalidad explícita:
+Personalidad y utilidad:
 - Eres amable, empática y dulce, pero hablas de forma natural y espontánea, como una amiga más en el chat.
 - Tienes un lado imaginativo y algo despistado: de repente sueltas ideas raras, antojos o pensamientos que se van un poquito por las ramas, pero entiendes bien el contexto.
+- También eres resolutiva y útil cuando te piden ayuda o un resumen del chat: organizas bien lo que pasó en la conversación de forma clara y directa, sin inventar cosas que no se dijeron.
 - Cuando alguien está triste, estresado o tiene un problema, bajas el juego, escuchas con cariño y das apoyo real con buena vibra.
 - Si el chat está en broma, memes o charla casual, sigues el ritmo con chispa y naturalidad.
 
@@ -57,9 +60,11 @@ Decoración y buen uso de emojis según la respuesta:
 - Ocurrencias, despiste, comida o antojos: usa emojis como 🍞, 🧁, ✨, 💫, 🤔, 👀, 🙈 o adornos sutiles como ˚₊· o ✧.
 - Bromas y charla animada: usa chispa con 😄, 😅, ✨, 🎶 o detalles ligeros que acompañen el chiste.
 - Apoyo, cariño o momentos sensibles: usa un toque cálido y cuidado con 🤍, 🌷, 🤗, ❀, sin exagerar adornos si el tema es serio.
+- Resúmenes o ayuda práctica: usa viñetas cortas o un cierre breve y claro con ✧, 📌 o ✨ para que sea fácil de leer.
 - Rechazo a propuestas de matrimonio o noviazgo: siempre un "no" amable y con chispa/ocurrencia al estilo Orihime, acompañado de un toque dulce o despistado (como 😅, 🙈, 🍞, ✨) dejando claro que no.
 
 Reglas estrictas de formato y estilo:
+- En charla normal, responde en 1 o 2 frases cortas. Si te piden un resumen o explicación útil del chat, puedes usar hasta 4–5 líneas o viñetas breves para que el resumen sí sirva.
 - No suenes exagerada ni teatral, ni tampoco fría o robótica.
 - No digas que eres una inteligencia artificial, ni hables de prompts, modelos o reglas.
 
@@ -180,6 +185,44 @@ async function setTypingState(sock, chatId, isTyping) {
     }
 }
 
+function mentionsYukiOrOrihime(text = '') {
+    return /\b(yuki|yuky|orihime)\b/i.test(String(text || ''));
+}
+
+function isSummaryRequest(text = '') {
+    return /\b(resumen|resume|resumir|qu[eé] (pas[oó]|dijeron|hablaron)|de qu[eé] hablaron|ponme al d[ií]a)\b/i.test(String(text || ''));
+}
+
+function recordChatMessage(chatId, m, text) {
+    const id = normalizeJid(chatId);
+    const clean = String(text || '').trim();
+    if (!id || !clean) return;
+
+    const senderName = (
+        m?.pushName ||
+        normalizeJid(m?.key?.participant || m?.key?.remoteJid || '').split('@')[0] ||
+        'Alguien'
+    ).trim();
+
+    const list = recentChatMessages.get(id) || [];
+    list.push({
+        sender: senderName,
+        text: clean.slice(0, 240),
+        at: Date.now()
+    });
+    if (list.length > RECENT_MESSAGES_LIMIT) {
+        list.splice(0, list.length - RECENT_MESSAGES_LIMIT);
+    }
+    recentChatMessages.set(id, list);
+}
+
+function buildRecentTranscript(chatId) {
+    const id = normalizeJid(chatId);
+    const list = recentChatMessages.get(id) || [];
+    if (!list.length) return '';
+    return list.slice(-18).map(item => `- ${item.sender}: ${item.text}`).join('\n');
+}
+
 function isProposalOrDatingRequest(text = '') {
     return /\b(c[aá]sate conmigo|quieres casarte|te casas conmigo|matrimonio|boda|s[eé] mi (novia|pareja|amor)|quieres ser mi (novia|pareja)|andamos|hacemos pareja)\b/i.test(text);
 }
@@ -231,7 +274,7 @@ async function fetchStickerPackUrls() {
             let match;
             while ((match = regex.exec(html)) !== null) {
                 const url = match[0].replace(/&amp;/g, '&');
-                if (/sigstick|stickers\.wiki|sticker|pack|orihime|inoue|4mXpH4vfNxi5xg7G27tF/i.test(url)) {
+                if (/sigstick|stickers\.wiki|sticker\.fan|sticker|pack|orihime|inoue|bleach|ulquiorra|anime153|x83dt|4mXpH4vfNxi5xg7G27tF/i.test(url)) {
                     found.add(url);
                 }
             }
@@ -255,9 +298,9 @@ function pickNonRepeatingUrl(urls, replyText, isProposal) {
     if (isProposal) {
         preferred = pool.filter(u => /no|reject|sigma|awkward|blank|confused/i.test(u));
     } else if (/\b(cansad|sueño|agotad|pesad|triste)\b/.test(t)) {
-        preferred = pool.filter(u => /tired|sleep|sad|blank/i.test(u));
+        preferred = pool.filter(u => /tired|sleep|sad|blank|ulquiorra/i.test(u));
     } else if (/\b(risa|jaja|meme|chiste|broma|sigma)\b/.test(t)) {
-        preferred = pool.filter(u => /sigma|laugh|happy|spin|shock/i.test(u));
+        preferred = pool.filter(u => /sigma|laugh|happy|spin|shock|bleach/i.test(u));
     } else if (/\b(sorpresa|qué|que|cómo|como|woah|locura)\b/.test(t)) {
         preferred = pool.filter(u => /shock|spin|blank/i.test(u));
     }
@@ -340,7 +383,7 @@ async function resolveGeminiModel(apiKey) {
     return chosen;
 }
 
-async function askGeminiFlash(contents) {
+async function askGeminiFlash(contents, maxOutputTokens = 135) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) return '';
 
@@ -356,7 +399,7 @@ async function askGeminiFlash(contents) {
             },
             generationConfig: {
                 temperature: 0.85,
-                maxOutputTokens: 135
+                maxOutputTokens
             },
             contents
         })
@@ -384,9 +427,10 @@ async function handleConversationalAI(sock, m, body, safeReply) {
     if (!process.env.GEMINI_API_KEY || !body || typeof body !== 'string') return false;
 
     const chatId = m?.key?.remoteJid;
-    if (!chatId || isChatMuted(chatId)) {
-        return false;
-    }
+    if (!chatId) return false;
+
+    const trimmed = body.trim();
+    if (!trimmed) return false;
 
     // Ignora los mensajes de ella
     if (isFromHer(m)) return false;
@@ -396,8 +440,17 @@ async function handleConversationalAI(sock, m, body, safeReply) {
         return false;
     }
 
-    const trimmed = body.trim();
-    if (!trimmed) return false;
+    // Guarda siempre los mensajes recientes del chat para resúmenes útiles
+    recordChatMessage(chatId, m, trimmed);
+
+    if (isChatMuted(chatId)) {
+        return false;
+    }
+
+    // Solo responde cuando mencionan a Yuki / Yuky / Orihime para evitar spam
+    if (!mentionsYukiOrOrihime(trimmed)) {
+        return false;
+    }
 
     const now = Date.now();
     if (now - (lastReplyAt.get(chatId) || 0) < COOLDOWN_MS) {
@@ -408,9 +461,17 @@ async function handleConversationalAI(sock, m, body, safeReply) {
         await setTypingState(sock, chatId, true);
 
         const isProposal = isProposalOrDatingRequest(trimmed);
-        const extraHint = isProposal
-            ? '\n[Nota de situación: te están pidiendo matrimonio o ser pareja; responde SIEMPRE que no, con dulzura y ocurrencia al estilo Orihime, en 1 o 2 frases cortas.]'
-            : '';
+        const wantsSummary = isSummaryRequest(trimmed);
+        const transcript = wantsSummary ? buildRecentTranscript(chatId) : '';
+
+        let extraHint = '';
+        if (isProposal) {
+            extraHint = '\n[Nota de situación: te están pidiendo matrimonio o ser pareja; responde SIEMPRE que no, con dulzura y ocurrencia al estilo Orihime, en 1 o 2 frases cortas.]';
+        } else if (wantsSummary && transcript) {
+            extraHint = `\n[Nota de situación: te pidieron resumir lo que pasó en el chat. Haz un resumen útil y claro de los puntos principales en 3 a 5 líneas o viñetas cortas con tu toque amable, sin inventar nada:\n${transcript}\n]`;
+        } else if (wantsSummary) {
+            extraHint = '\n[Nota de situación: te pidieron resumir el chat, pero aún no hay suficientes mensajes recientes guardados; avisa con amabilidad y chispa que aún no viste mucho movimiento.]';
+        }
 
         const history = chatHistory.get(chatId) || [];
         const contents = [
@@ -418,7 +479,7 @@ async function handleConversationalAI(sock, m, body, safeReply) {
             { role: 'user', parts: [{ text: `${trimmed}${extraHint}` }] }
         ];
 
-        const reply = await askGeminiFlash(contents);
+        const reply = await askGeminiFlash(contents, wantsSummary ? 240 : 135);
         if (!reply) return false;
 
         lastReplyAt.set(chatId, Date.now());
