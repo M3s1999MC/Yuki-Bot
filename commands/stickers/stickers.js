@@ -4,11 +4,18 @@ const { makeSticker } = require('../../utils/stickerMaker');
 module.exports = {
     name: 'sticker',
     aliases: ['s'],
-    category: 'tools',
+    category: 'stickers',
     description: 'Convierte una imagen o video en sticker.',
 
-    async execute(sock, m, args) {
+    async execute(sock, m, args = []) {
         const jid = m.key.remoteJid;
+        const firstArg = String(args?.[0] || '').trim().toLowerCase();
+
+        if (firstArg === 'a' || firstArg === 'audio') {
+            const saCmd = require('./sa');
+            return saCmd.execute(sock, m, args.slice(1));
+        }
+
         const context = m.message?.extendedTextMessage?.contextInfo;
         const quoted = context?.quotedMessage;
         const unwrap = message => message?.ephemeralMessage?.message || message?.viewOnceMessage?.message || message?.viewOnceMessageV2?.message || message;
