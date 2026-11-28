@@ -108,6 +108,28 @@ https://whatsapp.com/channel/0029Vb92LdaCnA7rdqUbdw38
 ✦ !ship
 ♡ ¿Hacen buena pareja? Yo los shipeo
 
+🍡 Dinámicas y retos del chat
+✦ !moodgrupo / !ambiente / !termometro
+♡ Detecta el ambiente o mood reciente del grupo
+✦ !corte / !clipchat
+♡ Guarda y destaca una frase o momento del chat
+✦ !desmentir / !chequeo
+♡ Evalúa con chispa una afirmación o chisme del chat
+✦ !quien / !voto
+♡ Lanza una votación rápida de etiqueta o pregunta en el grupo
+✦ !pista / !adivina
+♡ Lanza una adivinanza rápida en el grupo; el primero en acertar gana
+✦ !reto / !verdadoreto
+♡ Saca una verdad o un reto rápido para animar el chat
+✦ !chisme / !boladecristal
+♡ Lanza una predicción chistosa sobre lo que pasará en el chat
+
+🍡 Juegos rápidos en grupo
+✦ !quien / !voto
+♡ Lanza una votación rápida de etiqueta o pregunta en el grupo
+✦ !pista / !adivina
+♡ Lanza una adivinanza rápida en el grupo; el primero en acertar gana
+
 🍡 Para cuidar tu grupito - Grupo
 ✦ !promote / !promover / !admin
 ♡ Te ayudo a poner admins
